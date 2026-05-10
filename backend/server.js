@@ -1,9 +1,12 @@
 ﻿const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 require('dotenv').config();
 
 const pool = require('./database/db');
 const seedDatabase = require('./seed/initialData');
+const { apiLimiter } = require('./middleware/rateLimiter');
+const { logApiCall } = require('./utils/errorHandler');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -16,19 +19,24 @@ const damageReportRoutes = require('./routes/damageReports');
 
 const app = express();
 
-// Middleware
+// Security Middleware
+app.use(helmet()); // Secure HTTP headers
+
+// Body Parser Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// CORS Middleware
 app.use(cors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
     credentials: true
 }));
 
-// Request logging middleware
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-    next();
-});
+// API Rate Limiting (applies to all /api routes)
+app.use('/api/', apiLimiter);
+
+// Request Logging Middleware
+app.use(logApiCall);
 
 // Health check
 app.get('/api/health', async (req, res) => {
@@ -61,26 +69,47 @@ app.use('/api/damage-reports', damageReportRoutes);
 
 // 404 Handler
 app.use((req, res) => {
-    res.status(404).json({ 
+    return res.status(404).json({
+        success: false,
+        status: 404,
         message: 'Route not found',
-        path: req.path 
+        path: req.path,
+        timestamp: new Date().toISOString(),
     });
 });
 
-// Error Handler
+// Global Error Handler
 app.use((err, req, res, next) => {
-    console.error('Error:', err.stack);
-    
-    // Log to database (optional)
-    pool.query(
-        `INSERT INTO library_schema.activity_logs (action, raw_log, log_data) 
-         VALUES ($1, $2, $3)`,
-        ['ERROR', { path: req.path, method: req.method }, { error: err.message }]
-    ).catch(console.error);
-    
-    res.status(500).json({
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? err.message : 'Server error'
+    console.error('❌ Global Error Handler:', err);
+
+    // Handle rate limit errors
+    if (err.status === 429) {
+        return res.status(429).json({
+            success: false,
+            status: 429,
+            message: err.message || 'Too many requests',
+            timestamp: new Date().toISOString(),
+        });
+    }
+
+    // Handle validation errors
+    if (err.validationErrors) {
+        return res.status(422).json({
+            success: false,
+            status: 422,
+            message: 'Validation failed',
+            errors: err.validationErrors,
+            timestamp: new Date().toISOString(),
+        });
+    }
+
+    // Default error response
+    res.status(err.status || 500).json({
+        success: false,
+        status: err.status || 500,
+        message: err.message || 'Internal server error',
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+        timestamp: new Date().toISOString(),
     });
 });
 
