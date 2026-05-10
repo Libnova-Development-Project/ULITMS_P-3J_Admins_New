@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ULITMS — My Borrowings</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../css/styles.css">
+<script src="../js/config.js"></script>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<!-- ── SIDEBAR ── -->
+<aside id="sidebar">
+  <div class="logo-area">
+    <div class="logo-title">ULITMS</div>
+    <div class="logo-sub">with E-Lib Integration</div>
+  </div>
+
+  <nav class="nav-section">
+    <div class="nav-label">Main Menu</div>
+    <a href="../index.html" class="nav-item">
+      <span class="icon"><i class="fas fa-house"></i></span> Home
+    </a>
+    <a href="catalog.html" class="nav-item">
+      <span class="icon"><i class="fas fa-book"></i></span> Book Catalog
+    </a>
+    <a href="borrowings.html" class="nav-item active">
+      <span class="icon"><i class="fas fa-bookmark"></i></span> My Borrowings
+    </a>
+    <a href="elibrary.html" class="nav-item">
+      <span class="icon"><i class="fas fa-desktop"></i></span> E-Library
+    </a>
+
+    <div class="nav-divider"></div>
+    <div class="nav-label">Account</div>
+    <a href="profile.html" class="nav-item">
+      <span class="icon"><i class="fas fa-user"></i></span> My Profile
+    </a>
+    <a href="password.html" class="nav-item">
+      <span class="icon"><i class="fas fa-lock"></i></span> Change Password
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-item" style="color:#f87171;" onclick="alert('Logging out...')">
+      <span class="icon"><i class="fas fa-arrow-right-from-bracket"></i></span> Logout
+    </div>
+  </nav>
+
+  <div class="user-footer">
+    <div class="avatar">JM</div>
+    <div>
+      <div class="user-name">Jaylord Manolong</div>
+      <div class="user-role">Student</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div id="main">
+  <!-- Header -->
+  <header id="topbar">
+    <div class="page-title">My Borrowings</div>
+    <div class="topbar-right">
+      <div class="notif-btn"><i class="fas fa-bell"></i></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar" style="width:36px;height:36px;font-size:.8rem;">JM</div>
+        <div>
+          <div style="font-size:.82rem;font-weight:600;color:#e2e8f0;">Jaylord Manolong</div>
+          <div style="font-size:.7rem;color:#475569;">Student</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div id="content">
+    <!-- ═══════════ MY BORROWINGS ═══════════ -->
+    <div class="section-title">My Borrowings</div>
+    <div class="section-sub">Track your personal borrow and return history</div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;">
+      <div class="stat-card">
+        <div class="label">Currently Borrowed</div>
+        <div class="value" style="color:#60a5fa;">2</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Returned</div>
+        <div class="value" style="color:#4ade80;">11</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Overdue Fines</div>
+        <div class="value" style="color:#27c4cc;">₱0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="fas fa-list" style="color:#27c4cc;margin-right:8px;"></i>My Transaction History</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Trans. ID</th><th>Book Title</th><th>Borrow Date</th><th>Due Date</th><th>Status</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="color:#27c4cc;font-weight:600;">#T-0041</td><td>Network Fundamentals</td><td>Apr 25, 2026</td><td>May 2, 2026</td><td><span class="badge badge-yellow"><i class="fas fa-clock" style="font-size:.6rem;"></i> Due Soon</span></td></tr>
+            <tr><td style="color:#27c4cc;font-weight:600;">#T-0035</td><td>Intro to Programming</td><td>Apr 10, 2026</td><td>Apr 17, 2026</td><td><span class="badge badge-blue"><i class="fas fa-circle" style="font-size:.5rem;"></i> Active</span></td></tr>
+            <tr><td style="color:#27c4cc;font-weight:600;">#T-0028</td><td>Web Dev Essentials</td><td>Apr 1, 2026</td><td>Apr 8, 2026</td><td><span class="badge badge-gray"><i class="fas fa-check" style="font-size:.6rem;"></i> Returned</span></td></tr>
+            <tr><td style="color:#27c4cc;font-weight:600;">#T-0019</td><td>Computer Networks</td><td>Mar 2, 2026</td><td>Mar 22, 2026</td><td><span class="badge badge-gray"><i class="fas fa-check" style="font-size:.6rem;"></i> Returned</span></td></tr>
+            <tr><td style="color:#27c4cc;font-weight:600;">#T-0012</td><td>OS Concepts</td><td>Mar 1, 2026</td><td>Mar 8, 2026</td><td><span class="badge badge-gray"><i class="fas fa-check" style="font-size:.6rem;"></i> Returned</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /content -->
+</div><!-- /main -->
+
+</body>
+</html>

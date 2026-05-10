@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ULITMS — University Library System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css">
+<script src="js/config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<!-- ── SIDEBAR ── -->
+<aside id="sidebar">
+  <div class="logo-area">
+    <div class="logo-title">ULITMS</div>
+    <div class="logo-sub">with E-Lib Integration</div>
+  </div>
+
+  <nav class="nav-section">
+    <div class="nav-label">Main Menu</div>
+    
+    <div class="nav-item" data-page="dashboard">
+      <span class="icon"><i class="fas fa-house"></i></span> Dashboard
+    </div>
+    
+    <!-- USER ONLY -->
+    <div class="nav-item user-only" data-page="catalog" style="display:none;">
+      <span class="icon"><i class="fas fa-book"></i></span> Book Catalog
+    </div>
+    <div class="nav-item user-only" data-page="borrowings" style="display:none;">
+      <span class="icon"><i class="fas fa-bookmark"></i></span> My Borrowings
+    </div>
+    <div class="nav-item user-only" data-page="elibrary" style="display:none;">
+      <span class="icon"><i class="fas fa-desktop"></i></span> E-Library
+    </div>
+
+    <!-- ADMIN ONLY -->
+    <div class="nav-item admin-only" data-page="manage" style="display:none;">
+      <span class="icon"><i class="fas fa-cogs"></i></span> Manage Books
+    </div>
+    <div class="nav-item admin-only" data-page="inventory" style="display:none;">
+      <span class="icon"><i class="fas fa-boxes"></i></span> Book Inventory
+    </div>
+    <div class="nav-item admin-only" data-page="elibraryLogs" style="display:none;">
+      <span class="icon"><i class="fas fa-desktop"></i></span> E-Library Logs
+    </div>
+    <div class="nav-item admin-only" data-page="userManagement" style="display:none;">
+      <span class="icon"><i class="fas fa-users"></i></span> User Management
+    </div>
+    <div class="nav-item admin-only" data-page="equipmentMaintenance" style="display:none;">
+      <span class="icon"><i class="fas fa-tools"></i></span> Equipment & Maintenance
+    </div>
+
+    <div class="nav-divider"></div>
+    <div class="nav-label">Account</div>
+    <div class="nav-item" data-page="profile">
+      <span class="icon"><i class="fas fa-user"></i></span> My Profile
+    </div>
+    <div class="nav-item" data-page="password">
+      <span class="icon"><i class="fas fa-lock"></i></span> Change Password
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" style="color:#f87171;" onclick="logout()">
+      <span class="icon"><i class="fas fa-arrow-right-from-bracket"></i></span> Logout
+    </div>
+  </nav>
+
+  <div class="user-footer">
+    <div class="avatar" id="sidebar-avatar">JM</div>
+    <div>
+      <div id="sidebar-user-name" class="user-name">Guest</div>
+      <div id="sidebar-user-role" class="user-role">Visitor</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div id="main">
+  <!-- AUTH LOGIN OVERLAY -->
+  <div id="auth-landing" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.95);padding:24px;z-index:1000;">
+    <div class="auth-card" style="max-width:460px;width:100%;padding:32px;">
+      <div id="signin-panel" class="auth-panel">
+        <div class="auth-panel-heading" style="color:#e2e8f0;">Log in to ULITMS</div>
+        <div class="form-group">
+          <label class="form-label" id="login-label" style="color:#27c4cc;">Student ID</label>
+          <input id="login-identifier" type="text" class="form-input" placeholder="Enter your Student ID" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#27c4cc;">Password</label>
+          <input id="login-password" type="password" class="form-input" placeholder="Enter your password" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#27c4cc;">Role</label>
+          <select id="login-role" onchange="toggleLoginField()" class="form-input">
+            <option value="user">Student / User</option>
+            <option value="admin">Admin / Librarian</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="login()" type="button" style="width:100%;">Log in</button>
+        <div class="form-caption" style="margin-top:18px;color:#cbd5e1;">
+          Don't have an account? <button class="link-button" type="button" onclick="showAuthPanel('signup')">Sign up</button>
+        </div>
+        <div id="demo-hint" style="margin-top:12px;color:#475569;font-size:12px;text-align:center;">
+          🔑 Demo: Student ID: 2024-01018 | Password: student123
+        </div>
+      </div>
+
+      <div id="signup-panel" class="auth-panel" style="display:none;">
+        <div class="auth-panel-heading" style="color:#e2e8f0;">Create Account</div>
+        <div class="form-group">
+          <label class="form-label" style="color:#27c4cc;">First Name</label>
+          <input id="signup-firstname" class="form-input" placeholder="Your first name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#27c4cc;">Last Name</label>
+          <input id="signup-lastname" class="form-input" placeholder="Your last name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#27c4cc;">Student ID</label>
+          <input id="signup-studentid" class="form-input" placeholder="e.g. 2024-12345" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#27c4cc;">Email address</label>
+          <input id="signup-email" type="email" class="form-input" placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#27c4cc;">Course</label>
+          <input id="signup-course" class="form-input" placeholder="e.g. BS Information Technology" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#27c4cc;">Year level</label>
+          <input id="signup-year" class="form-input" placeholder="e.g. 3rd Year" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#27c4cc;">Contact number</label>
+          <input id="signup-contact" class="form-input" placeholder="09xx-xxx-xxxx" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#27c4cc;">Password</label>
+          <input id="signup-pwd" type="password" class="form-input" placeholder="Create password (min 6 characters)" />
+        </div>
+        <button class="btn-primary" onclick="createAccount()" type="button" style="width:100%;">Create Account</button>
+        <div class="form-caption" style="margin-top:18px;color:#cbd5e1;">
+          Already have an account? <button class="link-button" type="button" onclick="showAuthPanel('signin')">Log in</button>
+        </div>
+      </div>
+
+      <div id="success-panel" class="auth-panel" style="display:none;text-align:center;">
+        <div class="auth-panel-heading" style="color:#e2e8f0;">Account Created!</div>
+        <div style="color:#cbd5e1;margin-bottom:20px;">Your account has been successfully created. You can now log in using your Student ID.</div>
+        <button class="btn-primary" onclick="showAuthPanel('signin')" type="button">Log in</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header id="topbar">
+    <div class="page-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-right">
+      <div class="notif-btn"><i class="fas fa-bell"></i></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar" id="topbar-avatar" style="width:36px;height:36px;font-size:.8rem;">G</div>
+        <div>
+          <div id="topbar-user-name" style="font-size:.82rem;font-weight:600;color:#e2e8f0;">Guest</div>
+          <div id="topbar-user-role" style="font-size:.7rem;color:#475569;">Visitor</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div id="content">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="section-title" id="dashboard-welcome">Welcome back! 👋</div>
+      <div class="section-sub" id="dashboard-sub">Here's your library summary for today</div>
+      <div id="dashboard-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px;"></div>
+      <div id="dashboard-alert"></div>
+      <div id="dashboard-recent" class="card"></div>
+    </div>
+
+    <!-- BOOK CATALOG (USER ONLY) -->
+    <div class="page" id="page-catalog">
+      <div class="section-title">Book Catalog</div>
+      <div class="section-sub">Browse all available books in the library</div>
+      
+      <!-- Category Filter Buttons -->
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+        <button class="filter-btn active" data-category="all" onclick="filterBooks('all')" style="background: rgba(12,168,177,.2); border: 1px solid rgba(12,168,177,.4); color: #6adde2; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">
+          📚 All Books
+        </button>
+        <button class="filter-btn" data-category="Programming" onclick="filterBooks('Programming')" style="background: rgba(12,168,177,.1); border: 1px solid rgba(12,168,177,.2); color: #94a3b8; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">
+          💻 Programming
+        </button>
+        <button class="filter-btn" data-category="Literature" onclick="filterBooks('Literature')" style="background: rgba(12,168,177,.1); border: 1px solid rgba(12,168,177,.2); color: #94a3b8; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">
+          📖 Literature
+        </button>
+        <button class="filter-btn" data-category="Science" onclick="filterBooks('Science')" style="background: rgba(12,168,177,.1); border: 1px solid rgba(12,168,177,.2); color: #94a3b8; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">
+          🔬 Science
+        </button>
+        <button class="filter-btn" data-category="Engineering" onclick="filterBooks('Engineering')" style="background: rgba(12,168,177,.1); border: 1px solid rgba(12,168,177,.2); color: #94a3b8; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">
+          🏗️ Engineering
+        </button>
+      </div>
+      
+      <div class="search-wrap" style="margin-bottom:20px;">
+        <i class="fas fa-search"></i>
+        <input class="search-input" type="text" placeholder="Search by title, author, or ISBN..." id="catalog-search">
+      </div>
+      
+      <div class="card">
+        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Books Collection</span>
+          <span id="book-count" style="font-size: 0.8rem; color: #6adde2;">Loading books...</span>
+        </div>
+        <div class="tbl-wrap">
+          <table id="catalog-table">
+            <thead><tr><th>ISBN</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th></tr></thead>
+            <tbody id="catalog-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY BORROWINGS (USER ONLY) -->
+    <div class="page" id="page-borrowings">
+      <div class="section-title">My Borrowings</div>
+      <div class="section-sub">Track your personal borrow and return history</div>
+      <div id="borrow-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;"></div>
+      <div class="card">
+        <div class="card-title">My Transaction History</div>
+        <div class="tbl-wrap">
+          <table><thead><tr><th>Trans. ID</th><th>Book Title</th><th>Borrow Date</th><th>Due Date</th><th>Status</th></tr></thead>
+          <tbody id="borrow-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- E-LIBRARY (USER ONLY) -->
+    <div class="page" id="page-elibrary">
+      <div class="section-title">E-Library</div>
+      <div class="section-sub">Your personal PC session history</div>
+      <div id="elib-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;"></div>
+      <div class="card">
+        <div class="card-title">My Session History</div>
+        <div class="tbl-wrap">
+          <table><thead><tr><th>Date</th><th>Station</th><th>Time In</th><th>Time Out</th><th>Duration</th><th>Status</th></tr></thead>
+          <tbody id="elib-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANAGE BOOKS (ADMIN ONLY) -->
+    <div class="page" id="page-manage">
+      <div class="section-title">Manage Books (Admin)</div>
+      <div class="section-sub">Full CRUD operations for book inventory</div>
+      <div style="margin-bottom:20px;">
+        <button class="btn-primary" onclick="exportToPDF()"><i class="fas fa-file-pdf"></i> Export to PDF</button>
+        <button class="btn-secondary" onclick="showAddBookModal()"><i class="fas fa-plus"></i> Add Book</button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table id="manage-table">
+            <thead><tr><th>ISBN</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="manage-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOOK INVENTORY (ADMIN ONLY) -->
+    <div class="page" id="page-inventory">
+      <div class="section-title">Book Inventory</div>
+      <div class="section-sub">Complete library collection management</div>
+      <div class="card"><div class="tbl-wrap"><table id="inventory-table"><thead><tr><th>ISBN</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody id="inventory-tbody"></tbody></table></div></div>
+    </div>
+
+    <!-- E-LIBRARY LOGS (ADMIN ONLY) -->
+    <div class="page" id="page-elibraryLogs">
+      <div class="section-title">E-Library Usage & Live Monitoring</div>
+      <div class="section-sub">Admin oversight of all PC sessions</div>
+      <div class="card"><div class="tbl-wrap"><table id="admin-session-table"><thead><tr><th>User</th><th>Station</th><th>Date</th><th>Time In</th><th>Time Out</th><th>Status</th></tr></thead><tbody id="admin-session-tbody"></tbody></table></div></div>
+    </div>
+
+    <!-- USER MANAGEMENT (ADMIN ONLY) -->
+    <div class="page" id="page-userManagement">
+      <div class="section-title">User Management</div>
+      <div class="section-sub">Manage registered library users</div>
+      <div class="card"><div class="tbl-wrap"><table id="user-table"><thead><tr><th>Name</th><th>Email</th><th>Student ID</th><th>Course</th><th>Role</th><th>Actions</th></tr></thead><tbody id="user-tbody"></tbody></tr></div></div>
+    </div>
+
+    <!-- EQUIPMENT & MAINTENANCE (ADMIN ONLY) -->
+    <div class="page" id="page-equipmentMaintenance">
+      <div class="section-title">Equipment & Maintenance</div>
+      <div class="section-sub">Manage peripherals, track equipment, and monitor damage reports</div>
+      
+      <!-- Tabs -->
+      <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid rgba(12,168,177,.2); padding-bottom: 10px;">
+        <button class="tab-btn active" data-tab="equipment" onclick="switchMaintenanceTab('equipment')" style="background: transparent; border: none; color: #6adde2; padding: 10px 20px; cursor: pointer; font-size: 0.9rem; font-weight: 600; border-bottom: 2px solid #27c4cc;">
+          🖥️ Equipment Inventory
+        </button>
+        <button class="tab-btn" data-tab="damage" onclick="switchMaintenanceTab('damage')" style="background: transparent; border: none; color: #94a3b8; padding: 10px 20px; cursor: pointer; font-size: 0.9rem; font-weight: 600; border-bottom: 2px solid transparent;">
+          ⚠️ Damage Reports
+        </button>
+      </div>
+
+      <!-- EQUIPMENT INVENTORY TAB -->
+      <div id="equipment-tab" class="maintenance-tab active">
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div class="search-wrap" style="width: 300px;">
+            <i class="fas fa-search"></i>
+            <input class="search-input" type="text" id="equipment-search" placeholder="Search by name, brand, serial..." style="padding-left: 38px;">
+          </div>
+          <button class="btn-primary" onclick="showAddEquipmentModal()">
+            <i class="fas fa-plus"></i> Add Equipment
+          </button>
+        </div>
+
+        <!-- Equipment Stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="stat-card"><div class="label">Total Equipment</div><div class="value" id="total-equipment" style="color: #27c4cc;">0</div></div>
+          <div class="stat-card"><div class="label">Good Condition</div><div class="value" id="good-equipment" style="color: #4ade80;">0</div></div>
+          <div class="stat-card"><div class="label">Needs Repair</div><div class="value" id="repair-equipment" style="color: #fbbf24;">0</div></div>
+          <div class="stat-card"><div class="label">Categories</div><div class="value" id="category-count" style="color: #60a5fa;">0</div></div>
+        </div>
+
+        <!-- Equipment Table -->
+        <div class="card">
+          <div class="card-title">Peripherals & Equipment</div>
+          <div class="tbl-wrap">
+            <table id="equipment-table">
+              <thead><tr><th>Name</th><th>Category</th><th>Brand/Model</th><th>Serial Number</th><th>Assigned Unit</th><th>Condition</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="equipment-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- DAMAGE REPORTS TAB -->
+      <div id="damage-tab" class="maintenance-tab" style="display: none;">
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div class="search-wrap" style="width: 300px;">
+            <i class="fas fa-search"></i>
+            <input class="search-input" type="text" id="damage-search" placeholder="Search damage reports..." style="padding-left: 38px;">
+          </div>
+          <button class="btn-primary" onclick="showAddDamageModal()">
+            <i class="fas fa-plus"></i> Report Damage
+          </button>
+        </div>
+
+        <!-- Damage Stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div class="stat-card"><div class="label">Total Reports</div><div class="value" id="total-reports" style="color: #27c4cc;">0</div></div>
+          <div class="stat-card"><div class="label">Pending</div><div class="value" id="pending-reports" style="color: #f87171;">0</div></div>
+          <div class="stat-card"><div class="label">Resolved</div><div class="value" id="resolved-reports" style="color: #4ade80;">0</div></div>
+          <div class="stat-card"><div class="label">Critical Issues</div><div class="value" id="critical-reports" style="color: #ef4444;">0</div></div>
+        </div>
+
+        <!-- Damage Reports Table -->
+        <div class="card">
+          <div class="card-title">Damage & Maintenance Reports</div>
+          <div class="tbl-wrap">
+            <table id="damage-table">
+              <thead><tr><th>ID</th><th>Reported By</th><th>Equipment</th><th>Damage Type</th><th>Severity</th><th>Status</th><th>Reported Date</th><th>Actions</th></tr></thead>
+              <tbody id="damage-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div class="section-title">My Profile</div>
+      <div class="section-sub">Your personal account information</div>
+      <div id="profile-content"></div>
+    </div>
+
+    <!-- CHANGE PASSWORD -->
+    <div class="page" id="page-password">
+      <div class="section-title">Change Password</div>
+      <div class="section-sub">Keep your account secure</div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;max-width:900px;">
+        <div class="card">
+          <div class="card-title">Update Password</div>
+          <div class="form-group"><label class="form-label">Current Password</label><input id="current-password" class="form-input" type="password" placeholder="Enter current password"></div>
+          <div class="form-group"><label class="form-label">New Password</label><input id="new-password" class="form-input" type="password" placeholder="Enter new password"></div>
+          <div class="form-group"><label class="form-label">Confirm New Password</label><input id="confirm-password" class="form-input" type="password" placeholder="Confirm new password"></div>
+          <button class="btn-primary" onclick="changePassword()">UPDATE PASSWORD</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Password Tips</div>
+          <div class="tip-item"><div class="tip-dot"></div>At least 8 characters long</div>
+          <div class="tip-item"><div class="tip-dot"></div>Include uppercase and lowercase letters</div>
+          <div class="tip-item"><div class="tip-dot"></div>Use at least one number or symbol</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Toggle login field based on role selection
+  window.toggleLoginField = function() {
+    const roleSelect = document.getElementById('login-role');
+    const loginLabel = document.getElementById('login-label');
+    const loginInput = document.getElementById('login-identifier');
+    const demoHint = document.getElementById('demo-hint');
+    
+    if (!roleSelect) return;
+    
+    if (roleSelect.value === 'admin') {
+      loginLabel.textContent = 'Librarian ID';
+      loginInput.placeholder = 'Enter your Librarian ID';
+      demoHint.innerHTML = '🔑 Librarian ID: LIB001 | Password: admin123';
+    } else {
+      loginLabel.textContent = 'Student ID';
+      loginInput.placeholder = 'Enter your Student ID';
+      demoHint.innerHTML = '🔑 Student ID: 2024-01018 | Password: student123';
+    }
+  };
+</script>
+
+<!-- API and Application Scripts - Order matters! -->
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+  // Initialize authentication after all scripts are loaded
+  if(window.initAuth) {
+    window.initAuth();
+  }
+</script>
+</body>
+</html>
