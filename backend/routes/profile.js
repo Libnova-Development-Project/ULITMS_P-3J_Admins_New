@@ -1,10 +1,10 @@
 ﻿const express = require('express');
 const bcrypt = require('bcryptjs');
-const pool = require('../db/database');
-const { authenticateToken } = require('../middleware/auth');
+const pool = require('../database/db');
+const { auth } = require('../middleware/auth');
 const router = express.Router();
 
-router.get('/me', authenticateToken, async (req, res) => {
+router.get('/me', auth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, student_id, name, email, role, contact_number, course, year_level, is_active, created_at
@@ -22,7 +22,7 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
-router.put('/me', authenticateToken, async (req, res) => {
+router.put('/me', auth, async (req, res) => {
   const { contact_number, course, year_level } = req.body;
   
   try {
@@ -42,7 +42,7 @@ router.put('/me', authenticateToken, async (req, res) => {
   }
 });
 
-router.put('/change-password', authenticateToken, async (req, res) => {
+router.put('/change-password', auth, async (req, res) => {
   const { current_password, new_password } = req.body;
   
   if (!current_password || !new_password) {
@@ -67,7 +67,7 @@ router.put('/change-password', authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', auth, async (req, res) => {
   try {
     const borrowStats = await pool.query(
       `SELECT COUNT(*) as books_borrowed,

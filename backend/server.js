@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const pool = require('./database/db');
+const seedDatabase = require('./seed/initialData');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -89,4 +90,7 @@ app.listen(PORT, () => {
     console.log(`🚀 ULITMS Server running on http://localhost:${PORT}`);
     console.log(`📝 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🔐 Environment: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Seed database on startup (optional - comment out after first run)
+    // seedDatabase().catch(err => console.error('Seeding failed:', err));
 });

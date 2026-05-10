@@ -1,6 +1,6 @@
 const express = require('express');
-const pool = require('../db/database');
-const { authenticateToken, isAdmin } = require('../middleware/auth');
+const pool = require('../database/db');
+const { auth, adminOnly } = require('../middleware/auth');
 const router = express.Router();
 
 // Get all categories
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 });
 
 // Create category (admin only)
-router.post('/', authenticateToken, isAdmin, async (req, res) => {
+router.post('/', auth, adminOnly, async (req, res) => {
   const { name, description } = req.body;
   
   if (!name) {
