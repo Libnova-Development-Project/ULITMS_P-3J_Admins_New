@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ULITMS — Login</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root { --sidebar-w: 260px; --header-h: 68px; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Space Grotesk', sans-serif; background: #0b1120; color: #e2e8f0; }
+.auth-shell { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px; background: radial-gradient(circle at top right, rgba(39,196,204,.12), transparent 28%), #070c18; }
+.auth-card { width: 100%; max-width: 440px; background: rgba(10,18,30,.98); border: 1px solid rgba(12,168,177,.2); border-radius: 26px; padding: 36px; }
+.auth-panel-heading { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: #27c4cc; margin-bottom: 24px; }
+.form-group { margin-bottom: 18px; }
+.form-label { display: block; font-size: .75rem; text-transform: uppercase; letter-spacing: 1.5px; color: #27c4cc; margin-bottom: 8px; }
+.form-input { width: 100%; background: rgba(13,27,42,.9); border: 1px solid rgba(12,168,177,.2); border-radius: 10px; padding: 12px 14px; color: #e2e8f0; font-family: 'Space Grotesk', sans-serif; font-size: .875rem; outline: none; }
+.form-input:focus { border-color: rgba(12,168,177,.55); }
+.btn-primary { background: linear-gradient(135deg, #0ca8b1, #27c4cc); border: none; color: #0d1b2a; font-weight: 700; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-family: 'Space Grotesk', sans-serif; font-size: .85rem; width: 100%; transition: all .2s; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(12,168,177,.35); }
+.form-caption { margin-top: 18px; font-size: .85rem; color: #64748b; text-align: center; }
+.link-button { background: none; border: none; color: #60a5fa; cursor: pointer; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="auth-shell">
+<div class="auth-card">
+<div id="signin-panel">
+<div class="auth-panel-heading">ULITMS</div>
+<div class="form-group">
+<label class="form-label" id="login-label">Student ID / Email</label>
+<input id="signin-identifier" type="text" class="form-input" placeholder="Enter Student ID or Email" />
+</div>
+<div class="form-group">
+<label class="form-label">Password</label>
+<input id="signin-password" type="password" class="form-input" placeholder="Enter password" />
+</div>
+<div class="form-group">
+<label class="form-label">Role</label>
+<select id="signin-role" class="form-input" onchange="toggleLoginField()">
+<option value="student">Student</option>
+<option value="admin">Admin / Librarian</option>
+</select>
+</div>
+<button class="btn-primary" onclick="login()">Log in</button>
+<div class="form-caption">Don't have an account? <button class="link-button" onclick="showAuthPanel('signup')">Sign up</button></div>
+<div style="margin-top:16px;color:#475569;font-size:12px;text-align:center;">
+🔑 Demo: student@ulitms.com / student123<br>
+👑 Admin: admin@ulitms.com / admin123
+</div>
+</div>
+<div id="signup-panel" style="display:none;">
+<div class="auth-panel-heading">Sign Up</div>
+<div class="form-group"><label class="form-label">First Name</label><input id="signup-firstname" class="form-input" placeholder="First name" /></div>
+<div class="form-group"><label class="form-label">Last Name</label><input id="signup-lastname" class="form-input" placeholder="Last name" /></div>
+<div class="form-group"><label class="form-label">Student ID</label><input id="signup-studentid" class="form-input" placeholder="e.g., 2024-01018" /></div>
+<div class="form-group"><label class="form-label">Email</label><input id="signup-email" type="email" class="form-input" placeholder="you@example.com" /></div>
+<div class="form-group"><label class="form-label">Course</label><input id="signup-course" class="form-input" placeholder="BS Information Technology" /></div>
+<div class="form-group"><label class="form-label">Year Level</label><select id="signup-year" class="form-input"><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option></select></div>
+<div class="form-group"><label class="form-label">Contact</label><input id="signup-contact" class="form-input" placeholder="09xx-xxx-xxxx" /></div>
+<div class="form-group"><label class="form-label">Password</label><input id="signup-password" type="password" class="form-input" placeholder="Min 6 characters" /></div>
+<button class="btn-primary" onclick="createAccount()">Create Account</button>
+<div class="form-caption">Already have an account? <button class="link-button" onclick="showAuthPanel('signin')">Log in</button></div>
+</div>
+</div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>
