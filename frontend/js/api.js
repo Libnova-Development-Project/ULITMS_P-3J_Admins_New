@@ -1,5 +1,5 @@
 ﻿// ============================================================
-// ULITMS API Service Layer
+// ULITMS API Service Layer - COMPLETE FIXED VERSION
 // ============================================================
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -19,10 +19,10 @@ async function apiRequest(endpoint, options = {}) {
         };
         
         if (token) {
-            headers['Authorization'] = Bearer ;
+            headers['Authorization'] = `Bearer ${token}`;
         }
         
-        const response = await fetch(${API_BASE_URL}, {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
             headers
         });
@@ -32,21 +32,27 @@ async function apiRequest(endpoint, options = {}) {
         if (!response.ok) {
             if (response.status === 401) {
                 localStorage.clear();
-                window.location.href = '/login.html';
+                if (window.location.pathname !== '/login.html') {
+                    window.location.href = '/login.html';
+                }
             }
             throw new Error(data.message || data.error || 'Request failed');
         }
         
-        return data;
+        // Return the data object directly (not the wrapper)
+        return data.data || data;
     } catch (error) {
         console.error('API Error:', error);
         throw error;
     }
 }
 
-// Auth API
+// ============================================================
+// AUTH API
+// ============================================================
+
 window.login = async function(identifier, password, role) {
-    const response = await fetch(${API_BASE_URL}/auth/login, {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, password, role })
@@ -55,22 +61,27 @@ window.login = async function(identifier, password, role) {
     const data = await response.json();
     
     if (!response.ok) {
-        throw new Error(data.message || data.error || 'Login failed');
+        throw new Error(data.message || 'Login failed');
     }
     
-    // Store user data
-    localStorage.setItem('ulitms_token', data.token || data.data?.token);
-    localStorage.setItem('ulitms_role', data.user?.role || data.data?.user?.role);
-    localStorage.setItem('ulitms_name', data.user?.name || data.data?.user?.name || 'User');
-    localStorage.setItem('ulitms_email', data.user?.email || data.data?.user?.email);
-    localStorage.setItem('ulitms_studentid', data.user?.student_id || data.data?.user?.student_id || '');
-    localStorage.setItem('ulitms_user_id', data.user?.id || data.data?.user?.id);
+    // Store user data - handle both response formats
+    const token = data.token || data.data?.token;
+    const user = data.user || data.data?.user;
+    
+    if (token && user) {
+        localStorage.setItem('ulitms_token', token);
+        localStorage.setItem('ulitms_role', user.role);
+        localStorage.setItem('ulitms_name', `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.name || 'User');
+        localStorage.setItem('ulitms_email', user.email);
+        localStorage.setItem('ulitms_studentid', user.student_id || '');
+        localStorage.setItem('ulitms_user_id', user.id);
+    }
     
     return data;
 };
 
 window.register = async function(userData) {
-    const response = await fetch(${API_BASE_URL}/auth/register, {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
@@ -79,7 +90,7 @@ window.register = async function(userData) {
     const data = await response.json();
     
     if (!response.ok) {
-        throw new Error(data.message || data.error || 'Registration failed');
+        throw new Error(data.message || 'Registration failed');
     }
     
     return data;
@@ -90,100 +101,266 @@ window.logout = function() {
     window.location.href = '/login.html';
 };
 
-// Books API
+// ============================================================
+// BOOKS API
+// ============================================================
+
 window.fetchBooks = async function(filters = {}) {
     const params = new URLSearchParams(filters);
-    return apiRequest(/books?);
+    const result = await apiRequest(`/books?${params}`);
+    return result;
+};
+
+window.fetchBookById = async function(id) {
+    const result = await apiRequest(`/books/${id}`);
+    return result.book || result;
 };
 
 window.createBook = async function(bookData) {
-    return apiRequest('/books', {
+    const result = await apiRequest('/books', {
         method: 'POST',
         body: JSON.stringify(bookData)
     });
+    return result.book || result;
 };
 
 window.updateBook = async function(id, bookData) {
-    return apiRequest(/books/, {
+    const result = await apiRequest(`/books/${id}`, {
         method: 'PUT',
         body: JSON.stringify(bookData)
     });
+    return result.book || result;
 };
 
 window.deleteBook = async function(id) {
-    return apiRequest(/books/, { method: 'DELETE' });
+    return apiRequest(`/books/${id}`, { method: 'DELETE' });
 };
 
-// Borrowings API
+window.searchBooks = async function(query) {
+    const result = await apiRequest(`/books/search?query=${encodeURIComponent(query)}`);
+    return result;
+};
+
+window.fetchBookCategories = async function() {
+    const result = await apiRequest('/books/categories');
+    return result.categories || result;
+};
+
+// ============================================================
+// BORROWINGS API
+// ============================================================
+
 window.fetchMyBorrowings = async function() {
     const userId = localStorage.getItem('ulitms_user_id');
-    return apiRequest(/borrowings/user/);
+    if (!userId) throw new Error('User not logged in');
+    const result = await apiRequest(`/borrowings/user/${userId}`);
+    return result.borrowings || result;
+};
+
+window.fetchAllBorrowings = async function(limit = 100, offset = 0, status = null) {
+    let url = `/borrowings?limit=${limit}&offset=${offset}`;
+    if (status) url += `&status=${status}`;
+    const result = await apiRequest(url);
+    return result;
 };
 
 window.borrowBook = async function(bookId, userId, dueDate) {
-    return apiRequest('/borrowings', {
+    const result = await apiRequest('/borrowings', {
         method: 'POST',
         body: JSON.stringify({ book_id: bookId, user_id: userId, due_date: dueDate })
     });
+    return result.borrowing || result;
 };
 
 window.returnBook = async function(borrowingId) {
-    return apiRequest(/borrowings//return, { method: 'PUT' });
+    const result = await apiRequest(`/borrowings/${borrowingId}/return`, { method: 'PUT' });
+    return result;
 };
 
-// Users API
-window.fetchUserProfile = async function() {
+window.fetchOverdueBooks = async function() {
+    const result = await apiRequest('/borrowings/overdue');
+    return result.overdue || result;
+};
+
+// ============================================================
+// USERS API
+// ============================================================
+
+window.fetchCurrentUser = async function() {
     const userId = localStorage.getItem('ulitms_user_id');
-    return apiRequest(/users/profile/);
+    if (!userId) throw new Error('User not logged in');
+    const result = await apiRequest(`/users/profile/${userId}`);
+    return result.user || result;
 };
 
-window.fetchAllUsers = async function() {
-    return apiRequest('/users');
+window.fetchUserProfile = async function(userId) {
+    const result = await apiRequest(`/users/profile/${userId}`);
+    return result.user || result;
 };
 
-window.deleteUser = async function(userId) {
-    return apiRequest(/users/, { method: 'DELETE' });
+window.fetchAllUsers = async function(limit = 100, offset = 0) {
+    const result = await apiRequest(`/users?limit=${limit}&offset=${offset}`);
+    return result.users || result;
+};
+
+window.updateUserProfile = async function(userId, userData) {
+    const result = await apiRequest(`/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify(userData)
+    });
+    return result.user || result;
 };
 
 window.changePassword = async function(userId, currentPassword, newPassword) {
-    return apiRequest(/users//password, {
+    return apiRequest(`/users/${userId}/password`, {
         method: 'PUT',
         body: JSON.stringify({ currentPassword, newPassword })
     });
 };
 
-// E-Library API
+window.deleteUser = async function(userId) {
+    return apiRequest(`/users/${userId}`, { method: 'DELETE' });
+};
+
+// ============================================================
+// E-LIBRARY API
+// ============================================================
+
 window.fetchUserSessions = async function() {
     const userId = localStorage.getItem('ulitms_user_id');
-    return apiRequest(/elibrary/sessions/user/);
+    if (!userId) throw new Error('User not logged in');
+    const result = await apiRequest(`/elibrary/sessions/user/${userId}`);
+    return result.sessions || result;
+};
+
+window.fetchAllSessions = async function(limit = 100, offset = 0, activeOnly = false) {
+    let url = `/elibrary/sessions?limit=${limit}&offset=${offset}`;
+    if (activeOnly) url += `&activeOnly=true`;
+    const result = await apiRequest(url);
+    return result;
+};
+
+window.fetchActiveSessions = async function() {
+    const result = await apiRequest('/elibrary/sessions/active');
+    return result.sessions || result;
 };
 
 window.startSession = async function(unitId, purpose) {
-    return apiRequest('/elibrary/sessions/start', {
+    const result = await apiRequest('/elibrary/sessions/start', {
         method: 'POST',
         body: JSON.stringify({ unit_id: unitId, purpose })
     });
+    return result.session || result;
 };
 
 window.endSession = async function(sessionId) {
-    return apiRequest(/elibrary/sessions//end, { method: 'PUT' });
+    const result = await apiRequest(`/elibrary/sessions/${sessionId}/end`, { method: 'PUT' });
+    return result.session || result;
 };
 
-// Peripherals API
-window.fetchPeripherals = async function() {
-    return apiRequest('/peripherals');
+window.fetchELibraryUnits = async function(activeOnly = true) {
+    const result = await apiRequest(`/elibrary/units?activeOnly=${activeOnly}`);
+    return result.units || result;
 };
 
-// Damage Reports API
-window.fetchDamageReports = async function() {
-    return apiRequest('/damage-reports');
+window.fetchUnitById = async function(unitId) {
+    const result = await apiRequest(`/elibrary/units/${unitId}`);
+    return result.unit || result;
+};
+
+// ============================================================
+// PERIPHERALS API
+// ============================================================
+
+window.fetchPeripherals = async function(unitId = null, limit = 100, offset = 0) {
+    let url = `/peripherals?limit=${limit}&offset=${offset}`;
+    if (unitId) url += `&unit_id=${unitId}`;
+    const result = await apiRequest(url);
+    return result.peripherals || result;
+};
+
+window.fetchPeripheralById = async function(id) {
+    const result = await apiRequest(`/peripherals/${id}`);
+    return result.peripheral || result;
+};
+
+window.createPeripheral = async function(peripheralData) {
+    const result = await apiRequest('/peripherals', {
+        method: 'POST',
+        body: JSON.stringify(peripheralData)
+    });
+    return result.peripheral || result;
+};
+
+window.updatePeripheral = async function(id, peripheralData) {
+    const result = await apiRequest(`/peripherals/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(peripheralData)
+    });
+    return result.peripheral || result;
+};
+
+window.updatePeripheralCondition = async function(id, condition) {
+    const result = await apiRequest(`/peripherals/${id}/condition`, {
+        method: 'PUT',
+        body: JSON.stringify({ condition })
+    });
+    return result.peripheral || result;
+};
+
+window.deletePeripheral = async function(id) {
+    return apiRequest(`/peripherals/${id}`, { method: 'DELETE' });
+};
+
+window.fetchPeripheralCategories = async function() {
+    const result = await apiRequest('/peripherals/categories');
+    return result.categories || result;
+};
+
+window.createPeripheralCategory = async function(name, description) {
+    const result = await apiRequest('/peripherals/categories', {
+        method: 'POST',
+        body: JSON.stringify({ name, description })
+    });
+    return result.category || result;
+};
+
+// ============================================================
+// DAMAGE REPORTS API
+// ============================================================
+
+window.fetchDamageReports = async function(limit = 100, offset = 0, status = null, severity = null) {
+    let url = `/damage-reports?limit=${limit}&offset=${offset}`;
+    if (status) url += `&status=${status}`;
+    if (severity) url += `&severity=${severity}`;
+    const result = await apiRequest(url);
+    return result.reports || result;
+};
+
+window.fetchDamageReportById = async function(id) {
+    const result = await apiRequest(`/damage-reports/${id}`);
+    return result.report || result;
 };
 
 window.createDamageReport = async function(reportData) {
-    return apiRequest('/damage-reports', {
+    const result = await apiRequest('/damage-reports', {
         method: 'POST',
         body: JSON.stringify(reportData)
     });
+    return result.report || result;
+};
+
+window.resolveDamageReport = async function(id, resolutionNotes) {
+    const result = await apiRequest(`/damage-reports/${id}/resolve`, {
+        method: 'PUT',
+        body: JSON.stringify({ resolution_notes: resolutionNotes })
+    });
+    return result.report || result;
+};
+
+window.fetchDamageReportStats = async function() {
+    const result = await apiRequest('/damage-reports/stats');
+    return result.stats || result;
 };
 
 console.log('✅ API Service Loaded - Using:', API_BASE_URL);

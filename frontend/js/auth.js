@@ -1,18 +1,19 @@
-﻿// ULITMS Authentication System
-(function() {
+﻿// ULITMS Authentication System - COMPLETE FIXED VERSION
 
-function showToast(message, type) {
-    console.log([\] \);
+function showToast(message, type = 'info') {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    // You can implement a nice toast UI here
     alert(message);
 }
 
 window.login = async function() {
     const identifier = document.getElementById('signin-identifier')?.value.trim();
     const password = document.getElementById('signin-password')?.value.trim();
-    const role = document.getElementById('signin-role')?.value || 'student';
+    const roleSelect = document.getElementById('signin-role');
+    const role = roleSelect?.value === 'admin' ? 'admin' : 'student';
     
     if (!identifier || !password) {
-        alert('Please enter Student ID/Email and password');
+        showToast('Please enter Student ID/Email and password', 'error');
         return;
     }
     
@@ -25,11 +26,11 @@ window.login = async function() {
     
     try {
         const result = await window.login(identifier, password, role);
-        alert(Welcome back, \!);
+        
+        // Force reload to main page
         window.location.href = 'index.html';
     } catch (error) {
-        alert(error.message);
-    } finally {
+        showToast(error.message, 'error');
         if (btn) {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -48,12 +49,12 @@ window.createAccount = async function() {
     const contact_number = document.getElementById('signup-contact')?.value.trim();
     
     if (!student_id || !first_name || !last_name || !email || !password) {
-        alert('Please fill in all required fields');
+        showToast('Please fill in all required fields', 'error');
         return;
     }
     
     if (password.length < 6) {
-        alert('Password must be at least 6 characters');
+        showToast('Password must be at least 6 characters', 'error');
         return;
     }
     
@@ -66,18 +67,30 @@ window.createAccount = async function() {
     
     try {
         await window.register({
-            student_id, first_name, last_name, email, password,
+            student_id,
+            first_name,
+            last_name,
+            email,
+            password,
             course: course || null,
             year_level: year_level ? parseInt(year_level) : null,
             contact_number: contact_number || null
         });
-        alert('Account created successfully! Please login.');
+        
+        showToast('Account created successfully! Please login.', 'success');
+        
+        // Switch to login panel
         if (typeof showAuthPanel === 'function') {
             showAuthPanel('signin');
         }
+        
+        // Clear form
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     } catch (error) {
-        alert(error.message);
-    } finally {
+        showToast(error.message, 'error');
         if (btn) {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -95,8 +108,11 @@ window.logout = function() {
 window.showAuthPanel = function(panel) {
     const signin = document.getElementById('signin-panel');
     const signup = document.getElementById('signup-panel');
+    const success = document.getElementById('success-panel');
+    
     if (signin) signin.style.display = panel === 'signin' ? 'block' : 'none';
     if (signup) signup.style.display = panel === 'signup' ? 'block' : 'none';
+    if (success) success.style.display = panel === 'success' ? 'block' : 'none';
 };
 
 window.toggleLoginField = function() {
@@ -112,4 +128,3 @@ window.toggleLoginField = function() {
         if (loginInput) loginInput.placeholder = 'Enter Student ID or Email';
     }
 };
-})();

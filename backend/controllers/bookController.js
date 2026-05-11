@@ -1,5 +1,6 @@
 const BookModel = require('../models/bookModel');
 const pool = require('../database/db');
+const { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../constants/statusCodes');
 
 exports.getAllBooks = async (req, res) => {
     try {
@@ -9,12 +10,19 @@ exports.getAllBooks = async (req, res) => {
         const result = await BookModel.getAll(filters, parseInt(limit), parseInt(offset));
         
         res.json({
+            success: true,
             message: 'Books retrieved successfully',
-            ...result
+            data: result,
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
         console.error('Get books error:', error);
-        res.status(500).json({ message: 'Failed to retrieve books', error: error.message });
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to retrieve books', 
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 };
 
@@ -24,24 +32,38 @@ exports.getBookById = async (req, res) => {
         const book = await BookModel.findById(id);
         
         if (!book) {
-            return res.status(404).json({ message: 'Book not found' });
+            return res.status(404).json({ 
+                success: false,
+                message: 'Book not found',
+                timestamp: new Date().toISOString()
+            });
         }
         
         res.json({
+            success: true,
             message: 'Book retrieved successfully',
-            book
+            data: { book },
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
         console.error('Get book error:', error);
-        res.status(500).json({ message: 'Failed to retrieve book', error: error.message });
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to retrieve book', 
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 };
 
 exports.createBook = async (req, res) => {
     try {
-        // Check if admin
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Admin access required' });
+            return res.status(403).json({ 
+                success: false,
+                message: 'Admin access required',
+                timestamp: new Date().toISOString()
+            });
         }
         
         const {
@@ -50,14 +72,22 @@ exports.createBook = async (req, res) => {
         } = req.body;
         
         if (!title || !author || !total_copies) {
-            return res.status(400).json({ message: 'Title, author, and total copies are required' });
+            return res.status(400).json({ 
+                success: false,
+                message: 'Title, author, and total copies are required',
+                timestamp: new Date().toISOString()
+            });
         }
         
         // Check if ISBN exists
         if (isbn) {
             const existingBook = await BookModel.findByIsbn(isbn);
             if (existingBook) {
-                return res.status(400).json({ message: 'Book with this ISBN already exists' });
+                return res.status(400).json({ 
+                    success: false,
+                    message: 'Book with this ISBN already exists',
+                    timestamp: new Date().toISOString()
+                });
             }
         }
         
@@ -70,23 +100,34 @@ exports.createBook = async (req, res) => {
         await pool.query(
             `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
              VALUES ($1, $2, $3)`,
-            [req.user.id, 'CREATE_BOOK', { book_id: book.id, title: book.title }]
+            [req.user.id, 'CREATE_BOOK', JSON.stringify({ book_id: book.id, title: book.title })]
         );
         
         res.status(201).json({
+            success: true,
             message: 'Book created successfully',
-            book
+            data: { book },
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
         console.error('Create book error:', error);
-        res.status(500).json({ message: 'Failed to create book', error: error.message });
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to create book', 
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 };
 
 exports.updateBook = async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Admin access required' });
+            return res.status(403).json({ 
+                success: false,
+                message: 'Admin access required',
+                timestamp: new Date().toISOString()
+            });
         }
         
         const { id } = req.params;
@@ -94,52 +135,78 @@ exports.updateBook = async (req, res) => {
         
         const book = await BookModel.update(id, updates);
         if (!book) {
-            return res.status(404).json({ message: 'Book not found' });
+            return res.status(404).json({ 
+                success: false,
+                message: 'Book not found',
+                timestamp: new Date().toISOString()
+            });
         }
         
         // Log activity
         await pool.query(
             `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
              VALUES ($1, $2, $3)`,
-            [req.user.id, 'UPDATE_BOOK', { book_id: id, updates }]
+            [req.user.id, 'UPDATE_BOOK', JSON.stringify({ book_id: id, updates })]
         );
         
         res.json({
+            success: true,
             message: 'Book updated successfully',
-            book
+            data: { book },
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
         console.error('Update book error:', error);
-        res.status(500).json({ message: 'Failed to update book', error: error.message });
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to update book', 
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 };
 
 exports.deleteBook = async (req, res) => {
     try {
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Admin access required' });
+            return res.status(403).json({ 
+                success: false,
+                message: 'Admin access required',
+                timestamp: new Date().toISOString()
+            });
         }
         
         const { id } = req.params;
         const book = await BookModel.delete(id);
         
         if (!book) {
-            return res.status(404).json({ message: 'Book not found' });
+            return res.status(404).json({ 
+                success: false,
+                message: 'Book not found',
+                timestamp: new Date().toISOString()
+            });
         }
         
         // Log activity
         await pool.query(
             `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
              VALUES ($1, $2, $3)`,
-            [req.user.id, 'DELETE_BOOK', { book_id: id }]
+            [req.user.id, 'DELETE_BOOK', JSON.stringify({ book_id: id })]
         );
         
         res.json({
-            message: 'Book deleted successfully'
+            success: true,
+            message: 'Book deleted successfully',
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
         console.error('Delete book error:', error);
-        res.status(500).json({ message: 'Failed to delete book', error: error.message });
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to delete book', 
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 };
 
@@ -148,19 +215,29 @@ exports.searchBooks = async (req, res) => {
         const { query } = req.query;
         
         if (!query) {
-            return res.status(400).json({ message: 'Search query is required' });
+            return res.status(400).json({ 
+                success: false,
+                message: 'Search query is required',
+                timestamp: new Date().toISOString()
+            });
         }
         
         const result = await BookModel.getAll({ search: query }, 50, 0);
         
         res.json({
+            success: true,
             message: 'Search results',
-            count: result.total,
-            books: result.books
+            data: result,
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
         console.error('Search books error:', error);
-        res.status(500).json({ message: 'Search failed', error: error.message });
+        res.status(500).json({ 
+            success: false,
+            message: 'Search failed', 
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 };
 
@@ -168,11 +245,18 @@ exports.getCategories = async (req, res) => {
     try {
         const categories = await BookModel.getCategories();
         res.json({
+            success: true,
             message: 'Categories retrieved',
-            categories
+            data: { categories },
+            timestamp: new Date().toISOString()
         });
     } catch (error) {
         console.error('Get categories error:', error);
-        res.status(500).json({ message: 'Failed to retrieve categories', error: error.message });
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to retrieve categories', 
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 };

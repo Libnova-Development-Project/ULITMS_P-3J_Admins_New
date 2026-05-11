@@ -4,449 +4,681 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ULITMS — University Library System</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="css/styles.css">
-<script src="js/config.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+    --sidebar-w: 260px;
+    --header-h: 68px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Space Grotesk', sans-serif; background: #0b1120; color: #e2e8f0; }
+
+#sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: linear-gradient(180deg, #0d1b2a 0%, #0f2137 60%, #0c1a2e 100%);
+    border-right: 1px solid rgba(12,168,177,.18);
+    display: flex; flex-direction: column;
+    z-index: 50;
+}
+.logo-area { padding: 28px 24px 20px; border-bottom: 1px solid rgba(12,168,177,.12); }
+.logo-title { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: #27c4cc; letter-spacing: -.5px; }
+.logo-sub { font-size: .65rem; color: #6adde2; opacity: .75; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+
+.nav-section { flex: 1; padding: 16px 12px; overflow-y: auto; }
+.nav-label { font-size: .6rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(100,220,226,.45); padding: 0 12px; margin: 16px 0 6px; }
+.nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; border-radius: 10px; cursor: pointer;
+    font-size: .875rem; font-weight: 500; color: #94a3b8;
+    transition: all .2s ease; margin-bottom: 2px;
+    text-decoration: none;
+}
+.nav-item:hover { background: rgba(12,168,177,.12); color: #e2e8f0; }
+.nav-item.active { background: linear-gradient(135deg, rgba(12,168,177,.3), rgba(39,196,204,.15)); color: #6adde2; }
+.nav-item .icon { width: 18px; text-align: center; }
+.nav-divider { height: 1px; background: rgba(12,168,177,.1); margin: 10px 12px; }
+
+.user-footer {
+    padding: 14px 16px; border-top: 1px solid rgba(12,168,177,.12);
+    display: flex; align-items: center; gap: 10px;
+}
+.avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #0ca8b1, #27c4cc); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #0d1b2a; }
+.user-name { font-size: .85rem; font-weight: 600; color: #e2e8f0; }
+.user-role { font-size: .7rem; color: #64748b; }
+
+#main { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: none; }
+
+#topbar {
+    height: var(--header-h); background: #0d1b2a;
+    border-bottom: 1px solid rgba(12,168,177,.15);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; position: sticky; top: 0; z-index: 40;
+}
+.page-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; color: #e2e8f0; }
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+
+#content { flex: 1; padding: 28px 32px; }
+.page { display: none; }
+.page.active { display: block; }
+
+.stat-card {
+    background: linear-gradient(135deg, rgba(13,27,42,.9), rgba(15,33,55,.95));
+    border: 1px solid rgba(12,168,177,.2);
+    border-radius: 16px; padding: 22px 24px;
+}
+.stat-card .label { font-size: .72rem; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; margin-bottom: 8px; }
+.stat-card .value { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800; }
+
+.card {
+    background: linear-gradient(135deg, rgba(13,27,42,.9), rgba(15,33,55,.95));
+    border: 1px solid rgba(12,168,177,.18);
+    border-radius: 16px; padding: 22px 24px;
+}
+.card-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: #e2e8f0; margin-bottom: 18px; }
+
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+thead th { padding: 10px 14px; text-align: left; font-size: .68rem; letter-spacing: 1.5px; text-transform: uppercase; color: #27c4cc; border-bottom: 1px solid rgba(12,168,177,.2); }
+tbody tr { border-bottom: 1px solid rgba(255,255,255,.05); }
+tbody td { padding: 13px 14px; color: #cbd5e1; }
+
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; font-size: .7rem; font-weight: 600; }
+.badge-green { background: rgba(34,197,94,.12); color: #4ade80; border: 1px solid rgba(34,197,94,.3); }
+.badge-red { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+.badge-yellow { background: rgba(234,179,8,.12); color: #fbbf24; border: 1px solid rgba(234,179,8,.3); }
+.badge-blue { background: rgba(59,130,246,.12); color: #60a5fa; border: 1px solid rgba(59,130,246,.3); }
+.badge-teal { background: rgba(12,168,177,.12); color: #6adde2; border: 1px solid rgba(12,168,177,.3); }
+
+.btn-primary {
+    background: linear-gradient(135deg, #0ca8b1, #27c4cc);
+    border: none; color: #0d1b2a; font-weight: 700;
+    padding: 10px 20px; border-radius: 8px; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.btn-small {
+    background: rgba(12,168,177,.12); border: 1px solid rgba(12,168,177,.35);
+    color: #6adde2; padding: 5px 12px; border-radius: 6px;
+    cursor: pointer; font-size: .7rem; margin-left: 8px;
+}
+.search-input {
+    width: 100%; background: rgba(13,27,42,.9);
+    border: 1px solid rgba(12,168,177,.2); border-radius: 10px;
+    padding: 11px 14px; color: #e2e8f0;
+}
+</style>
 </head>
 <body>
 
-<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
-
-<!-- ── SIDEBAR ── -->
+<!-- SIDEBAR -->
 <aside id="sidebar">
-  <div class="logo-area">
-    <div class="logo-title">ULITMS</div>
-    <div class="logo-sub">with E-Lib Integration</div>
-  </div>
-
-  <nav class="nav-section">
-    <div class="nav-label">Main Menu</div>
-    
-    <div class="nav-item" data-page="dashboard">
-      <span class="icon"><i class="fas fa-house"></i></span> Dashboard
+    <div class="logo-area">
+        <div class="logo-title">ULITMS</div>
+        <div class="logo-sub">with E-Lib Integration</div>
     </div>
-    
-    <!-- USER ONLY -->
-    <div class="nav-item user-only" data-page="catalog" style="display:none;">
-      <span class="icon"><i class="fas fa-book"></i></span> Book Catalog
+    <nav class="nav-section">
+        <div class="nav-label">Main Menu</div>
+        <div class="nav-item" data-page="dashboard">
+            <span class="icon"><i class="fas fa-house"></i></span> Dashboard
+        </div>
+        <div class="nav-item user-only" data-page="catalog" style="display:none;">
+            <span class="icon"><i class="fas fa-book"></i></span> Book Catalog
+        </div>
+        <div class="nav-item user-only" data-page="borrowings" style="display:none;">
+            <span class="icon"><i class="fas fa-bookmark"></i></span> My Borrowings
+        </div>
+        <div class="nav-item user-only" data-page="elibrary" style="display:none;">
+            <span class="icon"><i class="fas fa-desktop"></i></span> E-Library
+        </div>
+        <div class="nav-item admin-only" data-page="manage" style="display:none;">
+            <span class="icon"><i class="fas fa-cogs"></i></span> Manage Books
+        </div>
+        <div class="nav-item admin-only" data-page="userManagement" style="display:none;">
+            <span class="icon"><i class="fas fa-users"></i></span> User Management
+        </div>
+        <div class="nav-item admin-only" data-page="equipmentMaintenance" style="display:none;">
+            <span class="icon"><i class="fas fa-tools"></i></span> Equipment
+        </div>
+        <div class="nav-divider"></div>
+        <div class="nav-label">Account</div>
+        <div class="nav-item" data-page="profile">
+            <span class="icon"><i class="fas fa-user"></i></span> My Profile
+        </div>
+        <div class="nav-item" data-page="password">
+            <span class="icon"><i class="fas fa-lock"></i></span> Change Password
+        </div>
+        <div class="nav-divider"></div>
+        <div class="nav-item" style="color:#f87171;" onclick="logout()">
+            <span class="icon"><i class="fas fa-sign-out-alt"></i></span> Logout
+        </div>
+    </nav>
+    <div class="user-footer">
+        <div class="avatar" id="sidebar-avatar">G</div>
+        <div>
+            <div id="sidebar-user-name" class="user-name">Guest</div>
+            <div id="sidebar-user-role" class="user-role">Visitor</div>
+        </div>
     </div>
-    <div class="nav-item user-only" data-page="borrowings" style="display:none;">
-      <span class="icon"><i class="fas fa-bookmark"></i></span> My Borrowings
-    </div>
-    <div class="nav-item user-only" data-page="elibrary" style="display:none;">
-      <span class="icon"><i class="fas fa-desktop"></i></span> E-Library
-    </div>
-
-    <!-- ADMIN ONLY -->
-    <div class="nav-item admin-only" data-page="manage" style="display:none;">
-      <span class="icon"><i class="fas fa-cogs"></i></span> Manage Books
-    </div>
-    <div class="nav-item admin-only" data-page="inventory" style="display:none;">
-      <span class="icon"><i class="fas fa-boxes"></i></span> Book Inventory
-    </div>
-    <div class="nav-item admin-only" data-page="elibraryLogs" style="display:none;">
-      <span class="icon"><i class="fas fa-desktop"></i></span> E-Library Logs
-    </div>
-    <div class="nav-item admin-only" data-page="userManagement" style="display:none;">
-      <span class="icon"><i class="fas fa-users"></i></span> User Management
-    </div>
-    <div class="nav-item admin-only" data-page="equipmentMaintenance" style="display:none;">
-      <span class="icon"><i class="fas fa-tools"></i></span> Equipment & Maintenance
-    </div>
-
-    <div class="nav-divider"></div>
-    <div class="nav-label">Account</div>
-    <div class="nav-item" data-page="profile">
-      <span class="icon"><i class="fas fa-user"></i></span> My Profile
-    </div>
-    <div class="nav-item" data-page="password">
-      <span class="icon"><i class="fas fa-lock"></i></span> Change Password
-    </div>
-    <div class="nav-divider"></div>
-    <div class="nav-item" style="color:#f87171;" onclick="logout()">
-      <span class="icon"><i class="fas fa-arrow-right-from-bracket"></i></span> Logout
-    </div>
-  </nav>
-
-  <div class="user-footer">
-    <div class="avatar" id="sidebar-avatar">JM</div>
-    <div>
-      <div id="sidebar-user-name" class="user-name">Guest</div>
-      <div id="sidebar-user-role" class="user-role">Visitor</div>
-    </div>
-  </div>
 </aside>
 
-<!-- ── MAIN ── -->
+<!-- MAIN CONTENT -->
 <div id="main">
-  <!-- AUTH LOGIN OVERLAY -->
-  <div id="auth-landing" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.95);padding:24px;z-index:1000;">
-    <div class="auth-card" style="max-width:460px;width:100%;padding:32px;">
-      <div id="signin-panel" class="auth-panel">
-        <div class="auth-panel-heading" style="color:#e2e8f0;">Log in to ULITMS</div>
-        <div class="form-group">
-          <label class="form-label" id="login-label" style="color:#27c4cc;">Student ID</label>
-          <input id="login-identifier" type="text" class="form-input" placeholder="Enter your Student ID" />
+    <header id="topbar">
+        <div class="page-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-right">
+            <div class="avatar" id="topbar-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div id="topbar-user-name" style="font-size:.82rem;font-weight:600;">Guest</div>
+                <div id="topbar-user-role" style="font-size:.7rem;color:#475569;">Visitor</div>
+            </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" style="color:#27c4cc;">Password</label>
-          <input id="login-password" type="password" class="form-input" placeholder="Enter your password" />
+    </header>
+    <div id="content">
+        <!-- Dashboard Page -->
+        <div class="page active" id="page-dashboard">
+            <div class="stat-card" style="margin-bottom:20px;">
+                <div class="label">Welcome</div>
+                <div class="value" id="welcome-message">Loading...</div>
+            </div>
+            <div id="dashboard-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;"></div>
         </div>
-        <div class="form-group">
-          <label class="form-label" style="color:#27c4cc;">Role</label>
-          <select id="login-role" onchange="toggleLoginField()" class="form-input">
-            <option value="user">Student / User</option>
-            <option value="admin">Admin / Librarian</option>
-          </select>
-        </div>
-        <button class="btn-primary" onclick="login()" type="button" style="width:100%;">Log in</button>
-        <div class="form-caption" style="margin-top:18px;color:#cbd5e1;">
-          Don't have an account? <button class="link-button" type="button" onclick="showAuthPanel('signup')">Sign up</button>
-        </div>
-        <div id="demo-hint" style="margin-top:12px;color:#475569;font-size:12px;text-align:center;">
-          🔑 Demo: Student ID: 2024-01018 | Password: student123
-        </div>
-      </div>
 
-      <div id="signup-panel" class="auth-panel" style="display:none;">
-        <div class="auth-panel-heading" style="color:#e2e8f0;">Create Account</div>
-        <div class="form-group">
-          <label class="form-label" style="color:#27c4cc;">First Name</label>
-          <input id="signup-firstname" class="form-input" placeholder="Your first name" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" style="color:#27c4cc;">Last Name</label>
-          <input id="signup-lastname" class="form-input" placeholder="Your last name" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" style="color:#27c4cc;">Student ID</label>
-          <input id="signup-studentid" class="form-input" placeholder="e.g. 2024-12345" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" style="color:#27c4cc;">Email address</label>
-          <input id="signup-email" type="email" class="form-input" placeholder="you@example.com" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" style="color:#27c4cc;">Course</label>
-          <input id="signup-course" class="form-input" placeholder="e.g. BS Information Technology" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" style="color:#27c4cc;">Year level</label>
-          <input id="signup-year" class="form-input" placeholder="e.g. 3rd Year" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" style="color:#27c4cc;">Contact number</label>
-          <input id="signup-contact" class="form-input" placeholder="09xx-xxx-xxxx" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" style="color:#27c4cc;">Password</label>
-          <input id="signup-pwd" type="password" class="form-input" placeholder="Create password (min 6 characters)" />
-        </div>
-        <button class="btn-primary" onclick="createAccount()" type="button" style="width:100%;">Create Account</button>
-        <div class="form-caption" style="margin-top:18px;color:#cbd5e1;">
-          Already have an account? <button class="link-button" type="button" onclick="showAuthPanel('signin')">Log in</button>
-        </div>
-      </div>
-
-      <div id="success-panel" class="auth-panel" style="display:none;text-align:center;">
-        <div class="auth-panel-heading" style="color:#e2e8f0;">Account Created!</div>
-        <div style="color:#cbd5e1;margin-bottom:20px;">Your account has been successfully created. You can now log in using your Student ID.</div>
-        <button class="btn-primary" onclick="showAuthPanel('signin')" type="button">Log in</button>
-      </div>
+       <!-- CATALOG PAGE -->
+<div class="page" id="page-catalog">
+    <h2 class="page-title">Book Catalog</h2>
+    <div class="section-sub">Browse all available books in the library</div>
+    
+    <div class="search-wrap" style="margin: 20px 0;">
+        <input class="search-input" type="text" id="catalog-search" placeholder="Search by title, author, or ISBN...">
     </div>
-  </div>
-
-  <!-- Header -->
-  <header id="topbar">
-    <div class="page-title" id="topbar-title">Dashboard</div>
-    <div class="topbar-right">
-      <div class="notif-btn"><i class="fas fa-bell"></i></div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="avatar" id="topbar-avatar" style="width:36px;height:36px;font-size:.8rem;">G</div>
-        <div>
-          <div id="topbar-user-name" style="font-size:.82rem;font-weight:600;color:#e2e8f0;">Guest</div>
-          <div id="topbar-user-role" style="font-size:.7rem;color:#475569;">Visitor</div>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <div id="content">
-    <!-- DASHBOARD -->
-    <div class="page active" id="page-dashboard">
-      <div class="section-title" id="dashboard-welcome">Welcome back! 👋</div>
-      <div class="section-sub" id="dashboard-sub">Here's your library summary for today</div>
-      <div id="dashboard-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px;"></div>
-      <div id="dashboard-alert"></div>
-      <div id="dashboard-recent" class="card"></div>
-    </div>
-
-    <!-- BOOK CATALOG (USER ONLY) -->
-    <div class="page" id="page-catalog">
-      <div class="section-title">Book Catalog</div>
-      <div class="section-sub">Browse all available books in the library</div>
-      
-      <!-- Category Filter Buttons -->
-      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
-        <button class="filter-btn active" data-category="all" onclick="filterBooks('all')" style="background: rgba(12,168,177,.2); border: 1px solid rgba(12,168,177,.4); color: #6adde2; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">
-          📚 All Books
-        </button>
-        <button class="filter-btn" data-category="Programming" onclick="filterBooks('Programming')" style="background: rgba(12,168,177,.1); border: 1px solid rgba(12,168,177,.2); color: #94a3b8; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">
-          💻 Programming
-        </button>
-        <button class="filter-btn" data-category="Literature" onclick="filterBooks('Literature')" style="background: rgba(12,168,177,.1); border: 1px solid rgba(12,168,177,.2); color: #94a3b8; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">
-          📖 Literature
-        </button>
-        <button class="filter-btn" data-category="Science" onclick="filterBooks('Science')" style="background: rgba(12,168,177,.1); border: 1px solid rgba(12,168,177,.2); color: #94a3b8; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">
-          🔬 Science
-        </button>
-        <button class="filter-btn" data-category="Engineering" onclick="filterBooks('Engineering')" style="background: rgba(12,168,177,.1); border: 1px solid rgba(12,168,177,.2); color: #94a3b8; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.8rem;">
-          🏗️ Engineering
-        </button>
-      </div>
-      
-      <div class="search-wrap" style="margin-bottom:20px;">
-        <i class="fas fa-search"></i>
-        <input class="search-input" type="text" placeholder="Search by title, author, or ISBN..." id="catalog-search">
-      </div>
-      
-      <div class="card">
-        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Books Collection</span>
-          <span id="book-count" style="font-size: 0.8rem; color: #6adde2;">Loading books...</span>
+    
+    <div class="card">
+        <div class="card-title" style="display: flex; justify-content: space-between;">
+            <span>📚 Books Collection</span>
+            <span id="book-count" style="color: #6adde2;">Loading...</span>
         </div>
         <div class="tbl-wrap">
-          <table id="catalog-table">
-            <thead><tr><th>ISBN</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th></tr></thead>
-            <tbody id="catalog-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- MY BORROWINGS (USER ONLY) -->
-    <div class="page" id="page-borrowings">
-      <div class="section-title">My Borrowings</div>
-      <div class="section-sub">Track your personal borrow and return history</div>
-      <div id="borrow-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;"></div>
-      <div class="card">
-        <div class="card-title">My Transaction History</div>
-        <div class="tbl-wrap">
-          <table><thead><tr><th>Trans. ID</th><th>Book Title</th><th>Borrow Date</th><th>Due Date</th><th>Status</th></tr></thead>
-          <tbody id="borrow-tbody"></tbody></table>
-        </div>
-      </div>
-    </div>
-
-    <!-- E-LIBRARY (USER ONLY) -->
-    <div class="page" id="page-elibrary">
-      <div class="section-title">E-Library</div>
-      <div class="section-sub">Your personal PC session history</div>
-      <div id="elib-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;"></div>
-      <div class="card">
-        <div class="card-title">My Session History</div>
-        <div class="tbl-wrap">
-          <table><thead><tr><th>Date</th><th>Station</th><th>Time In</th><th>Time Out</th><th>Duration</th><th>Status</th></tr></thead>
-          <tbody id="elib-tbody"></tbody></table>
-        </div>
-      </div>
-    </div>
-
-    <!-- MANAGE BOOKS (ADMIN ONLY) -->
-    <div class="page" id="page-manage">
-      <div class="section-title">Manage Books (Admin)</div>
-      <div class="section-sub">Full CRUD operations for book inventory</div>
-      <div style="margin-bottom:20px;">
-        <button class="btn-primary" onclick="exportToPDF()"><i class="fas fa-file-pdf"></i> Export to PDF</button>
-        <button class="btn-secondary" onclick="showAddBookModal()"><i class="fas fa-plus"></i> Add Book</button>
-      </div>
-      <div class="card">
-        <div class="tbl-wrap">
-          <table id="manage-table">
-            <thead><tr><th>ISBN</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="manage-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- BOOK INVENTORY (ADMIN ONLY) -->
-    <div class="page" id="page-inventory">
-      <div class="section-title">Book Inventory</div>
-      <div class="section-sub">Complete library collection management</div>
-      <div class="card"><div class="tbl-wrap"><table id="inventory-table"><thead><tr><th>ISBN</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead><tbody id="inventory-tbody"></tbody></table></div></div>
-    </div>
-
-    <!-- E-LIBRARY LOGS (ADMIN ONLY) -->
-    <div class="page" id="page-elibraryLogs">
-      <div class="section-title">E-Library Usage & Live Monitoring</div>
-      <div class="section-sub">Admin oversight of all PC sessions</div>
-      <div class="card"><div class="tbl-wrap"><table id="admin-session-table"><thead><tr><th>User</th><th>Station</th><th>Date</th><th>Time In</th><th>Time Out</th><th>Status</th></tr></thead><tbody id="admin-session-tbody"></tbody></table></div></div>
-    </div>
-
-    <!-- USER MANAGEMENT (ADMIN ONLY) -->
-    <div class="page" id="page-userManagement">
-      <div class="section-title">User Management</div>
-      <div class="section-sub">Manage registered library users</div>
-      <div class="card"><div class="tbl-wrap"><table id="user-table"><thead><tr><th>Name</th><th>Email</th><th>Student ID</th><th>Course</th><th>Role</th><th>Actions</th></tr></thead><tbody id="user-tbody"></tbody></tr></div></div>
-    </div>
-
-    <!-- EQUIPMENT & MAINTENANCE (ADMIN ONLY) -->
-    <div class="page" id="page-equipmentMaintenance">
-      <div class="section-title">Equipment & Maintenance</div>
-      <div class="section-sub">Manage peripherals, track equipment, and monitor damage reports</div>
-      
-      <!-- Tabs -->
-      <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid rgba(12,168,177,.2); padding-bottom: 10px;">
-        <button class="tab-btn active" data-tab="equipment" onclick="switchMaintenanceTab('equipment')" style="background: transparent; border: none; color: #6adde2; padding: 10px 20px; cursor: pointer; font-size: 0.9rem; font-weight: 600; border-bottom: 2px solid #27c4cc;">
-          🖥️ Equipment Inventory
-        </button>
-        <button class="tab-btn" data-tab="damage" onclick="switchMaintenanceTab('damage')" style="background: transparent; border: none; color: #94a3b8; padding: 10px 20px; cursor: pointer; font-size: 0.9rem; font-weight: 600; border-bottom: 2px solid transparent;">
-          ⚠️ Damage Reports
-        </button>
-      </div>
-
-      <!-- EQUIPMENT INVENTORY TAB -->
-      <div id="equipment-tab" class="maintenance-tab active">
-        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <div class="search-wrap" style="width: 300px;">
-            <i class="fas fa-search"></i>
-            <input class="search-input" type="text" id="equipment-search" placeholder="Search by name, brand, serial..." style="padding-left: 38px;">
-          </div>
-          <button class="btn-primary" onclick="showAddEquipmentModal()">
-            <i class="fas fa-plus"></i> Add Equipment
-          </button>
-        </div>
-
-        <!-- Equipment Stats -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px;">
-          <div class="stat-card"><div class="label">Total Equipment</div><div class="value" id="total-equipment" style="color: #27c4cc;">0</div></div>
-          <div class="stat-card"><div class="label">Good Condition</div><div class="value" id="good-equipment" style="color: #4ade80;">0</div></div>
-          <div class="stat-card"><div class="label">Needs Repair</div><div class="value" id="repair-equipment" style="color: #fbbf24;">0</div></div>
-          <div class="stat-card"><div class="label">Categories</div><div class="value" id="category-count" style="color: #60a5fa;">0</div></div>
-        </div>
-
-        <!-- Equipment Table -->
-        <div class="card">
-          <div class="card-title">Peripherals & Equipment</div>
-          <div class="tbl-wrap">
-            <table id="equipment-table">
-              <thead><tr><th>Name</th><th>Category</th><th>Brand/Model</th><th>Serial Number</th><th>Assigned Unit</th><th>Condition</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody id="equipment-tbody"></tbody>
+            <table style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>ISBN</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Category</th>
+                        <th>Available</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="catalog-tbody">
+                    <tr><td colspan="6" style="text-align: center;">Loading books...</td></tr>
+                </tbody>
             </table>
-          </div>
         </div>
-      </div>
-
-      <!-- DAMAGE REPORTS TAB -->
-      <div id="damage-tab" class="maintenance-tab" style="display: none;">
-        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <div class="search-wrap" style="width: 300px;">
-            <i class="fas fa-search"></i>
-            <input class="search-input" type="text" id="damage-search" placeholder="Search damage reports..." style="padding-left: 38px;">
-          </div>
-          <button class="btn-primary" onclick="showAddDamageModal()">
-            <i class="fas fa-plus"></i> Report Damage
-          </button>
-        </div>
-
-        <!-- Damage Stats -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px;">
-          <div class="stat-card"><div class="label">Total Reports</div><div class="value" id="total-reports" style="color: #27c4cc;">0</div></div>
-          <div class="stat-card"><div class="label">Pending</div><div class="value" id="pending-reports" style="color: #f87171;">0</div></div>
-          <div class="stat-card"><div class="label">Resolved</div><div class="value" id="resolved-reports" style="color: #4ade80;">0</div></div>
-          <div class="stat-card"><div class="label">Critical Issues</div><div class="value" id="critical-reports" style="color: #ef4444;">0</div></div>
-        </div>
-
-        <!-- Damage Reports Table -->
-        <div class="card">
-          <div class="card-title">Damage & Maintenance Reports</div>
-          <div class="tbl-wrap">
-            <table id="damage-table">
-              <thead><tr><th>ID</th><th>Reported By</th><th>Equipment</th><th>Damage Type</th><th>Severity</th><th>Status</th><th>Reported Date</th><th>Actions</th></tr></thead>
-              <tbody id="damage-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
     </div>
-
-    <!-- PROFILE -->
-    <div class="page" id="page-profile">
-      <div class="section-title">My Profile</div>
-      <div class="section-sub">Your personal account information</div>
-      <div id="profile-content"></div>
-    </div>
-
-    <!-- CHANGE PASSWORD -->
-    <div class="page" id="page-password">
-      <div class="section-title">Change Password</div>
-      <div class="section-sub">Keep your account secure</div>
-      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;max-width:900px;">
-        <div class="card">
-          <div class="card-title">Update Password</div>
-          <div class="form-group"><label class="form-label">Current Password</label><input id="current-password" class="form-input" type="password" placeholder="Enter current password"></div>
-          <div class="form-group"><label class="form-label">New Password</label><input id="new-password" class="form-input" type="password" placeholder="Enter new password"></div>
-          <div class="form-group"><label class="form-label">Confirm New Password</label><input id="confirm-password" class="form-input" type="password" placeholder="Confirm new password"></div>
-          <button class="btn-primary" onclick="changePassword()">UPDATE PASSWORD</button>
+</div>
+        <!-- Borrowings Page -->
+        <div class="page" id="page-borrowings">
+            <h2 class="page-title">My Borrowings</h2>
+            <div class="card">
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>Book</th><th>Borrow Date</th><th>Due Date</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="borrow-tbody"><tr><td colspan="6">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-        <div class="card">
-          <div class="card-title">Password Tips</div>
-          <div class="tip-item"><div class="tip-dot"></div>At least 8 characters long</div>
-          <div class="tip-item"><div class="tip-dot"></div>Include uppercase and lowercase letters</div>
-          <div class="tip-item"><div class="tip-dot"></div>Use at least one number or symbol</div>
+
+        <!-- E-Library Page -->
+        <div class="page" id="page-elibrary">
+            <h2 class="page-title">E-Library Sessions</h2>
+            <div class="card">
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>Date</th><th>Unit</th><th>Time In</th><th>Time Out</th><th>Status</th></tr></thead>
+                        <tbody id="elib-tbody"><tr><td colspan="5">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- Profile Page -->
+        <div class="page" id="page-profile">
+            <h2 class="page-title">My Profile</h2>
+            <div id="profile-content" class="card">Loading...</div>
+        </div>
+
+        <!-- Password Page -->
+        <div class="page" id="page-password">
+            <h2 class="page-title">Change Password</h2>
+            <div class="card" style="max-width:500px;">
+                <input type="password" id="current-password" placeholder="Current Password" class="search-input" style="margin-bottom:10px;">
+                <input type="password" id="new-password" placeholder="New Password" class="search-input" style="margin-bottom:10px;">
+                <input type="password" id="confirm-password" placeholder="Confirm Password" class="search-input" style="margin-bottom:20px;">
+                <button class="btn-primary" onclick="changePassword()">Update Password</button>
+            </div>
+        </div>
+
+        <!-- Admin: Manage Books -->
+        <div class="page" id="page-manage">
+            <h2 class="page-title">Manage Books</h2>
+            <button class="btn-primary" onclick="showAddBookModal()" style="margin-bottom:20px;">+ Add Book</button>
+            <div class="card">
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>Title</th><th>Author</th><th>ISBN</th><th>Copies</th><th>Actions</th></tr></thead>
+                        <tbody id="manage-tbody"><tr><td colspan="5">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin: User Management -->
+        <div class="page" id="page-userManagement">
+            <h2 class="page-title">User Management</h2>
+            <div class="card">
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>Name</th><th>Email</th><th>Student ID</th><th>Role</th><th>Action</th></tr></thead>
+                        <tbody id="user-tbody"><tr><td colspan="5">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin: Equipment Maintenance -->
+        <div class="page" id="page-equipmentMaintenance">
+            <h2 class="page-title">Equipment Maintenance</h2>
+            <div class="card">
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>Name</th><th>Category</th><th>Condition</th><th>Status</th></tr></thead>
+                        <tbody id="equipment-tbody"><tr><td colspan="4">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <script>
-  // Toggle login field based on role selection
-  window.toggleLoginField = function() {
-    const roleSelect = document.getElementById('login-role');
-    const loginLabel = document.getElementById('login-label');
-    const loginInput = document.getElementById('login-identifier');
-    const demoHint = document.getElementById('demo-hint');
+// API Configuration
+const API_BASE_URL = 'http://localhost:5000/api';
+
+// Helper functions
+function getAuthToken() { return localStorage.getItem('ulitms_token'); }
+function isAdmin() { return localStorage.getItem('ulitms_role') === 'admin'; }
+function getUserId() { return localStorage.getItem('ulitms_user_id'); }
+
+// API Request
+async function apiRequest(endpoint, options = {}) {
+    const token = getAuthToken();
+    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     
-    if (!roleSelect) return;
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+    const data = await response.json();
     
-    if (roleSelect.value === 'admin') {
-      loginLabel.textContent = 'Librarian ID';
-      loginInput.placeholder = 'Enter your Librarian ID';
-      demoHint.innerHTML = '🔑 Librarian ID: LIB001 | Password: admin123';
-    } else {
-      loginLabel.textContent = 'Student ID';
-      loginInput.placeholder = 'Enter your Student ID';
-      demoHint.innerHTML = '🔑 Student ID: 2024-01018 | Password: student123';
+    if (!response.ok) {
+        if (response.status === 401) { localStorage.clear(); location.reload(); }
+        throw new Error(data.message || 'Request failed');
     }
-  };
-</script>
+    return data.data || data;
+}
 
-<!-- API and Application Scripts - Order matters! -->
-<script src="js/api.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/app.js"></script>
-
-<script>
-  // Initialize after all scripts are loaded
-  document.addEventListener('DOMContentLoaded', function() {
-    if (localStorage.getItem('ulitms_token')) {
-      if (window.updateUserInterface) updateUserInterface();
-      if (window.loadAllData) window.loadAllData();
+// Update UI based on login state
+function updateUI() {
+    const token = getAuthToken();
+    const role = localStorage.getItem('ulitms_role');
+    const name = localStorage.getItem('ulitms_name') || 'User';
+    const initials = name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+    
+    document.querySelectorAll('#sidebar-avatar, #topbar-avatar').forEach(el => el.textContent = initials);
+    document.querySelectorAll('#sidebar-user-name, #topbar-user-name').forEach(el => el.textContent = name);
+    document.querySelectorAll('#sidebar-user-role, #topbar-user-role').forEach(el => el.textContent = role === 'admin' ? 'Admin' : 'Student');
+    
+    const isAdminUser = role === 'admin';
+    document.querySelectorAll('.user-only').forEach(el => el.style.display = isAdminUser ? 'none' : 'flex');
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdminUser ? 'flex' : 'none');
+    
+    if (!token) {
+        window.location.href = '/login.html';
     }
-  });
-</script>
+}
 
-<script>
-  // Initialize authentication after all scripts are loaded
-  if(window.initAuth) {
-    window.initAuth();
-  }
+// Navigation
+document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    el.addEventListener('click', () => {
+        const page = el.dataset.page;
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(`page-${page}`)?.classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('topbar-title').textContent = el.textContent.trim();
+        
+        // Load page data
+        if (page === 'catalog') loadCatalog();
+        else if (page === 'borrowings') loadBorrowings();
+        else if (page === 'elibrary') loadELibrary();
+        else if (page === 'profile') loadProfile();
+        else if (page === 'manage' && isAdmin()) loadManageBooks();
+        else if (page === 'userManagement' && isAdmin()) loadUserManagement();
+        else if (page === 'equipmentMaintenance' && isAdmin()) loadEquipment();
+        else loadDashboard();
+    });
+});
+
+// Dashboard
+async function loadDashboard() {
+    const welcome = document.getElementById('welcome-message');
+    if (welcome) welcome.textContent = `Welcome back, ${localStorage.getItem('ulitms_name') || 'User'}!`;
+    
+    try {
+        const books = await apiRequest('/books?limit=5');
+        const statsDiv = document.getElementById('dashboard-stats');
+        if (statsDiv) {
+            statsDiv.innerHTML = `
+                <div class="stat-card"><div class="label">Total Books</div><div class="value">${books.total || books.books?.length || 0}</div></div>
+                <div class="stat-card"><div class="label">Available</div><div class="value">${books.books?.filter(b => b.available_copies > 0).length || 0}</div></div>
+                <div class="stat-card"><div class="label">Borrowed</div><div class="value">${books.books?.filter(b => b.available_copies === 0).length || 0}</div></div>
+            `;
+        }
+    } catch (error) {
+        console.error('Dashboard error:', error);
+    }
+}
+
+// Catalog
+// Load and display books from database
+async function loadCatalog() {
+    const tbody = document.getElementById('catalog-tbody');
+    const countEl = document.getElementById('book-count');
+    
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">📚 Loading books...</td></tr>';
+    
+    try {
+        console.log('Fetching books from API...');
+        const result = await apiRequest('/books?limit=100');
+        console.log('API Response:', result);
+        
+        // Handle different response formats
+        let books = [];
+        if (result.books) {
+            books = result.books;
+        } else if (Array.isArray(result)) {
+            books = result;
+        } else if (result.data && result.data.books) {
+            books = result.data.books;
+        }
+        
+        console.log('Books found:', books.length);
+        
+        if (books.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">📖 No books found in library</td></tr>';
+            if (countEl) countEl.textContent = '0 books';
+            return;
+        }
+        
+        // Display books
+        tbody.innerHTML = books.map(book => `
+            <tr>
+                <td>${book.isbn || 'N/A'}</td>
+                <td><strong>${book.title || 'Untitled'}</strong></td>
+                <td>${book.author || 'Unknown'}</td>
+                <td>${book.category_name || book.category || 'General'}</td>
+                <td>${book.available_copies || 0} / ${book.total_copies || 0}</td>
+                <td>
+                    ${book.available_copies > 0 ? 
+                        '<span class="badge badge-green">✓ Available</span>' : 
+                        '<span class="badge badge-red">✗ Borrowed</span>'
+                    }
+                </td>
+            </tr>
+        `).join('');
+        
+        if (countEl) countEl.textContent = `${books.length} books`;
+        
+        // Setup search functionality
+        const searchInput = document.getElementById('catalog-search');
+        if (searchInput) {
+            searchInput.oninput = (e) => {
+                const term = e.target.value.toLowerCase();
+                const filtered = books.filter(book => 
+                    (book.title && book.title.toLowerCase().includes(term)) ||
+                    (book.author && book.author.toLowerCase().includes(term)) ||
+                    (book.isbn && book.isbn.toLowerCase().includes(term))
+                );
+                
+                if (filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No matching books found</td></tr>';
+                } else {
+                    tbody.innerHTML = filtered.map(book => `
+                        <tr>
+                            <td>${book.isbn || 'N/A'}</td>
+                            <td><strong>${book.title || 'Untitled'}</strong></td>
+                            <td>${book.author || 'Unknown'}</td>
+                            <td>${book.category_name || book.category || 'General'}</td>
+                            <td>${book.available_copies || 0} / ${book.total_copies || 0}</td>
+                            <td>
+                                ${book.available_copies > 0 ? 
+                                    '<span class="badge badge-green">✓ Available</span>' : 
+                                    '<span class="badge badge-red">✗ Borrowed</span>'
+                                }
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            };
+        }
+        
+    } catch (error) {
+        console.error('Load catalog error:', error);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #f87171;">❌ Failed to load books: ' + error.message + '</td></tr>';
+    }
+}
+
+// Borrowings
+async function loadBorrowings() {
+    const tbody = document.getElementById('borrow-tbody');
+    tbody.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
+    try {
+        const borrowings = await apiRequest(`/borrowings/user/${getUserId()}`);
+        tbody.innerHTML = (borrowings.borrowings || borrowings || []).map(b => `
+            <tr>
+                <td>#${b.id}</td>
+                <td>${b.title || b.book_title}</td>
+                <td>${new Date(b.borrowed_at).toLocaleDateString()}</td>
+                <td>${new Date(b.due_date).toLocaleDateString()}</td>
+                <td><span class="badge ${b.status === 'returned' ? 'badge-gray' : 'badge-yellow'}">${b.status}</span></td>
+                <td>${b.status !== 'returned' ? `<button class="btn-small" onclick="returnBook(${b.id})">Return</button>` : ''}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="6">Failed to load</td></tr>';
+    }
+}
+
+// E-Library
+async function loadELibrary() {
+    const tbody = document.getElementById('elib-tbody');
+    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+    try {
+        const sessions = await apiRequest(`/elibrary/sessions/user/${getUserId()}`);
+        tbody.innerHTML = (sessions.sessions || sessions || []).map(s => `
+            <tr>
+                <td>${new Date(s.time_in).toLocaleDateString()}</td>
+                <td>Unit ${s.unit_number || 'N/A'}</td>
+                <td>${new Date(s.time_in).toLocaleTimeString()}</td>
+                <td>${s.time_out ? new Date(s.time_out).toLocaleTimeString() : 'Active'}</td>
+                <td><span class="badge ${s.time_out ? 'badge-gray' : 'badge-teal'}">${s.time_out ? 'Completed' : 'Active'}</span></td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="5">Failed to load</td></tr>';
+    }
+}
+
+// Profile
+async function loadProfile() {
+    const container = document.getElementById('profile-content');
+    container.innerHTML = 'Loading...';
+    try {
+        const user = await apiRequest(`/users/profile/${getUserId()}`);
+        container.innerHTML = `
+            <div><strong>Name:</strong> ${user.first_name || ''} ${user.last_name || ''}</div>
+            <div><strong>Email:</strong> ${user.email}</div>
+            <div><strong>Student ID:</strong> ${user.student_id || 'N/A'}</div>
+            <div><strong>Course:</strong> ${user.course || 'N/A'}</div>
+            <div><strong>Role:</strong> ${user.role}</div>
+        `;
+    } catch (error) {
+        container.innerHTML = 'Failed to load profile';
+    }
+}
+
+// Change Password
+window.changePassword = async function() {
+    const current = document.getElementById('current-password')?.value;
+    const newPass = document.getElementById('new-password')?.value;
+    const confirm = document.getElementById('confirm-password')?.value;
+    
+    if (!current || !newPass || !confirm) {
+        alert('Please fill all fields');
+        return;
+    }
+    if (newPass !== confirm) {
+        alert('Passwords do not match');
+        return;
+    }
+    
+    try {
+        await apiRequest(`/users/${getUserId()}/password`, {
+            method: 'PUT',
+            body: JSON.stringify({ currentPassword: current, newPassword: newPass })
+        });
+        alert('Password changed successfully!');
+        document.getElementById('current-password').value = '';
+        document.getElementById('new-password').value = '';
+        document.getElementById('confirm-password').value = '';
+    } catch (error) {
+        alert(error.message);
+    }
+};
+
+// Admin Functions
+async function loadManageBooks() {
+    if (!isAdmin()) return;
+    const tbody = document.getElementById('manage-tbody');
+    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+    try {
+        const result = await apiRequest('/books');
+        const books = result.books || [];
+        tbody.innerHTML = books.map(book => `
+            <tr>
+                <td>${book.title}</td>
+                <td>${book.author}</td>
+                <td>${book.isbn || 'N/A'}</td>
+                <td>${book.available_copies}/${book.total_copies}</td>
+                <td><button class="btn-small" onclick="deleteBook(${book.id})">Delete</button></td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="5">Failed to load</td></tr>';
+    }
+}
+
+async function loadUserManagement() {
+    if (!isAdmin()) return;
+    const tbody = document.getElementById('user-tbody');
+    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+    try {
+        const users = await apiRequest('/users');
+        tbody.innerHTML = (users.users || users || []).map(user => `
+            <tr>
+                <td>${user.first_name || ''} ${user.last_name || ''}</td>
+                <td>${user.email}</td>
+                <td>${user.student_id || 'N/A'}</td>
+                <td><span class="badge ${user.role === 'admin' ? 'badge-red' : 'badge-blue'}">${user.role}</span></td>
+                <td><button class="btn-small" onclick="deleteUser(${user.id})">Delete</button></td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="5">Failed to load</td></tr>';
+    }
+}
+
+async function loadEquipment() {
+    if (!isAdmin()) return;
+    const tbody = document.getElementById('equipment-tbody');
+    tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+    try {
+        const peripherals = await apiRequest('/peripherals');
+        tbody.innerHTML = (peripherals.peripherals || peripherals || []).map(p => `
+            <tr>
+                <td>${p.name}</td>
+                <td>${p.category_name || 'General'}</td>
+                <td><span class="badge ${p.condition === 'good' ? 'badge-green' : 'badge-yellow'}">${p.condition || 'good'}</span></td>
+                <td><span class="badge ${p.is_active ? 'badge-green' : 'badge-red'}">${p.is_active ? 'Active' : 'Inactive'}</span></td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="4">Failed to load</td></tr>';
+    }
+}
+
+window.deleteBook = async function(id) {
+    if (confirm('Delete this book?')) {
+        await apiRequest(`/books/${id}`, { method: 'DELETE' });
+        loadManageBooks();
+        loadCatalog();
+    }
+};
+
+window.deleteUser = async function(id) {
+    if (confirm('Delete this user?')) {
+        await apiRequest(`/users/${id}`, { method: 'DELETE' });
+        loadUserManagement();
+    }
+};
+
+window.returnBook = async function(id) {
+    if (confirm('Return this book?')) {
+        await apiRequest(`/borrowings/${id}/return`, { method: 'PUT' });
+        loadBorrowings();
+        loadCatalog();
+    }
+};
+
+window.showAddBookModal = function() {
+    const title = prompt('Book title:');
+    const author = prompt('Author:');
+    const isbn = prompt('ISBN:');
+    const copies = prompt('Number of copies:', '1');
+    if (title && author) {
+        apiRequest('/books', {
+            method: 'POST',
+            body: JSON.stringify({ title, author, isbn, total_copies: parseInt(copies), category_id: 1 })
+        }).then(() => {
+            loadManageBooks();
+            loadCatalog();
+            alert('Book added!');
+        }).catch(err => alert(err.message));
+    }
+};
+
+window.logout = function() {
+    localStorage.clear();
+    window.location.href = '/login.html';
+};
+
+// Initialize
+updateUI();
+loadDashboard();
 </script>
 </body>
 </html>

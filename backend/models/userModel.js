@@ -3,37 +3,37 @@ const bcrypt = require('bcryptjs');
 
 class UserModel {
     // Create user
-    static async create(userData) {
-        const {
-            student_id,
-            first_name,
-            middle_name,
-            last_name,
-            email,
-            password,
-            contact_number,
-            course,
-            year_level,
-            role = 'student'
-        } = userData;
+    // Create user
+static async create(userData) {
+    const {
+        student_id,
+        first_name,
+        middle_name,
+        last_name,
+        email,
+        password,
+        contact_number,
+        course,
+        year_level,
+        role = 'student'
+    } = userData;
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        const result = await pool.query(
-            `INSERT INTO library_schema.users 
-             (student_id, first_name, middle_name, last_name, email, password, 
-              contact_number, course, year_level, role)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-             RETURNING id, student_id, first_name, middle_name, last_name, 
-                       email, role, course, year_level, contact_number, 
-                       is_active, created_at`,
-            [student_id, first_name, middle_name, last_name, email, hashedPassword,
-             contact_number, course, year_level, role]
-        );
-        
-        return result.rows[0];
-    }
-
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const result = await pool.query(
+        `INSERT INTO library_schema.users 
+         (student_id, first_name, middle_name, last_name, email, password, 
+          contact_number, course, year_level, role, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         RETURNING id, student_id, first_name, middle_name, last_name, 
+                   email, role, course, year_level, contact_number, 
+                   is_active, created_at`,
+        [student_id, first_name, middle_name || null, last_name, email, hashedPassword,
+         contact_number || null, course || null, year_level || null, role, true]
+    );
+    
+    return result.rows[0];
+}
     // Find by email
     static async findByEmail(email) {
         const result = await pool.query(
