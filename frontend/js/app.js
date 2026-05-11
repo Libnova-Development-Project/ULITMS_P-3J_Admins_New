@@ -134,6 +134,7 @@ window.navigate = async function(page) {
         inventory: 'Book Inventory',
         userManagement: 'User Management',
         equipmentMaintenance: 'Equipment & Maintenance',
+        'elibrary-admin': 'E-Library Management',
         profile: 'My Profile',
         password: 'Change Password'
     };
@@ -160,6 +161,7 @@ window.navigate = async function(page) {
             break;
         case 'elibrary':
             loadELibrary();
+            displayAvailablePCs();
             break;
         case 'manage':
             if (isAdmin()) loadManageBooks();
@@ -172,6 +174,9 @@ window.navigate = async function(page) {
             break;
         case 'equipmentMaintenance':
             if (isAdmin()) loadEquipmentMaintenance();
+            break;
+        case 'elibrary-admin':
+            if (isAdmin()) loadELibraryManagement();
             break;
         case 'profile':
             loadProfile();
@@ -657,6 +662,251 @@ window.endELibrarySession = async function(sessionId) {
         await loadELibrary();
     } catch (error) {
         showToast(error.message, 'error');
+    }
+};
+
+// Display available PCs with color-coded status
+window.displayAvailablePCs = async function() {
+    const container = document.getElementById('available-pcs');
+    if (!container) return;
+    
+    try {
+        const units = await fetchELibraryUnits(true);
+        const activeSessions = await fetchActiveSessions();
+        
+        const activeSessMap = {};
+        (activeSessions || []).forEach(s => {
+            if (!activeSessMap[s.unit_id]) activeSessMap[s.unit_id] = 0;
+            activeSessMap[s.unit_id]++;
+        });
+        
+        if (!units || units.length === 0) {
+            container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No PC units available</div>';
+            return;
+        }
+        
+        container.innerHTML = units.map(unit => {
+            const status = activeSessMap[unit.id] > 0 ? 'in-use' : 'available';
+            const statusColor = status === 'available' ? '#10b981' : '#f59e0b';
+            const statusText = status === 'available' ? '✓ Available' : `In Use (${activeSessMap[unit.id]})`;
+            
+            return `
+                <div style="
+                    border: 2px solid ${statusColor};
+                    border-radius: 12px;
+                    padding: 16px;
+                    background: rgba(${statusColor === '#10b981' ? '16,185,129' : '245,158,11'}, 0.08);
+                    cursor: pointer;
+                    transition: all 0.2s;
+                " 
+                onmouseover="this.style.transform='translateY(-2px)'" 
+                onmouseout="this.style.transform='translateY(0)'">
+                    <div style="font-size: 24px; font-weight: 700; color: ${statusColor}; margin-bottom: 8px;">
+                        PC #${unit.unit_number || unit.id}
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 8px;">
+                        ${unit.label || 'E-Library Unit'}
+                    </div>
+                    <div style="color: ${statusColor}; font-size: 12px; font-weight: 600; margin-bottom: 12px;">
+                        ${statusText}
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 12px;">
+                        Location: ${unit.location || 'Main Hall'}<br>
+                        Condition: ${unit.condition || 'Good'}
+                    </div>
+                    ${status === 'available' ? `
+                        <button class="btn btn-primary" style="width: 100%; padding: 8px; font-size: 12px;" 
+                            onclick="selectUnitAndScroll(${unit.id}, '${unit.unit_number || unit.id}')">
+                            <i class="fas fa-play"></i> Reserve
+                        </button>
+                    ` : `
+                        <button class="btn" style="width: 100%; padding: 8px; font-size: 12px; background: #94a3b8; cursor: not-allowed;" disabled>
+                            In Use
+                        </button>
+                    `}
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Display PCs error:', error);
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #f87171;">Failed to load PC units</div>';
+    }
+};
+
+window.selectUnitAndScroll = function(unitId, unitNumber) {
+    const select = document.getElementById('session-unit');
+    if (select) {
+        select.value = unitId;
+        select.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const purposeInput = document.getElementById('session-purpose');
+        if (purposeInput) purposeInput.focus();
+    }
+};
+
+window.refreshAvailablePCs = async function() {
+    showToast('Refreshing PC status...', 'info');
+    await displayAvailablePCs();
+    showToast('PC status updated', 'success');
+};
+
+window.refreshELibrary = async function() {
+    showToast('Refreshing E-Library data...', 'info');
+    await loadELibrary();
+};
+
+// ============================================================
+// ADMIN: E-LIBRARY MANAGEMENT
+// ============================================================
+
+let currentELibraryUnits = [];
+
+async function loadELibraryManagement() {
+    if (!isAdmin()) return;
+    const tbody = document.getElementById('elibrary-units-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> Loading units...</td></tr>';
+    
+    try {
+        const units = await fetchELibraryUnits(false);
+        currentELibraryUnits = units || [];
+        
+        if (!units || units.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No PC units found. Create one to get started.</td></tr>';
+            return;
+        }
+        
+        // Get active sessions count per unit
+        const allSessions = await fetchAllSessions(500);
+        const activeSessions = (allSessions || []).reduce((acc, s) => {
+            if (!s.time_out) {
+                acc[s.unit_id] = (acc[s.unit_id] || 0) + 1;
+            }
+            return acc;
+        }, {});
+        
+        tbody.innerHTML = units.map(unit => `
+            <tr>
+                <td><strong>PC #${unit.unit_number || unit.id}</strong></td>
+                <td>${unit.label || '-'}</td>
+                <td>${unit.location || '-'}</td>
+                <td><span class="badge ${unit.condition === 'good' ? 'badge-green' : 'badge-yellow'}">${unit.condition || 'good'}</span></td>
+                <td><span class="badge ${unit.is_active ? 'badge-green' : 'badge-gray'}">${unit.is_active ? 'Active' : 'Inactive'}</span></td>
+                <td><span class="badge badge-blue">${activeSessions[unit.id] || 0}</span></td>
+                <td>
+                    <button class="btn-small" onclick="editELibraryUnit(${unit.id})"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn-small btn-danger" onclick="deleteELibraryUnit(${unit.id})"><i class="fas fa-trash"></i> Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Load E-Library management error:', error);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#f87171;">Failed to load units</td></tr>';
+        showToast('Failed to load E-Library units', 'error');
+    }
+}
+
+window.showAddELibraryUnitModal = function() {
+    const form = `
+        <div style="padding: 20px;">
+            <div class="form-group">
+                <label class="form-label">PC Unit Number</label>
+                <input type="number" id="unit-number" class="form-input" placeholder="e.g., 1, 2, 3..." min="1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Label / Name</label>
+                <input type="text" id="unit-label" class="form-input" placeholder="e.g., Front Desk PC #1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Location</label>
+                <input type="text" id="unit-location" class="form-input" placeholder="e.g., Main Hall, Level 2">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Specifications</label>
+                <textarea id="unit-specs" class="form-input" placeholder="e.g., Intel i7, 16GB RAM, Windows 10" style="resize: vertical; min-height: 80px;"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Condition</label>
+                <select id="unit-condition" class="form-input">
+                    <option value="good">Good</option>
+                    <option value="fair">Fair</option>
+                    <option value="needs_repair">Needs Repair</option>
+                </select>
+            </div>
+        </div>
+    `;
+    
+    // For now, use simple prompt-based approach
+    const unitNumber = prompt('Enter PC Unit Number (1-50):');
+    if (!unitNumber) return;
+    
+    const label = prompt('Enter Unit Label (e.g., "Front Desk PC #1"):') || `PC Unit ${unitNumber}`;
+    const location = prompt('Enter Location (e.g., "Main Hall, Level 2"):') || 'Main Building';
+    const specs = prompt('Enter Specifications (optional):') || '';
+    
+    createELibraryUnit({
+        unit_number: parseInt(unitNumber),
+        label,
+        location,
+        specs: specs || null,
+        condition: 'good',
+        is_active: true
+    });
+};
+
+async function createELibraryUnit(unitData) {
+    showToast('Creating E-Library unit...', 'info');
+    
+    try {
+        await createELibraryUnit(unitData);
+        showToast('PC unit created successfully!', 'success');
+        await loadELibraryManagement();
+    } catch (error) {
+        showToast(error.message || 'Failed to create unit', 'error');
+    }
+}
+
+window.editELibraryUnit = async function(unitId) {
+    const unit = currentELibraryUnits.find(u => u.id === unitId);
+    if (!unit) {
+        showToast('Unit not found', 'error');
+        return;
+    }
+    
+    const newLabel = prompt('Enter new label:', unit.label || '');
+    const newLocation = prompt('Enter new location:', unit.location || '');
+    const newCondition = prompt('Enter condition (good/fair/needs_repair):', unit.condition || 'good');
+    const newStatus = confirm('Should this unit be active?');
+    
+    if (newLabel || newLocation || newCondition !== undefined) {
+        showToast('Updating unit...', 'info');
+        
+        try {
+            await updateELibraryUnit(unitId, {
+                label: newLabel || unit.label,
+                location: newLocation || unit.location,
+                condition: newCondition || unit.condition,
+                is_active: newStatus
+            });
+            showToast('Unit updated successfully!', 'success');
+            await loadELibraryManagement();
+        } catch (error) {
+            showToast(error.message || 'Failed to update unit', 'error');
+        }
+    }
+};
+
+window.deleteELibraryUnit = async function(unitId) {
+    if (!confirm('Delete this PC unit? Any active sessions will be ended.')) return;
+    
+    showToast('Deleting unit...', 'info');
+    
+    try {
+        await deleteELibraryUnit(unitId);
+        showToast('PC unit deleted successfully!', 'success');
+        await loadELibraryManagement();
+    } catch (error) {
+        showToast(error.message || 'Failed to delete unit', 'error');
     }
 };
 

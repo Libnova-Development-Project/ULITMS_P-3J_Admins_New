@@ -268,6 +268,26 @@ window.fetchUnitById = async function(unitId) {
     return result.unit || result;
 };
 
+window.createELibraryUnit = async function(unitData) {
+    const result = await apiRequest('/elibrary/units', {
+        method: 'POST',
+        body: JSON.stringify(unitData)
+    });
+    return result.unit || result;
+};
+
+window.updateELibraryUnit = async function(unitId, unitData) {
+    const result = await apiRequest(`/elibrary/units/${unitId}`, {
+        method: 'PUT',
+        body: JSON.stringify(unitData)
+    });
+    return result.unit || result;
+};
+
+window.deleteELibraryUnit = async function(unitId) {
+    await apiRequest(`/elibrary/units/${unitId}`, { method: 'DELETE' });
+};
+
 // ============================================================
 // PERIPHERALS API
 // ============================================================
@@ -356,6 +376,20 @@ window.resolveDamageReport = async function(id, resolutionNotes) {
         body: JSON.stringify({ resolution_notes: resolutionNotes })
     });
     return result.report || result;
+};
+
+window.getUserDamageReports = async function(userId) {
+    const result = await apiRequest(`/damage-reports?reported_by=${userId}`);
+    return result.reports || result;
+};
+
+window.fetchDamageReportStats = async function() {
+    const result = await apiRequest('/damage-reports/stats');
+    return result.stats || result;
+};
+
+window.deleteDamageReport = async function(id) {
+    return apiRequest(`/damage-reports/${id}`, { method: 'DELETE' });
 };
 
 window.fetchDamageReportStats = async function() {

@@ -1,302 +1,519 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ULITMS — University Library System</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-:root {
-    --sidebar-w: 260px;
-    --header-h: 68px;
-}
-* { box-sizing: border-box; }
-body { margin: 0; font-family: 'Space Grotesk', sans-serif; background: #0b1120; color: #e2e8f0; }
-
-#sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0;
-    width: var(--sidebar-w);
-    background: linear-gradient(180deg, #0d1b2a 0%, #0f2137 60%, #0c1a2e 100%);
-    border-right: 1px solid rgba(12,168,177,.18);
-    display: flex; flex-direction: column;
-    z-index: 50;
-}
-.logo-area { padding: 28px 24px 20px; border-bottom: 1px solid rgba(12,168,177,.12); }
-.logo-title { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: #27c4cc; letter-spacing: -.5px; }
-.logo-sub { font-size: .65rem; color: #6adde2; opacity: .75; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
-
-.nav-section { flex: 1; padding: 16px 12px; overflow-y: auto; }
-.nav-label { font-size: .6rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(100,220,226,.45); padding: 0 12px; margin: 16px 0 6px; }
-.nav-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 11px 14px; border-radius: 10px; cursor: pointer;
-    font-size: .875rem; font-weight: 500; color: #94a3b8;
-    transition: all .2s ease; margin-bottom: 2px;
-    text-decoration: none;
-}
-.nav-item:hover { background: rgba(12,168,177,.12); color: #e2e8f0; }
-.nav-item.active { background: linear-gradient(135deg, rgba(12,168,177,.3), rgba(39,196,204,.15)); color: #6adde2; }
-.nav-item .icon { width: 18px; text-align: center; }
-.nav-divider { height: 1px; background: rgba(12,168,177,.1); margin: 10px 12px; }
-
-.user-footer {
-    padding: 14px 16px; border-top: 1px solid rgba(12,168,177,.12);
-    display: flex; align-items: center; gap: 10px;
-}
-.avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #0ca8b1, #27c4cc); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #0d1b2a; }
-.user-name { font-size: .85rem; font-weight: 600; color: #e2e8f0; }
-.user-role { font-size: .7rem; color: #64748b; }
-
-#main { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: none; }
-
-#topbar {
-    height: var(--header-h); background: #0d1b2a;
-    border-bottom: 1px solid rgba(12,168,177,.15);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 32px; position: sticky; top: 0; z-index: 40;
-}
-.page-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; color: #e2e8f0; }
-.topbar-right { display: flex; align-items: center; gap: 14px; }
-
-#content { flex: 1; padding: 28px 32px; }
-.page { display: none; }
-.page.active { display: block; }
-
-.stat-card {
-    background: linear-gradient(135deg, rgba(13,27,42,.9), rgba(15,33,55,.95));
-    border: 1px solid rgba(12,168,177,.2);
-    border-radius: 16px; padding: 22px 24px;
-}
-.stat-card .label { font-size: .72rem; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; margin-bottom: 8px; }
-.stat-card .value { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800; }
-
-.card {
-    background: linear-gradient(135deg, rgba(13,27,42,.9), rgba(15,33,55,.95));
-    border: 1px solid rgba(12,168,177,.18);
-    border-radius: 16px; padding: 22px 24px;
-}
-.card-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: #e2e8f0; margin-bottom: 18px; }
-
-.tbl-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
-thead th { padding: 10px 14px; text-align: left; font-size: .68rem; letter-spacing: 1.5px; text-transform: uppercase; color: #27c4cc; border-bottom: 1px solid rgba(12,168,177,.2); }
-tbody tr { border-bottom: 1px solid rgba(255,255,255,.05); }
-tbody td { padding: 13px 14px; color: #cbd5e1; }
-
-.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 99px; font-size: .7rem; font-weight: 600; }
-.badge-green { background: rgba(34,197,94,.12); color: #4ade80; border: 1px solid rgba(34,197,94,.3); }
-.badge-red { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
-.badge-yellow { background: rgba(234,179,8,.12); color: #fbbf24; border: 1px solid rgba(234,179,8,.3); }
-.badge-blue { background: rgba(59,130,246,.12); color: #60a5fa; border: 1px solid rgba(59,130,246,.3); }
-.badge-teal { background: rgba(12,168,177,.12); color: #6adde2; border: 1px solid rgba(12,168,177,.3); }
-
-.btn-primary {
-    background: linear-gradient(135deg, #0ca8b1, #27c4cc);
-    border: none; color: #0d1b2a; font-weight: 700;
-    padding: 10px 20px; border-radius: 8px; cursor: pointer;
-    font-family: 'Space Grotesk', sans-serif;
-}
-.btn-small {
-    background: rgba(12,168,177,.12); border: 1px solid rgba(12,168,177,.35);
-    color: #6adde2; padding: 5px 12px; border-radius: 6px;
-    cursor: pointer; font-size: .7rem; margin-left: 8px;
-}
-.search-input {
-    width: 100%; background: rgba(13,27,42,.9);
-    border: 1px solid rgba(12,168,177,.2); border-radius: 10px;
-    padding: 11px 14px; color: #e2e8f0;
-}
-</style>
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS - University Library System</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- ULITMS Custom Styles -->
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-<!-- SIDEBAR -->
+<!-- Sidebar -->
 <aside id="sidebar">
     <div class="logo-area">
         <div class="logo-title">ULITMS</div>
-        <div class="logo-sub">with E-Lib Integration</div>
+        <div class="logo-sub">Library Management System</div>
     </div>
+    
     <nav class="nav-section">
         <div class="nav-label">Main Menu</div>
-        <div class="nav-item" data-page="dashboard">
-            <span class="icon"><i class="fas fa-house"></i></span> Dashboard
+        <div class="nav-item active" data-page="dashboard">
+            <span class="icon"><i class="fas fa-th-large"></i></span>
+            <span>Dashboard</span>
         </div>
+        
         <div class="nav-item user-only" data-page="catalog" style="display:none;">
-            <span class="icon"><i class="fas fa-book"></i></span> Book Catalog
+            <span class="icon"><i class="fas fa-book"></i></span>
+            <span>Book Catalog</span>
         </div>
         <div class="nav-item user-only" data-page="borrowings" style="display:none;">
-            <span class="icon"><i class="fas fa-bookmark"></i></span> My Borrowings
+            <span class="icon"><i class="fas fa-bookmark"></i></span>
+            <span>My Borrowings</span>
+        </div>
+        <div class="nav-item user-only" data-page="damagereport" style="display:none;">
+            <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+            <span>Report Damage</span>
         </div>
         <div class="nav-item user-only" data-page="elibrary" style="display:none;">
-            <span class="icon"><i class="fas fa-desktop"></i></span> E-Library
+            <span class="icon"><i class="fas fa-desktop"></i></span>
+            <span>E-Library</span>
         </div>
+        
         <div class="nav-item admin-only" data-page="manage" style="display:none;">
-            <span class="icon"><i class="fas fa-cogs"></i></span> Manage Books
+            <span class="icon"><i class="fas fa-cogs"></i></span>
+            <span>Manage Books</span>
         </div>
-        <div class="nav-item admin-only" data-page="userManagement" style="display:none;">
-            <span class="icon"><i class="fas fa-users"></i></span> User Management
+        <div class="nav-item admin-only" data-page="users" style="display:none;">
+            <span class="icon"><i class="fas fa-users"></i></span>
+            <span>User Management</span>
         </div>
-        <div class="nav-item admin-only" data-page="equipmentMaintenance" style="display:none;">
-            <span class="icon"><i class="fas fa-tools"></i></span> Equipment
+        <div class="nav-item admin-only" data-page="equipment" style="display:none;">
+            <span class="icon"><i class="fas fa-microchip"></i></span>
+            <span>Equipment</span>
         </div>
+        <div class="nav-item admin-only" data-page="elibrary-admin" style="display:none;">
+            <span class="icon"><i class="fas fa-laptop"></i></span>
+            <span>E-Library Units</span>
+        </div>
+        <div class="nav-item admin-only" data-page="damage-admin" style="display:none;">
+            <span class="icon"><i class="fas fa-hammer"></i></span>
+            <span>Damage Reports</span>
+        </div>
+        
         <div class="nav-divider"></div>
+        
         <div class="nav-label">Account</div>
         <div class="nav-item" data-page="profile">
-            <span class="icon"><i class="fas fa-user"></i></span> My Profile
+            <span class="icon"><i class="fas fa-user"></i></span>
+            <span>My Profile</span>
         </div>
         <div class="nav-item" data-page="password">
-            <span class="icon"><i class="fas fa-lock"></i></span> Change Password
+            <span class="icon"><i class="fas fa-lock"></i></span>
+            <span>Change Password</span>
         </div>
+        
         <div class="nav-divider"></div>
-        <div class="nav-item" style="color:#f87171;" onclick="logout()">
-            <span class="icon"><i class="fas fa-sign-out-alt"></i></span> Logout
+        
+        <div class="nav-item" onclick="logout()" style="color: #f87171;">
+            <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+            <span>Logout</span>
         </div>
     </nav>
+    
     <div class="user-footer">
         <div class="avatar" id="sidebar-avatar">G</div>
         <div>
-            <div id="sidebar-user-name" class="user-name">Guest</div>
-            <div id="sidebar-user-role" class="user-role">Visitor</div>
+            <div class="user-name" id="sidebar-name">Guest</div>
+            <div class="user-role" id="sidebar-role">Visitor</div>
         </div>
     </div>
 </aside>
 
-<!-- MAIN CONTENT -->
+<!-- Main Content -->
 <div id="main">
     <header id="topbar">
-        <div class="page-title" id="topbar-title">Dashboard</div>
+        <div class="page-title" id="page-title">Dashboard</div>
         <div class="topbar-right">
-            <div class="avatar" id="topbar-avatar" style="width:36px;height:36px;">G</div>
+            <div class="notif-btn" id="notificationBtn">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge" id="notificationCount">0</span>
+            </div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
             <div>
-                <div id="topbar-user-name" style="font-size:.82rem;font-weight:600;">Guest</div>
-                <div id="topbar-user-role" style="font-size:.7rem;color:#475569;">Visitor</div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Visitor</div>
+            </div>
+        </div>
+        
+        <!-- Notification Dropdown -->
+        <div class="notification-dropdown" id="notificationDropdown">
+            <div class="notification-header">
+                <span>Notifications</span>
+                <span class="mark-read-btn" onclick="markAllNotificationsRead()">Mark all as read</span>
+            </div>
+            <div id="notificationList">
+                <div style="padding: 20px; text-align: center; color: var(--text-muted);">
+                    No notifications
+                </div>
             </div>
         </div>
     </header>
+    
     <div id="content">
         <!-- Dashboard Page -->
         <div class="page active" id="page-dashboard">
-            <div class="stat-card" style="margin-bottom:20px;">
-                <div class="label">Welcome</div>
-                <div class="value" id="welcome-message">Loading...</div>
-            </div>
-            <div id="dashboard-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;"></div>
+            <div class="section-title" id="welcome-message">Welcome back!</div>
+            <div class="section-sub" id="welcome-subtitle">Here's your library summary</div>
+            <div class="stats-grid" id="dashboard-stats"></div>
         </div>
-
-       <!-- CATALOG PAGE -->
-<div class="page" id="page-catalog">
-    <h2 class="page-title">Book Catalog</h2>
-    <div class="section-sub">Browse all available books in the library</div>
+        
+        <!-- Book Catalog Page -->
+        <div class="page" id="page-catalog">
+            <div class="section-title">Book Catalog</div>
+            <div class="section-sub">Browse all available books in the library</div>
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" class="search-input" id="catalog-search" placeholder="Search by title, author, or ISBN...">
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📚 Books Collection</div>
+                    <span id="book-count" class="badge badge-teal">0 books</span>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>ISBN</th><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="catalog-tbody"><tr><td colspan="6" style="text-align:center;"><div class="loading-spinner" style="margin:0 auto;"></div></td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- My Borrowings Page -->
+        <div class="page" id="page-borrowings">
+            <div class="section-title">My Borrowings</div>
+            <div class="section-sub">Track your personal borrow and return history</div>
+            <div class="card">
+                <div class="card-header"><div class="card-title">📋 Transaction History</div></div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>Book Title</th><th>Borrow Date</th><th>Due Date</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="borrow-tbody"><tr><td colspan="6" style="text-align:center;">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+       <!-- E-Library Page -->
+<div class="page" id="page-elibrary">
+    <div class="section-title">E-Library</div>
+    <div class="section-sub">Reserve and manage your PC sessions</div>
     
-    <div class="search-wrap" style="margin: 20px 0;">
-        <input class="search-input" type="text" id="catalog-search" placeholder="Search by title, author, or ISBN...">
+    <!-- Available PCs Display -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+            <div class="card-title">💻 Available PC Units</div>
+            <button class="btn btn-secondary btn-small" onclick="refreshAvailablePCs()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        <div id="available-pcs" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+            <div style="text-align: center; grid-column: 1/-1; color: var(--text-muted);">Loading PC units...</div>
+        </div>
     </div>
     
+    <!-- Start Session Form -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+            <div class="card-title">🖥️ Start New Session</div>
+        </div>
+        <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+                <label class="form-label">Select PC Unit</label>
+                <select id="session-unit" class="form-select">
+                    <option value="">Loading units...</option>
+                </select>
+            </div>
+            <div style="flex: 2; min-width: 250px;">
+                <label class="form-label">Purpose (Optional)</label>
+                <input type="text" id="session-purpose" class="form-input" placeholder="e.g., Research, Programming, Study">
+            </div>
+            <div>
+                <button class="btn btn-primary" onclick="startELibrarySession()">
+                    <i class="fas fa-play"></i> Start Session
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Session History -->
     <div class="card">
-        <div class="card-title" style="display: flex; justify-content: space-between;">
-            <span>📚 Books Collection</span>
-            <span id="book-count" style="color: #6adde2;">Loading...</span>
+        <div class="card-header">
+            <div class="card-title">📊 Your Session History</div>
+            <button class="btn btn-secondary btn-small" onclick="refreshELibrary()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
         </div>
         <div class="tbl-wrap">
-            <table style="width: 100%;">
+            <table>
                 <thead>
                     <tr>
-                        <th>ISBN</th>
-                        <th>Title</th>
-                        <th>Author</th>
-                        <th>Category</th>
-                        <th>Available</th>
+                        <th>Date</th>
+                        <th>Unit</th>
+                        <th>Time In</th>
+                        <th>Time Out</th>
+                        <th>Duration</th>
                         <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
-                <tbody id="catalog-tbody">
-                    <tr><td colspan="6" style="text-align: center;">Loading books...</td></tr>
+                <tbody id="elib-tbody">
+                    <tr><td colspan="7" style="text-align:center;"><div class="loading-spinner" style="margin:0 auto;"></div>Loading...<\/td><\/tr>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
-        <!-- Borrowings Page -->
-        <div class="page" id="page-borrowings">
-            <h2 class="page-title">My Borrowings</h2>
-            <div class="card">
-                <div class="tbl-wrap">
-                    <table>
-                        <thead><tr><th>ID</th><th>Book</th><th>Borrow Date</th><th>Due Date</th><th>Status</th><th>Action</th></tr></thead>
-                        <tbody id="borrow-tbody"><tr><td colspan="6">Loading...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- E-Library Page -->
-        <div class="page" id="page-elibrary">
-            <h2 class="page-title">E-Library Sessions</h2>
-            <div class="card">
-                <div class="tbl-wrap">
-                    <table>
-                        <thead><tr><th>Date</th><th>Unit</th><th>Time In</th><th>Time Out</th><th>Status</th></tr></thead>
-                        <tbody id="elib-tbody"><tr><td colspan="5">Loading...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Profile Page -->
-        <div class="page" id="page-profile">
-            <h2 class="page-title">My Profile</h2>
-            <div id="profile-content" class="card">Loading...</div>
-        </div>
-
-        <!-- Password Page -->
+        <!-- Change Password Page -->
         <div class="page" id="page-password">
-            <h2 class="page-title">Change Password</h2>
-            <div class="card" style="max-width:500px;">
-                <input type="password" id="current-password" placeholder="Current Password" class="search-input" style="margin-bottom:10px;">
-                <input type="password" id="new-password" placeholder="New Password" class="search-input" style="margin-bottom:10px;">
-                <input type="password" id="confirm-password" placeholder="Confirm Password" class="search-input" style="margin-bottom:20px;">
-                <button class="btn-primary" onclick="changePassword()">Update Password</button>
+            <div class="section-title">Change Password</div>
+            <div class="section-sub">Keep your account secure</div>
+            <div class="card" style="max-width: 500px;">
+                <div class="form-group">
+                    <label class="form-label">Current Password</label>
+                    <input type="password" id="current-password" class="form-input" placeholder="Enter current password">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">New Password</label>
+                    <input type="password" id="new-password" class="form-input" placeholder="Enter new password (min 6 chars)">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" id="confirm-password" class="form-input" placeholder="Confirm new password">
+                </div>
+                <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
             </div>
         </div>
-
-        <!-- Admin: Manage Books -->
+        
+        <!-- Admin Pages -->
         <div class="page" id="page-manage">
-            <h2 class="page-title">Manage Books</h2>
-            <button class="btn-primary" onclick="showAddBookModal()" style="margin-bottom:20px;">+ Add Book</button>
+            <div class="section-title">Manage Books</div>
+            <div class="section-sub">Full CRUD operations for book inventory</div>
+            <button class="btn btn-primary" onclick="showAddBookModal()" style="margin-bottom:20px;"><i class="fas fa-plus"></i> Add Book</button>
             <div class="card">
                 <div class="tbl-wrap">
                     <table>
                         <thead><tr><th>Title</th><th>Author</th><th>ISBN</th><th>Copies</th><th>Actions</th></tr></thead>
-                        <tbody id="manage-tbody"><tr><td colspan="5">Loading...</td></tr></tbody>
+                        <tbody id="manage-tbody"></tbody>
                     </table>
                 </div>
             </div>
         </div>
-
-        <!-- Admin: User Management -->
-        <div class="page" id="page-userManagement">
-            <h2 class="page-title">User Management</h2>
+        
+        <div class="page" id="page-users">
+            <div class="section-title">User Management</div>
+            <div class="section-sub">Manage registered library users</div>
             <div class="card">
                 <div class="tbl-wrap">
                     <table>
-                        <thead><tr><th>Name</th><th>Email</th><th>Student ID</th><th>Role</th><th>Action</th></tr></thead>
-                        <tbody id="user-tbody"><tr><td colspan="5">Loading...</td></tr></tbody>
+                        <thead><tr><th>Name</th><th>Email</th><th>Student ID</th><th>Course</th><th>Role</th><th>Action</th></tr></thead>
+                        <tbody id="users-tbody"></tbody>
                     </table>
                 </div>
             </div>
         </div>
-
-        <!-- Admin: Equipment Maintenance -->
-        <div class="page" id="page-equipmentMaintenance">
-            <h2 class="page-title">Equipment Maintenance</h2>
+        
+        <div class="page" id="page-equipment">
+            <div class="section-title">Equipment Management</div>
+            <div class="section-sub">Manage peripherals and equipment</div>
+            <button class="btn btn-primary" onclick="showAddEquipmentModal()" style="margin-bottom:20px;"><i class="fas fa-plus"></i> Add Equipment</button>
             <div class="card">
                 <div class="tbl-wrap">
                     <table>
-                        <thead><tr><th>Name</th><th>Category</th><th>Condition</th><th>Status</th></tr></thead>
-                        <tbody id="equipment-tbody"><tr><td colspan="4">Loading...</td></tr></tbody>
+                        <thead><tr><th>Name</th><th>Category</th><th>Brand</th><th>Condition</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="equipment-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Admin: E-Library Management -->
+        <div class="page admin-only" id="page-elibrary-admin" style="display:none;">
+            <div class="section-title">E-Library Unit Management</div>
+            <div class="section-sub">Manage PC units, status, and availability</div>
+            <button class="btn btn-primary" onclick="showAddELibraryUnitModal()" style="margin-bottom:20px;"><i class="fas fa-plus"></i> Add PC Unit</button>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📊 All PC Units</div>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Unit #</th>
+                                <th>Label</th>
+                                <th>Location</th>
+                                <th>Condition</th>
+                                <th>Status</th>
+                                <th>Active Sessions</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="elibrary-units-tbody">
+                            <tr><td colspan="7" style="text-align:center;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User: Report Damage Page -->
+        <div class="page user-only" id="page-damagereport" style="display:none;">
+            <div class="section-title">Report Damage</div>
+            <div class="section-sub">Report any damaged equipment or peripherals</div>
+            
+            <!-- Report Form -->
+            <div class="card" style="max-width: 600px; margin-bottom: 24px;">
+                <div class="card-header">
+                    <div class="card-title">📋 New Damage Report</div>
+                </div>
+                <div style="padding: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Equipment / Peripheral *</label>
+                        <select id="damage-equipment" class="form-input" required>
+                            <option value="">Select damaged equipment...</option>
+                        </select>
+                        <small style="color: var(--text-muted);">Cannot find your equipment? Contact the librarian.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Damage Type *</label>
+                        <select id="damage-type" class="form-input" required>
+                            <option value="">Select damage type...</option>
+                            <option value="Physical Damage">Physical Damage (broken, cracked)</option>
+                            <option value="Malfunction">Malfunction (not working)</option>
+                            <option value="Missing Parts">Missing Parts</option>
+                            <option value="Liquid Damage">Liquid Damage (wet, spilled)</option>
+                            <option value="Software Issue">Software Issue</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Description *</label>
+                        <textarea id="damage-description" class="form-input" placeholder="Describe the issue in detail..." required style="min-height: 120px; resize: vertical;"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Severity Level *</label>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="radio" name="damage-severity" value="low"> 
+                                <span style="color: #10b981;">● Low</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="radio" name="damage-severity" value="medium"> 
+                                <span style="color: #f59e0b;">● Medium</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="radio" name="damage-severity" value="high"> 
+                                <span style="color: #ef4444;">● High</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="radio" name="damage-severity" value="critical"> 
+                                <span style="color: #dc2626; font-weight: 600;">● Critical</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Location Where Damage Occurred</label>
+                        <input type="text" id="damage-location" class="form-input" placeholder="e.g., Main Hall, 2nd Floor PC #3">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Additional Notes (Optional)</label>
+                        <textarea id="damage-notes" class="form-input" placeholder="Any additional information..." style="min-height: 80px; resize: vertical;"></textarea>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="submitDamageReport()" style="width: 100%;">
+                        <i class="fas fa-paper-plane"></i> Submit Report
+                    </button>
+                </div>
+            </div>
+            
+            <!-- My Reports -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📊 My Submitted Reports</div>
+                    <button class="btn btn-secondary btn-small" onclick="loadUserDamageReports()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Equipment</th>
+                                <th>Damage Type</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-damage-tbody">
+                            <tr><td colspan="7" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Admin: Damage Reports Management -->
+        <div class="page admin-only" id="page-damage-admin" style="display:none;">
+            <div class="section-title">Damage Reports Management</div>
+            <div class="section-sub">View, filter, and resolve equipment damage reports</div>
+            
+            <!-- Stats -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: #27c4cc;">
+                        <span id="damage-total-reports">0</span>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 12px;">Total Reports</div>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: #f59e0b;">
+                        <span id="damage-pending-reports">0</span>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 12px;">Pending</div>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: #10b981;">
+                        <span id="damage-resolved-reports">0</span>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 12px;">Resolved</div>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: #ef4444;">
+                        <span id="damage-critical-reports">0</span>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 12px;">Critical</div>
+                </div>
+            </div>
+            
+            <!-- Filter & Search -->
+            <div class="card" style="margin-bottom: 24px;">
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <input type="text" id="damage-search" class="form-input" placeholder="Search by equipment, type, reporter..." style="flex: 1; min-width: 200px;">
+                    <select id="damage-filter-status" class="form-input" style="min-width: 150px;">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                    </select>
+                    <select id="damage-filter-severity" class="form-input" style="min-width: 150px;">
+                        <option value="">All Severity</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Reports Table -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📋 All Damage Reports</div>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Reporter</th>
+                                <th>Equipment</th>
+                                <th>Type</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-damage-tbody">
+                            <tr><td colspan="8" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -304,49 +521,161 @@ tbody td { padding: 13px 14px; color: #cbd5e1; }
     </div>
 </div>
 
-<script>
-// API Configuration
-const API_BASE_URL = 'http://localhost:5000/api';
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
 
-// Helper functions
-function getAuthToken() { return localStorage.getItem('ulitms_token'); }
+<script>
+// ============================================
+// CONFIGURATION
+// ============================================
+const API_URL = 'http://localhost:5000/api';
+
+// Notification System
+let notifications = [];
+let unreadCount = 0;
+
+// Toast System
+function showToast(message, type = 'info', title = '') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
+    const titles = {
+        success: 'Success',
+        error: 'Error',
+        warning: 'Warning',
+        info: 'Information'
+    };
+    
+    toast.innerHTML = `
+        <div class="toast-icon"><i class="fas ${icons[type] || icons.info}"></i></div>
+        <div class="toast-content">
+            <div class="toast-title">${title || titles[type]}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <div class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></div>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast && toast.parentElement) toast.remove();
+    }, 5000);
+}
+
+// Add Notification
+function addNotification(title, message, type = 'info') {
+    const notification = {
+        id: Date.now(),
+        title,
+        message,
+        type,
+        time: new Date(),
+        read: false
+    };
+    notifications.unshift(notification);
+    updateNotificationUI();
+    showToast(message, type, title);
+}
+
+// Update Notification UI
+function updateNotificationUI() {
+    unreadCount = notifications.filter(n => !n.read).length;
+    const countEl = document.getElementById('notificationCount');
+    if (countEl) countEl.textContent = unreadCount;
+    
+    const listEl = document.getElementById('notificationList');
+    if (!listEl) return;
+    
+    if (notifications.length === 0) {
+        listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No notifications</div>';
+        return;
+    }
+    
+    listEl.innerHTML = notifications.map(n => `
+        <div class="notification-item ${!n.read ? 'unread' : ''}" onclick="markNotificationRead(${n.id})">
+            <div class="notification-title">${n.title}</div>
+            <div class="notification-message">${n.message}</div>
+            <div class="notification-time">${formatTimeAgo(n.time)}</div>
+        </div>
+    `).join('');
+}
+
+function formatTimeAgo(date) {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    return new Date(date).toLocaleDateString();
+}
+
+function markNotificationRead(id) {
+    const notification = notifications.find(n => n.id === id);
+    if (notification) notification.read = true;
+    updateNotificationUI();
+}
+
+function markAllNotificationsRead() {
+    notifications.forEach(n => n.read = true);
+    updateNotificationUI();
+    showToast('All notifications marked as read', 'info');
+}
+
+// Toggle Notification Dropdown
+document.getElementById('notificationBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dropdown = document.getElementById('notificationDropdown');
+    dropdown.classList.toggle('show');
+});
+
+document.addEventListener('click', () => {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (dropdown) dropdown.classList.remove('show');
+});
+
+// Helper Functions
+function getToken() { return localStorage.getItem('ulitms_token'); }
 function isAdmin() { return localStorage.getItem('ulitms_role') === 'admin'; }
 function getUserId() { return localStorage.getItem('ulitms_user_id'); }
 
 // API Request
 async function apiRequest(endpoint, options = {}) {
-    const token = getAuthToken();
-    const headers = { 'Content-Type': 'application/json', ...options.headers };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+    const token = getToken();
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '', ...options.headers }
+    });
     const data = await response.json();
-    
-    if (!response.ok) {
-        if (response.status === 401) { localStorage.clear(); location.reload(); }
-        throw new Error(data.message || 'Request failed');
-    }
+    if (!response.ok) throw new Error(data.message || 'Request failed');
     return data.data || data;
 }
 
-// Update UI based on login state
+// Update UI
 function updateUI() {
-    const token = getAuthToken();
-    const role = localStorage.getItem('ulitms_role');
-    const name = localStorage.getItem('ulitms_name') || 'User';
+    const name = localStorage.getItem('ulitms_name') || 'Guest';
+    const role = localStorage.getItem('ulitms_role') || 'visitor';
     const initials = name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
     
-    document.querySelectorAll('#sidebar-avatar, #topbar-avatar').forEach(el => el.textContent = initials);
-    document.querySelectorAll('#sidebar-user-name, #topbar-user-name').forEach(el => el.textContent = name);
-    document.querySelectorAll('#sidebar-user-role, #topbar-user-role').forEach(el => el.textContent = role === 'admin' ? 'Admin' : 'Student');
+    document.querySelectorAll('#sidebar-avatar, #header-avatar').forEach(el => el.textContent = initials);
+    document.querySelectorAll('#sidebar-name, #header-name').forEach(el => el.textContent = name);
+    document.querySelectorAll('#sidebar-role, #header-role').forEach(el => el.textContent = role === 'admin' ? 'Administrator' : 'Student');
     
     const isAdminUser = role === 'admin';
     document.querySelectorAll('.user-only').forEach(el => el.style.display = isAdminUser ? 'none' : 'flex');
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdminUser ? 'flex' : 'none');
     
-    if (!token) {
-        window.location.href = '/login.html';
-    }
+    document.getElementById('welcome-message').innerHTML = `Welcome back, ${name}! 👋`;
+    
+    if (!getToken()) window.location.href = '/login.html';
 }
 
 // Navigation
@@ -355,226 +684,172 @@ document.querySelectorAll('.nav-item[data-page]').forEach(el => {
         const page = el.dataset.page;
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(`page-${page}`)?.classList.add('active');
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         el.classList.add('active');
-        document.getElementById('topbar-title').textContent = el.textContent.trim();
+        document.getElementById('page-title').textContent = el.querySelector('span:last-child')?.textContent || page;
         
-        // Load page data
-        if (page === 'catalog') loadCatalog();
+        if (page === 'dashboard') loadDashboard();
+        else if (page === 'catalog') loadCatalog();
         else if (page === 'borrowings') loadBorrowings();
         else if (page === 'elibrary') loadELibrary();
         else if (page === 'profile') loadProfile();
         else if (page === 'manage' && isAdmin()) loadManageBooks();
-        else if (page === 'userManagement' && isAdmin()) loadUserManagement();
-        else if (page === 'equipmentMaintenance' && isAdmin()) loadEquipment();
-        else loadDashboard();
+        else if (page === 'users' && isAdmin()) loadUsers();
+        else if (page === 'equipment' && isAdmin()) loadEquipment();
     });
 });
 
-// Dashboard
+// Load Functions
 async function loadDashboard() {
-    const welcome = document.getElementById('welcome-message');
-    if (welcome) welcome.textContent = `Welcome back, ${localStorage.getItem('ulitms_name') || 'User'}!`;
-    
     try {
-        const books = await apiRequest('/books?limit=5');
-        const statsDiv = document.getElementById('dashboard-stats');
-        if (statsDiv) {
-            statsDiv.innerHTML = `
-                <div class="stat-card"><div class="label">Total Books</div><div class="value">${books.total || books.books?.length || 0}</div></div>
-                <div class="stat-card"><div class="label">Available</div><div class="value">${books.books?.filter(b => b.available_copies > 0).length || 0}</div></div>
-                <div class="stat-card"><div class="label">Borrowed</div><div class="value">${books.books?.filter(b => b.available_copies === 0).length || 0}</div></div>
-            `;
-        }
-    } catch (error) {
-        console.error('Dashboard error:', error);
-    }
+        const books = await apiRequest('/books');
+        const bookCount = books.books?.length || 0;
+        document.getElementById('dashboard-stats').innerHTML = `
+            <div class="stat-card"><div class="label">Total Books</div><div class="value">${bookCount}</div></div>
+            <div class="stat-card"><div class="label">Available</div><div class="value">${books.books?.filter(b => b.available_copies > 0).length || 0}</div></div>
+            <div class="stat-card"><div class="label">Borrowed</div><div class="value">${books.books?.filter(b => b.available_copies === 0).length || 0}</div></div>
+        `;
+        addNotification('Dashboard Loaded', `System shows ${bookCount} books in library`, 'info');
+    } catch(e) { console.error(e); }
 }
 
-// Catalog
-// Load and display books from database
 async function loadCatalog() {
     const tbody = document.getElementById('catalog-tbody');
-    const countEl = document.getElementById('book-count');
-    
-    if (!tbody) return;
-    
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">📚 Loading books...</td></tr>';
-    
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;"><div class="loading-spinner" style="margin:0 auto;"></div></td></tr>';
     try {
-        console.log('Fetching books from API...');
-        const result = await apiRequest('/books?limit=100');
-        console.log('API Response:', result);
-        
-        // Handle different response formats
-        let books = [];
-        if (result.books) {
-            books = result.books;
-        } else if (Array.isArray(result)) {
-            books = result;
-        } else if (result.data && result.data.books) {
-            books = result.data.books;
-        }
-        
-        console.log('Books found:', books.length);
+        const result = await apiRequest('/books');
+        const books = result.books || [];
+        document.getElementById('book-count').textContent = `${books.length} books`;
         
         if (books.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">📖 No books found in library</td></tr>';
-            if (countEl) countEl.textContent = '0 books';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px;"><i class="fas fa-book-open" style="font-size: 48px; color: #64748b;"></i><br>No books found</td></td>';
             return;
         }
         
-        // Display books
         tbody.innerHTML = books.map(book => `
             <tr>
                 <td>${book.isbn || 'N/A'}</td>
-                <td><strong>${book.title || 'Untitled'}</strong></td>
-                <td>${book.author || 'Unknown'}</td>
-                <td>${book.category_name || book.category || 'General'}</td>
-                <td>${book.available_copies || 0} / ${book.total_copies || 0}</td>
-                <td>
-                    ${book.available_copies > 0 ? 
-                        '<span class="badge badge-green">✓ Available</span>' : 
-                        '<span class="badge badge-red">✗ Borrowed</span>'
-                    }
-                </td>
+                <td><strong>${book.title}</strong></td>
+                <td>${book.author}</td>
+                <td>${book.category_name || 'General'}</td>
+                <td>${book.available_copies > 0 ? '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Available</span>' : '<span class="badge badge-danger"><i class="fas fa-times-circle"></i> Borrowed</span>'}</td>
+                <td>${book.available_copies > 0 ? `<button class="btn btn-small btn-primary" onclick="borrowBook(${book.id})"><i class="fas fa-book-open"></i> Borrow</button>` : '-'}</td>
             </tr>
         `).join('');
         
-        if (countEl) countEl.textContent = `${books.length} books`;
-        
-        // Setup search functionality
-        const searchInput = document.getElementById('catalog-search');
-        if (searchInput) {
-            searchInput.oninput = (e) => {
-                const term = e.target.value.toLowerCase();
-                const filtered = books.filter(book => 
-                    (book.title && book.title.toLowerCase().includes(term)) ||
-                    (book.author && book.author.toLowerCase().includes(term)) ||
-                    (book.isbn && book.isbn.toLowerCase().includes(term))
-                );
-                
-                if (filtered.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No matching books found</td></tr>';
-                } else {
-                    tbody.innerHTML = filtered.map(book => `
-                        <tr>
-                            <td>${book.isbn || 'N/A'}</td>
-                            <td><strong>${book.title || 'Untitled'}</strong></td>
-                            <td>${book.author || 'Unknown'}</td>
-                            <td>${book.category_name || book.category || 'General'}</td>
-                            <td>${book.available_copies || 0} / ${book.total_copies || 0}</td>
-                            <td>
-                                ${book.available_copies > 0 ? 
-                                    '<span class="badge badge-green">✓ Available</span>' : 
-                                    '<span class="badge badge-red">✗ Borrowed</span>'
-                                }
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            };
-        }
-        
-    } catch (error) {
-        console.error('Load catalog error:', error);
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #f87171;">❌ Failed to load books: ' + error.message + '</td></tr>';
-    }
+        document.getElementById('catalog-search').oninput = (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = books.filter(b => b.title?.toLowerCase().includes(term) || b.author?.toLowerCase().includes(term));
+            tbody.innerHTML = filtered.map(book => `<tr><td colspan="6">No results</td>`).join('');
+        };
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="6">Failed to load books</td></tr>'; showToast(e.message, 'error'); }
 }
 
-// Borrowings
+window.borrowBook = async (bookId) => {
+    const dueDate = prompt('Enter due date (YYYY-MM-DD):', new Date(Date.now() + 14*86400000).toISOString().split('T')[0]);
+    if (!dueDate) return;
+    try {
+        await apiRequest('/borrowings', { method: 'POST', body: JSON.stringify({ book_id: bookId, user_id: parseInt(getUserId()), due_date: dueDate }) });
+        showToast('Book borrowed successfully!', 'success');
+        addNotification('Book Borrowed', 'You have successfully borrowed a book', 'success');
+        loadCatalog();
+        loadBorrowings();
+    } catch(e) { showToast(e.message, 'error'); }
+};
+
+window.returnBook = async (id) => {
+    if (!confirm('Return this book?')) return;
+    try {
+        await apiRequest(`/borrowings/${id}/return`, { method: 'PUT' });
+        showToast('Book returned successfully!', 'success');
+        addNotification('Book Returned', 'You have returned a book', 'info');
+        loadBorrowings();
+        loadCatalog();
+    } catch(e) { showToast(e.message, 'error'); }
+};
+
 async function loadBorrowings() {
     const tbody = document.getElementById('borrow-tbody');
-    tbody.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
     try {
         const borrowings = await apiRequest(`/borrowings/user/${getUserId()}`);
-        tbody.innerHTML = (borrowings.borrowings || borrowings || []).map(b => `
+        const items = borrowings.borrowings || borrowings || [];
+        if (items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">No borrowing records</td></tr>';
+            return;
+        }
+        tbody.innerHTML = items.map(b => `
             <tr>
                 <td>#${b.id}</td>
                 <td>${b.title || b.book_title}</td>
                 <td>${new Date(b.borrowed_at).toLocaleDateString()}</td>
                 <td>${new Date(b.due_date).toLocaleDateString()}</td>
-                <td><span class="badge ${b.status === 'returned' ? 'badge-gray' : 'badge-yellow'}">${b.status}</span></td>
-                <td>${b.status !== 'returned' ? `<button class="btn-small" onclick="returnBook(${b.id})">Return</button>` : ''}</td>
+                <td>${b.status === 'returned' ? '<span class="badge badge-info">Returned</span>' : '<span class="badge badge-warning">Active</span>'}</td>
+                <td>${b.status !== 'returned' ? `<button class="btn btn-small btn-secondary" onclick="returnBook(${b.id})">Return</button>` : '-'}</td>
             </tr>
         `).join('');
-    } catch (error) {
-        tbody.innerHTML = '<tr><td colspan="6">Failed to load</td></tr>';
-    }
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="6">Failed to load</td></tr>'; }
 }
 
-// E-Library
 async function loadELibrary() {
     const tbody = document.getElementById('elib-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
     try {
         const sessions = await apiRequest(`/elibrary/sessions/user/${getUserId()}`);
-        tbody.innerHTML = (sessions.sessions || sessions || []).map(s => `
+        const items = sessions.sessions || sessions || [];
+        tbody.innerHTML = items.map(s => `
             <tr>
                 <td>${new Date(s.time_in).toLocaleDateString()}</td>
                 <td>Unit ${s.unit_number || 'N/A'}</td>
                 <td>${new Date(s.time_in).toLocaleTimeString()}</td>
                 <td>${s.time_out ? new Date(s.time_out).toLocaleTimeString() : 'Active'}</td>
-                <td><span class="badge ${s.time_out ? 'badge-gray' : 'badge-teal'}">${s.time_out ? 'Completed' : 'Active'}</span></td>
+                <td>${s.time_out ? Math.round((new Date(s.time_out) - new Date(s.time_in))/60000) + ' min' : 'Ongoing'}</td>
+                <td>${s.time_out ? '<span class="badge badge-info">Completed</span>' : '<span class="badge badge-success">Active</span>'}</td>
             </tr>
         `).join('');
-    } catch (error) {
-        tbody.innerHTML = '<tr><td colspan="5">Failed to load</td></tr>';
-    }
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="6">Failed to load</td></tr>'; }
 }
 
-// Profile
 async function loadProfile() {
     const container = document.getElementById('profile-content');
-    container.innerHTML = 'Loading...';
     try {
         const user = await apiRequest(`/users/profile/${getUserId()}`);
+        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+        const initials = name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
         container.innerHTML = `
-            <div><strong>Name:</strong> ${user.first_name || ''} ${user.last_name || ''}</div>
-            <div><strong>Email:</strong> ${user.email}</div>
-            <div><strong>Student ID:</strong> ${user.student_id || 'N/A'}</div>
-            <div><strong>Course:</strong> ${user.course || 'N/A'}</div>
-            <div><strong>Role:</strong> ${user.role}</div>
+            <div class="profile-header">
+                <div class="profile-avatar">${initials}</div>
+                <div><div class="profile-name">${name}</div><div class="profile-meta">${user.student_id || 'N/A'} · ${user.role === 'admin' ? 'Administrator' : 'Student'}</div></div>
+            </div>
+            <div class="card">
+                <div class="detail-row"><span class="detail-key">Student ID</span><span class="detail-val">${user.student_id || 'N/A'}</span></div>
+                <div class="detail-row"><span class="detail-key">Email</span><span class="detail-val">${user.email}</span></div>
+                <div class="detail-row"><span class="detail-key">Course</span><span class="detail-val">${user.course || 'N/A'}</span></div>
+                <div class="detail-row"><span class="detail-key">Year Level</span><span class="detail-val">${user.year_level || 'N/A'}</span></div>
+                <div class="detail-row"><span class="detail-key">Contact</span><span class="detail-val">${user.contact_number || 'N/A'}</span></div>
+            </div>
         `;
-    } catch (error) {
-        container.innerHTML = 'Failed to load profile';
-    }
+    } catch(e) { container.innerHTML = '<div class="card">Failed to load profile</div>'; }
 }
 
-// Change Password
-window.changePassword = async function() {
-    const current = document.getElementById('current-password')?.value;
-    const newPass = document.getElementById('new-password')?.value;
-    const confirm = document.getElementById('confirm-password')?.value;
-    
-    if (!current || !newPass || !confirm) {
-        alert('Please fill all fields');
-        return;
-    }
-    if (newPass !== confirm) {
-        alert('Passwords do not match');
-        return;
-    }
-    
+window.changePassword = async () => {
+    const current = document.getElementById('current-password').value;
+    const newPass = document.getElementById('new-password').value;
+    const confirm = document.getElementById('confirm-password').value;
+    if (!current || !newPass || !confirm) return showToast('Fill all fields', 'error');
+    if (newPass !== confirm) return showToast('Passwords do not match', 'error');
+    if (newPass.length < 6) return showToast('Password must be at least 6 characters', 'error');
     try {
-        await apiRequest(`/users/${getUserId()}/password`, {
-            method: 'PUT',
-            body: JSON.stringify({ currentPassword: current, newPassword: newPass })
-        });
-        alert('Password changed successfully!');
+        await apiRequest(`/users/${getUserId()}/password`, { method: 'PUT', body: JSON.stringify({ currentPassword: current, newPassword: newPass }) });
+        showToast('Password changed successfully!', 'success');
+        addNotification('Password Changed', 'Your password has been updated', 'success');
         document.getElementById('current-password').value = '';
         document.getElementById('new-password').value = '';
         document.getElementById('confirm-password').value = '';
-    } catch (error) {
-        alert(error.message);
-    }
+    } catch(e) { showToast(e.message, 'error'); }
 };
 
-// Admin Functions
 async function loadManageBooks() {
     if (!isAdmin()) return;
     const tbody = document.getElementById('manage-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
     try {
         const result = await apiRequest('/books');
         const books = result.books || [];
@@ -584,97 +859,102 @@ async function loadManageBooks() {
                 <td>${book.author}</td>
                 <td>${book.isbn || 'N/A'}</td>
                 <td>${book.available_copies}/${book.total_copies}</td>
-                <td><button class="btn-small" onclick="deleteBook(${book.id})">Delete</button></td>
+                <td><button class="btn btn-small btn-danger" onclick="deleteBook(${book.id})">Delete</button></td>
             </tr>
         `).join('');
-    } catch (error) {
-        tbody.innerHTML = '<tr><td colspan="5">Failed to load</td></tr>';
-    }
+    } catch(e) { tbody.innerHTML = '<td><td colspan="5">Failed to load</td></tr>'; }
 }
 
-async function loadUserManagement() {
+async function loadUsers() {
     if (!isAdmin()) return;
-    const tbody = document.getElementById('user-tbody');
-    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+    const tbody = document.getElementById('users-tbody');
     try {
         const users = await apiRequest('/users');
-        tbody.innerHTML = (users.users || users || []).map(user => `
+        tbody.innerHTML = (users.users || users || []).map(u => `
             <tr>
-                <td>${user.first_name || ''} ${user.last_name || ''}</td>
-                <td>${user.email}</td>
-                <td>${user.student_id || 'N/A'}</td>
-                <td><span class="badge ${user.role === 'admin' ? 'badge-red' : 'badge-blue'}">${user.role}</span></td>
-                <td><button class="btn-small" onclick="deleteUser(${user.id})">Delete</button></td>
+                <td>${u.first_name || ''} ${u.last_name || ''}</td>
+                <td>${u.email}</td>
+                <td>${u.student_id || 'N/A'}</td>
+                <td>${u.course || 'N/A'}</td>
+                <td><span class="badge ${u.role === 'admin' ? 'badge-danger' : 'badge-info'}">${u.role}</span></td>
+                <td><button class="btn btn-small btn-danger" onclick="deleteUser(${u.id})">Delete</button></td>
             </tr>
         `).join('');
-    } catch (error) {
-        tbody.innerHTML = '<tr><td colspan="5">Failed to load</td></tr>';
-    }
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="6">Failed to load</td></tr>'; }
 }
 
 async function loadEquipment() {
     if (!isAdmin()) return;
     const tbody = document.getElementById('equipment-tbody');
-    tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
     try {
         const peripherals = await apiRequest('/peripherals');
         tbody.innerHTML = (peripherals.peripherals || peripherals || []).map(p => `
             <tr>
                 <td>${p.name}</td>
                 <td>${p.category_name || 'General'}</td>
-                <td><span class="badge ${p.condition === 'good' ? 'badge-green' : 'badge-yellow'}">${p.condition || 'good'}</span></td>
-                <td><span class="badge ${p.is_active ? 'badge-green' : 'badge-red'}">${p.is_active ? 'Active' : 'Inactive'}</span></td>
+                <td>${p.brand || '-'}</td>
+                <td><span class="badge ${p.condition === 'good' ? 'badge-success' : 'badge-warning'}">${p.condition || 'good'}</span></td>
+                <td><span class="badge ${p.is_active ? 'badge-success' : 'badge-danger'}">${p.is_active ? 'Active' : 'Inactive'}</span></td>
+                <td><button class="btn btn-small btn-secondary" onclick="editEquipment(${p.id})">Edit</button></td>
             </tr>
         `).join('');
-    } catch (error) {
-        tbody.innerHTML = '<tr><td colspan="4">Failed to load</td></tr>';
-    }
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="6">Failed to load</td></tr>'; }
 }
 
-window.deleteBook = async function(id) {
+window.deleteBook = async (id) => {
     if (confirm('Delete this book?')) {
         await apiRequest(`/books/${id}`, { method: 'DELETE' });
+        showToast('Book deleted', 'success');
         loadManageBooks();
         loadCatalog();
     }
 };
 
-window.deleteUser = async function(id) {
+window.deleteUser = async (id) => {
     if (confirm('Delete this user?')) {
         await apiRequest(`/users/${id}`, { method: 'DELETE' });
-        loadUserManagement();
+        showToast('User deleted', 'success');
+        loadUsers();
     }
 };
 
-window.returnBook = async function(id) {
-    if (confirm('Return this book?')) {
-        await apiRequest(`/borrowings/${id}/return`, { method: 'PUT' });
-        loadBorrowings();
-        loadCatalog();
-    }
-};
-
-window.showAddBookModal = function() {
+window.showAddBookModal = () => {
     const title = prompt('Book title:');
     const author = prompt('Author:');
     const isbn = prompt('ISBN:');
     const copies = prompt('Number of copies:', '1');
     if (title && author) {
-        apiRequest('/books', {
-            method: 'POST',
-            body: JSON.stringify({ title, author, isbn, total_copies: parseInt(copies), category_id: 1 })
-        }).then(() => {
-            loadManageBooks();
-            loadCatalog();
-            alert('Book added!');
-        }).catch(err => alert(err.message));
+        apiRequest('/books', { method: 'POST', body: JSON.stringify({ title, author, isbn, total_copies: parseInt(copies), category_id: 1 }) })
+            .then(() => { showToast('Book added successfully!', 'success'); loadManageBooks(); loadCatalog(); })
+            .catch(e => showToast(e.message, 'error'));
     }
 };
 
-window.logout = function() {
-    localStorage.clear();
-    window.location.href = '/login.html';
+window.showAddEquipmentModal = () => {
+    const name = prompt('Equipment name:');
+    const category = prompt('Category:');
+    if (name) {
+        apiRequest('/peripherals', { method: 'POST', body: JSON.stringify({ name, category_name: category, unit_id: 1, condition: 'good' }) })
+            .then(() => { showToast('Equipment added!', 'success'); loadEquipment(); })
+            .catch(e => showToast(e.message, 'error'));
+    }
 };
+
+window.editEquipment = async (id) => {
+    const condition = prompt('Condition (good/damaged/repair_needed):', 'good');
+    if (condition) {
+        await apiRequest(`/peripherals/${id}/condition`, { method: 'PUT', body: JSON.stringify({ condition }) });
+        showToast('Equipment updated', 'success');
+        loadEquipment();
+    }
+};
+
+window.logout = () => { localStorage.clear(); window.location.href = '/login.html'; };
+
+// Add sample welcome notification
+setTimeout(() => {
+    addNotification('Welcome to ULITMS', 'You have successfully logged into the Library Management System', 'success');
+}, 1000);
 
 // Initialize
 updateUI();

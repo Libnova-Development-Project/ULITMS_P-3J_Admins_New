@@ -20,6 +20,21 @@ const validateStudentId = (studentId) => {
     return oldFormat.test(studentId) || newFormat.test(studentId);
 };
 
+const validatePhoneNumber = (phone) => {
+    const phoneRegex = /^(\+\d{1,3}[- ]?)?\d{10,}$/;
+    return phoneRegex.test(phone);
+};
+
+const validateYearLevel = (year) => {
+    const validYears = [1, 2, 3, 4];
+    return validYears.includes(parseInt(year));
+};
+
+const validateISBN = (isbn) => {
+    const cleanISBN = isbn.replace(/[-\s]/g, '');
+    return /^\d{10}$|^\d{13}$/.test(cleanISBN);
+};
+
 const validateRequiredFields = (data, requiredFields) => {
     const missing = requiredFields.filter(field => !data[field] || data[field].toString().trim() === '');
     if (missing.length > 0) {
@@ -57,11 +72,57 @@ const validateLogin = (data) => {
     return { valid: true };
 };
 
+// ============================================
+// CRITICAL FIX: Add the missing function
+// ============================================
+const validatePagination = (limit, offset) => {
+    const parsedLimit = parseInt(limit) || 10;
+    const parsedOffset = parseInt(offset) || 0;
+
+    if (parsedLimit < 1 || parsedLimit > 100) {
+        return { valid: false, error: 'Limit must be between 1 and 100' };
+    }
+
+    if (parsedOffset < 0) {
+        return { valid: false, error: 'Offset must be non-negative' };
+    }
+
+    return { valid: true, limit: parsedLimit, offset: parsedOffset };
+};
+
+const validateBookCreation = (data) => {
+    const { title, author, total_copies } = data;
+
+    const required = validateRequiredFields(data, ['title', 'author', 'total_copies']);
+    if (!required.valid) return required;
+
+    if (total_copies && (isNaN(total_copies) || total_copies < 0)) {
+        return { valid: false, error: 'Total copies must be a positive number' };
+    }
+
+    return { valid: true };
+};
+
+const validateBorrowingRequest = (data) => {
+    const { book_id, user_id, due_date } = data;
+
+    const required = validateRequiredFields(data, ['book_id', 'user_id', 'due_date']);
+    if (!required.valid) return required;
+
+    return { valid: true };
+};
+
 module.exports = {
     validateEmail,
     validatePassword,
     validateStudentId,
+    validatePhoneNumber,
+    validateYearLevel,
+    validateISBN,
     validateRequiredFields,
     validateRegistration,
     validateLogin,
+    validatePagination,      // ← ADDED THIS
+    validateBookCreation,
+    validateBorrowingRequest,
 };
