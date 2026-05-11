@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/modern.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <script src="js/api.js" defer></script>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar">
+        <div class="logo-area">
+            <div class="logo-title">ULITMS</div>
+            <div class="logo-sub">Library System</div>
+        </div>
+
+        <nav class="nav-section">
+            <!-- Main Menu -->
+            <div class="nav-label">Navigation</div>
+            <div class="nav-item active" data-page="dashboard">
+                <i class="fas fa-chart-line icon"></i>
+                <span>Dashboard</span>
+            </div>
+
+            <!-- User Menu -->
+            <div class="user-menu" id="user-menu" style="display:none;">
+                <div class="nav-item" data-page="catalog">
+                    <i class="fas fa-book icon"></i>
+                    <span>Book Catalog</span>
+                </div>
+                <div class="nav-item" data-page="borrowings">
+                    <i class="fas fa-bookmark icon"></i>
+                    <span>My Borrowings</span>
+                </div>
+                <div class="nav-item" data-page="elibrary">
+                    <i class="fas fa-desktop icon"></i>
+                    <span>E-Library</span>
+                </div>
+            </div>
+
+            <!-- Admin Menu -->
+            <div class="admin-menu" id="admin-menu" style="display:none;">
+                <div class="nav-label">Management</div>
+                <div class="nav-item" data-page="manage-books">
+                    <i class="fas fa-cogs icon"></i>
+                    <span>Manage Books</span>
+                </div>
+                <div class="nav-item" data-page="manage-users">
+                    <i class="fas fa-users icon"></i>
+                    <span>Users</span>
+                </div>
+                <div class="nav-item" data-page="manage-equipment">
+                    <i class="fas fa-microchip icon"></i>
+                    <span>Equipment</span>
+                </div>
+                <div class="nav-item" data-page="damage-reports">
+                    <i class="fas fa-exclamation-triangle icon"></i>
+                    <span>Damage Reports</span>
+                </div>
+            </div>
+
+            <div class="nav-divider"></div>
+
+            <!-- Account -->
+            <div class="nav-label">Account</div>
+            <div class="nav-item" data-page="profile">
+                <i class="fas fa-user icon"></i>
+                <span>Profile</span>
+            </div>
+            <div class="nav-item" onclick="logout()">
+                <i class="fas fa-sign-out-alt icon"></i>
+                <span>Logout</span>
+            </div>
+        </nav>
+
+        <!-- User Footer -->
+        <div class="user-footer">
+            <div class="avatar" id="sidebar-avatar">U</div>
+            <div>
+                <div class="user-name" id="sidebar-name">User</div>
+                <div class="user-role" id="sidebar-role">Student</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div id="main">
+        <!-- Topbar -->
+        <div id="topbar">
+            <div class="page-title" id="page-title">Dashboard</div>
+            <div class="topbar-right">
+                <button class="notif-btn" onclick="toggleNotifications()">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notif-count" style="display:none;">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content">
+            <!-- Dashboard Page -->
+            <div class="page active" id="dashboard-page">
+                <div class="page-header">
+                    <h1>Welcome, <span id="welcome-name">User</span>!</h1>
+                    <p>Here's your library dashboard overview</p>
+                </div>
+
+                <!-- User Dashboard -->
+                <div id="user-dashboard" style="display:none;">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="label">Active Borrowings</div>
+                            <div class="value" id="stat-borrowings">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Due This Week</div>
+                            <div class="value" id="stat-due">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Available Points</div>
+                            <div class="value" id="stat-points">100</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Overdue Books</div>
+                            <div class="value" id="stat-overdue">0</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Quick Actions</h3>
+                        <div class="quick-actions">
+                            <button class="btn btn-primary" onclick="goToPage('catalog')">
+                                <i class="fas fa-search"></i> Browse Books
+                            </button>
+                            <button class="btn btn-secondary" onclick="goToPage('borrowings')">
+                                <i class="fas fa-list"></i> View Borrowings
+                            </button>
+                            <button class="btn btn-secondary" onclick="goToPage('elibrary')">
+                                <i class="fas fa-cloud"></i> E-Library
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Dashboard -->
+                <div id="admin-dashboard" style="display:none;">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="label">Total Books</div>
+                            <div class="value" id="stat-total-books">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Active Users</div>
+                            <div class="value" id="stat-active-users">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Active Borrowings</div>
+                            <div class="value" id="stat-active-borrowings">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Overdue Items</div>
+                            <div class="value" id="stat-overdue-items">0</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>System Status</h3>
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <span class="status-label">Database</span>
+                                <span class="status-badge status-online"><i class="fas fa-circle"></i> Online</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">API Server</span>
+                                <span class="status-badge status-online"><i class="fas fa-circle"></i> Online</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">E-Library</span>
+                                <span class="status-badge status-online"><i class="fas fa-circle"></i> Online</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Catalog Page -->
+            <div class="page" id="catalog-page">
+                <div class="page-header">
+                    <h1>Book Catalog</h1>
+                    <p>Browse and search the library collection</p>
+                </div>
+
+                <div class="card">
+                    <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+                        <input type="text" class="form-input" id="search-books" placeholder="Search books..." style="flex: 1;">
+                        <button class="btn btn-primary">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>ISBN</th>
+                                    <th>Available</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="books-table">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">
+                                        Loading books...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Borrowings Page -->
+            <div class="page" id="borrowings-page">
+                <div class="page-header">
+                    <h1>My Borrowings</h1>
+                    <p>Track your borrowed books and return dates</p>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Book Title</th>
+                                    <th>Borrowed Date</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="borrowings-table">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted);">
+                                        No borrowings yet
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- E-Library Page -->
+            <div class="page" id="elibrary-page">
+                <div class="page-header">
+                    <h1>E-Library</h1>
+                    <p>Access digital resources and online reading stations</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="label">Active Sessions</div>
+                        <div class="value" id="stat-sessions">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Total Hours</div>
+                        <div class="value" id="stat-hours">0</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Available Units</h3>
+                    <div class="units-grid" id="units-grid">
+                        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            Loading units...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Page -->
+            <div class="page" id="profile-page">
+                <div class="page-header">
+                    <h1>My Profile</h1>
+                    <p>Manage your account information</p>
+                </div>
+
+                <div class="card">
+                    <h3>Profile Information</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                        <div class="form-group">
+                            <label class="form-label">Name</label>
+                            <div style="padding: 12px; background: rgba(12,168,177,0.05); border-radius: 8px; border: 1px solid var(--border-color);">
+                                <span id="profile-name">-</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <div style="padding: 12px; background: rgba(12,168,177,0.05); border-radius: 8px; border: 1px solid var(--border-color);">
+                                <span id="profile-email">-</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Student ID</label>
+                            <div style="padding: 12px; background: rgba(12,168,177,0.05); border-radius: 8px; border: 1px solid var(--border-color);">
+                                <span id="profile-studentid">-</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Role</label>
+                            <div style="padding: 12px; background: rgba(12,168,177,0.05); border-radius: 8px; border: 1px solid var(--border-color);">
+                                <span id="profile-role">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            setupNavigation();
+            loadUserData();
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('ulitms_token');
+            if (!token) {
+                window.location.href = 'login-modern.html';
+                return;
+            }
+            
+            const role = localStorage.getItem('ulitms_role');
+            const userMenu = document.getElementById('user-menu');
+            const adminMenu = document.getElementById('admin-menu');
+            
+            if (role === 'admin') {
+                adminMenu.style.display = 'block';
+                document.getElementById('admin-dashboard').style.display = 'block';
+                document.getElementById('sidebar-role').textContent = 'Administrator';
+            } else {
+                userMenu.style.display = 'block';
+                document.getElementById('user-dashboard').style.display = 'block';
+                document.getElementById('sidebar-role').textContent = 'Student';
+            }
+        }
+
+        function setupNavigation() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const page = this.getAttribute('data-page');
+                    if (page) goToPage(page);
+                });
+            });
+        }
+
+        function goToPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            
+            document.getElementById(`${page}-page`).classList.add('active');
+            document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+            
+            const titles = {
+                'dashboard': 'Dashboard',
+                'catalog': 'Book Catalog',
+                'borrowings': 'My Borrowings',
+                'elibrary': 'E-Library',
+                'profile': 'My Profile'
+            };
+            
+            document.getElementById('page-title').textContent = titles[page] || 'Page';
+        }
+
+        function loadUserData() {
+            const user = JSON.parse(localStorage.getItem('ulitms_user') || '{}');
+            const name = user.first_name || 'User';
+            
+            document.getElementById('welcome-name').textContent = name;
+            document.getElementById('sidebar-name').textContent = name;
+            document.getElementById('sidebar-avatar').textContent = name.charAt(0).toUpperCase();
+            
+            document.getElementById('profile-name').textContent = `${user.first_name || ''} ${user.last_name || ''}`;
+            document.getElementById('profile-email').textContent = user.email || '-';
+            document.getElementById('profile-studentid').textContent = user.student_id || '-';
+            document.getElementById('profile-role').textContent = localStorage.getItem('ulitms_role') || '-';
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login-modern.html';
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function toggleNotifications() {
+            alert('Notifications feature coming soon!');
+        }
+    </script>
+</body>
+</html>

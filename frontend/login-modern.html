@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/modern.css">
+    <link rel="stylesheet" href="css/login.css">
+    <script src="js/api.js"></script>
+</head>
+<body class="auth-body">
+    <div class="auth-container">
+        <!-- Left Section - Branding -->
+        <div class="auth-section auth-branding">
+            <div class="brand-content">
+                <div class="brand-logo">
+                    <i class="fas fa-book"></i>
+                </div>
+                <h1>ULITMS</h1>
+                <p>University Library Inventory & Transaction Management System</p>
+                <div class="brand-features">
+                    <div class="feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Manage Your Library Account</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Track Book Borrowings</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Access Digital Resources</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Section - Auth Forms -->
+        <div class="auth-section auth-forms">
+            <div class="auth-card">
+                <!-- Tabs -->
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                    <button class="auth-tab" data-tab="register">
+                        <i class="fas fa-user-plus"></i> Register
+                    </button>
+                </div>
+
+                <!-- Login Form -->
+                <div class="auth-form active" id="login-form">
+                    <h2>Welcome Back</h2>
+                    <p class="form-subtitle">Sign in to your account to continue</p>
+
+                    <div class="form-group">
+                        <label class="form-label">Student ID or Email</label>
+                        <input type="text" id="login-identifier" class="form-input" placeholder="Enter your Student ID or Email" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="login-password" class="form-input" placeholder="Enter your password" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Login As</label>
+                        <select id="login-role" class="form-input">
+                            <option value="student">Student</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 8px;" onclick="handleLogin()">
+                        <i class="fas fa-arrow-right"></i> Sign In
+                    </button>
+
+                    <div class="demo-hint">
+                        <i class="fas fa-lightbulb"></i>
+                        <span><strong>Demo:</strong> Student ID: 2024-01018 | Password: student123</span>
+                    </div>
+
+                    <p class="form-footer">
+                        Don't have an account? <a href="#" class="link-button" onclick="switchTab('register')">Sign up here</a>
+                    </p>
+                </div>
+
+                <!-- Register Form -->
+                <div class="auth-form" id="register-form">
+                    <h2>Create Account</h2>
+                    <p class="form-subtitle">Join the library system today</p>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">First Name</label>
+                            <input type="text" id="register-firstName" class="form-input" placeholder="First name" />
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" id="register-lastName" class="form-input" placeholder="Last name" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Student ID</label>
+                        <input type="text" id="register-studentId" class="form-input" placeholder="e.g., 2024-01018" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="register-email" class="form-input" placeholder="your@email.com" />
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Course</label>
+                            <input type="text" id="register-course" class="form-input" placeholder="e.g., BS IT" />
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Year Level</label>
+                            <select id="register-yearLevel" class="form-input">
+                                <option>Select Year</option>
+                                <option value="1st">1st Year</option>
+                                <option value="2nd">2nd Year</option>
+                                <option value="3rd">3rd Year</option>
+                                <option value="4th">4th Year</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Contact Number</label>
+                        <input type="tel" id="register-contact" class="form-input" placeholder="+63" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="register-password" class="form-input" placeholder="Create a strong password" />
+                    </div>
+
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 8px;" onclick="handleRegister()">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </button>
+
+                    <p class="form-footer">
+                        Already have an account? <a href="#" class="link-button" onclick="switchTab('login')">Sign in here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            document.getElementById(`${tab}-form`).classList.add('active');
+        }
+
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        });
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Login handler
+        async function handleLogin() {
+            const identifier = document.getElementById('login-identifier').value;
+            const password = document.getElementById('login-password').value;
+            const role = document.getElementById('login-role').value;
+
+            if (!identifier || !password) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        identifier,
+                        password,
+                        role
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('ulitms_token', data.token);
+                    localStorage.setItem('ulitms_role', role);
+                    localStorage.setItem('ulitms_user', JSON.stringify(data.user));
+                    showToast('Login successful!', 'success');
+                    setTimeout(() => window.location.href = 'index.html', 1000);
+                } else {
+                    showToast(data.message || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showToast('Connection error. Please try again.', 'error');
+            }
+        }
+
+        // Register handler
+        async function handleRegister() {
+            const firstName = document.getElementById('register-firstName').value;
+            const lastName = document.getElementById('register-lastName').value;
+            const studentId = document.getElementById('register-studentId').value;
+            const email = document.getElementById('register-email').value;
+            const course = document.getElementById('register-course').value;
+            const yearLevel = document.getElementById('register-yearLevel').value;
+            const contact = document.getElementById('register-contact').value;
+            const password = document.getElementById('register-password').value;
+
+            if (!firstName || !lastName || !studentId || !email || !password) {
+                showToast('Please fill in all required fields', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_id: studentId,
+                        first_name: firstName,
+                        middle_name: '',
+                        last_name: lastName,
+                        email,
+                        password,
+                        contact_number: contact,
+                        course,
+                        year_level: yearLevel
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showToast('Account created! Redirecting to login...', 'success');
+                    setTimeout(() => switchTab('login'), 1500);
+                } else {
+                    showToast(data.message || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                showToast('Connection error. Please try again.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>
