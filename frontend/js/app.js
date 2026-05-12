@@ -129,12 +129,14 @@ window.navigate = async function(page) {
         dashboard: 'Dashboard',
         catalog: 'Book Catalog',
         borrowings: 'My Borrowings',
+        damagereport: 'Report Damage',
         elibrary: 'E-Library',
         manage: 'Manage Books',
         inventory: 'Book Inventory',
         userManagement: 'User Management',
         equipmentMaintenance: 'Equipment & Maintenance',
         'elibrary-admin': 'E-Library Management',
+        'damage-admin': 'Damage Reports',
         profile: 'My Profile',
         password: 'Change Password'
     };
