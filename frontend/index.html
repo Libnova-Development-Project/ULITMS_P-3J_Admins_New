@@ -1102,11 +1102,32 @@ window.resolveDamage = async (id) => {
     }, 'Resolve Report');
 };
 
-// Admin Load Functions
 async function loadManageBooks() {
-    const result = await fetchBooks();
-    const books = result.books||[];
-    document.getElementById('manage-tbody').innerHTML = books.map(b => `<tr><td><strong>${b.title}</strong></td><td>${b.author}</td><td>${b.isbn||'N/A'}</td><td><span class="badge ${b.available_copies>0?'badge-success':'badge-danger'}">${b.available_copies}/${b.total_copies}</span></td><td><button class="btn-small btn-danger" onclick="deleteBook(${b.id})">Delete</button></td></tr>`).join('');
+    try {
+        const result = await fetchBooks();
+        const books = result.books || [];
+        
+        console.log('Loading manage books - found:', books.length); // Debug
+        
+        if (books.length === 0) {
+            document.getElementById('manage-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;">No books found</td><tr>';
+            return;
+        }
+        
+        document.getElementById('manage-tbody').innerHTML = books.map(b => `
+            <tr>
+                <td><strong>${b.title}</strong></td>
+                <td>${b.author}</td>
+                <td>${b.isbn || 'N/A'}</td>
+                <td><span class="badge ${b.available_copies > 0 ? 'badge-success' : 'badge-danger'}">${b.available_copies}/${b.total_copies}</span></td>
+                <td><button class="btn-small btn-danger" onclick="deleteBook(${b.id})">Delete</button></td>
+            </tr>
+        `).join('');
+        
+    } catch(e) {
+        console.error('Load manage books error:', e);
+        document.getElementById('manage-tbody').innerHTML = '<tr><td colspan="5">Failed to load books</td><tr>';
+    }
 }
 
 async function loadUsers() {
@@ -1154,33 +1175,18 @@ async function loadDamageReports() {
     document.getElementById('damage-tbody').innerHTML = (reports||[]).map(r => `<tr><td>#${r.id}</td><td>${r.reporter_name||'Unknown'}</td><td>${r.peripheral_name||'N/A'}</td><td>${r.damage_type}</td><td><span class="badge ${r.severity==='critical'?'badge-danger':'badge-warning'}">${r.severity||'medium'}</span></td><td><span class="badge ${r.resolved_by?'badge-success':'badge-danger'}">${r.resolved_by?'Resolved':'Pending'}</span></td><td>${!r.resolved_by?`<button class="btn-small" onclick="resolveDamage(${r.id})">Resolve</button>`:'-'}</td></tr>`).join('');
 }
 
-// Delete Book - WITH CUSTOM MODAL
 window.deleteBook = async (id) => {
     // First fetch book to show title
     let bookTitle = 'this book';
-    let bookAuthor = '';
-    let bookIsbn = '';
     try {
         const result = await fetchBookById(id);
         if (result) {
             bookTitle = result.title || 'this book';
-            bookAuthor = result.author || '';
-            bookIsbn = result.isbn || '';
         }
     } catch(e) { 
         console.error('Error fetching book:', e);
-        // Try to get from current list
-        const booksResult = await fetchBooks();
-        const books = booksResult.books || [];
-        const book = books.find(b => b.id === id);
-        if (book) {
-            bookTitle = book.title || 'this book';
-            bookAuthor = book.author || '';
-            bookIsbn = book.isbn || '';
-        }
     }
     
-    // Custom modal HTML
     const modalHtml = `
         <div style="text-align: center; padding: 10px;">
             <div style="font-size: 48px; color: #ef4444; margin-bottom: 16px;">
@@ -1192,16 +1198,10 @@ window.deleteBook = async (id) => {
             <div style="color: var(--text-muted); margin-bottom: 8px;">
                 Are you sure you want to delete
             </div>
-            <div style="font-weight: 600; color: #f87171; margin-bottom: 4px;">
+            <div style="font-weight: 600; color: #f87171; margin-bottom: 16px;">
                 "${bookTitle}"
             </div>
-            ${bookAuthor ? `<div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 4px;">by ${bookAuthor}</div>` : ''}
-            ${bookIsbn ? `<div style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 16px;">ISBN: ${bookIsbn}</div>` : ''}
-            <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 8px;">
-                This will permanently delete the book from the library.<br>
-                All borrowing records will be removed.
-            </div>
-            <div style="color: #f87171; font-size: 0.75rem; margin-top: 12px;">
+            <div style="color: #f87171; font-size: 0.75rem;">
                 ⚠️ This action cannot be undone!
             </div>
         </div>
@@ -1209,16 +1209,36 @@ window.deleteBook = async (id) => {
     
     showModal('Delete Book', modalHtml, async () => {
         try {
-            await deleteBook(id);
-            showToast(`Book "${bookTitle}" has been deleted!`, 'success');
-            loadManageBooks();
-            loadCatalog();
+            showToast('Deleting book...', 'info');
+            
+            // DIRECT FETCH - THIS WORKS
+            const response = await fetch(`http://localhost:5000/api/books/${id}`, {
+                method: 'DELETE',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('ulitms_token')
+                }
+            });
+            
+            const data = await response.json();
+            console.log('Delete response:', data);
+            
+            if (data.success) {
+                showToast(`"${bookTitle}" deleted!`, 'success');
+                // Refresh all tables
+                await loadManageBooks();
+                await loadCatalog();
+                await loadDashboard();
+            } else {
+                throw new Error(data.message || 'Delete failed');
+            }
         } catch(e) { 
             console.error('Delete error:', e);
-            showToast(e.message || 'Failed to delete book', 'error'); 
+            showToast(e.message || 'Failed to delete', 'error'); 
         }
     }, 'Yes, Delete Book');
 };
+
 
 // Delete User Account - WITH CUSTOM MODAL
 window.deleteUserAccount = async (id) => {

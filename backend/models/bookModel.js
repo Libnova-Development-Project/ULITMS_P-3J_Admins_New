@@ -21,7 +21,7 @@ class BookModel {
         return result.rows[0];
     }
 
-    // Get all books
+    // Get all books (only non-deleted)
     static async getAll(filters = {}, limit = 100, offset = 0) {
         let query = `
             SELECT b.*, bc.name as category_name
@@ -55,7 +55,7 @@ class BookModel {
 
         const result = await pool.query(query, values);
         
-        // Get total count
+        // Get total count (only non-deleted)
         const countResult = await pool.query(
             `SELECT COUNT(*) FROM library_schema.books WHERE is_deleted = false`
         );
@@ -68,7 +68,7 @@ class BookModel {
         };
     }
 
-    // Get book by ID
+    // Get book by ID (only non-deleted)
     static async findById(id) {
         const result = await pool.query(
             `SELECT b.*, bc.name as category_name
@@ -80,7 +80,7 @@ class BookModel {
         return result.rows[0];
     }
 
-    // Get book by ISBN
+    // Get book by ISBN (only non-deleted)
     static async findByIsbn(isbn) {
         const result = await pool.query(
             `SELECT * FROM library_schema.books 
@@ -108,9 +108,8 @@ class BookModel {
         }
         
         if (updates.total_copies !== undefined) {
-            const diff = updates.total_copies - (updates.current_total || 0);
             setClauses.push(`total_copies = $${paramIndex}, available_copies = available_copies + $${paramIndex + 1}`);
-            values.push(updates.total_copies, diff);
+            values.push(updates.total_copies, updates.total_copies - (updates.current_total || updates.total_copies));
             paramIndex += 2;
         }
         
@@ -128,7 +127,7 @@ class BookModel {
         return result.rows[0];
     }
 
-    // Delete book (soft delete)
+    // Delete book (soft delete - only mark as deleted)
     static async delete(id) {
         const result = await pool.query(
             `UPDATE library_schema.books 
@@ -156,7 +155,7 @@ class BookModel {
         return result.rows[0];
     }
 
-    // Get book categories
+    // Get book categories (only non-deleted)
     static async getCategories() {
         const result = await pool.query(
             `SELECT * FROM library_schema.book_categories 

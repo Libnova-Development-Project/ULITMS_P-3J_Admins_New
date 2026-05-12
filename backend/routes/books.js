@@ -58,9 +58,9 @@ router.post('/', auth, createResourceLimiter, validateBookInput, bookController.
 
 /**
  * PUT /api/books/:id
- * Update book (Admin only, validated)
+ * Update book (Admin only)
  */
-router.put('/:id', auth, validateBookInput, bookController.updateBook);
+router.put('/:id', auth, bookController.updateBook);
 
 /**
  * DELETE /api/books/:id
