@@ -95,9 +95,10 @@ class ElibraryModel {
     static async startSession(userId, unitId, purpose = null, monitoredBy = null) {
         // Check if unit is available (more accurate check)
         const activeSession = await pool.query(
-            `SELECT * FROM library_schema.elibrary_sessions 
-             WHERE unit_id = $1 AND time_out IS NULL
-             ORDER BY time_in DESC
+            `SELECT es.* FROM library_schema.elibrary_sessions es
+             JOIN library_schema.users u ON es.user_id = u.id
+             WHERE es.unit_id = $1 AND es.time_out IS NULL AND u.is_deleted = false
+             ORDER BY es.time_in DESC
              LIMIT 1`,
             [unitId]
         );
@@ -211,7 +212,7 @@ class ElibraryModel {
              FROM library_schema.elibrary_sessions es
              JOIN library_schema.users u ON es.user_id = u.id
              JOIN library_schema.elibrary_units eu ON es.unit_id = eu.id
-             WHERE es.time_out IS NULL
+             WHERE es.time_out IS NULL AND u.is_deleted = false
              ORDER BY es.time_in ASC`
         );
         return result.rows;

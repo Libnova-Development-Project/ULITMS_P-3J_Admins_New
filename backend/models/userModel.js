@@ -128,14 +128,36 @@ static async create(userData) {
 
     // Delete user (soft delete)
     static async delete(id) {
-        const result = await pool.query(
-            `UPDATE library_schema.users 
-             SET is_deleted = true, is_active = false
-             WHERE id = $1 AND is_deleted = false
-             RETURNING id`,
-            [id]
-        );
-        return result.rowCount > 0; // Return true if a row was updated
+        // Start a transaction
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // 1. End any active e-library sessions
+            await client.query(
+                `UPDATE library_schema.elibrary_sessions 
+                 SET time_out = CURRENT_TIMESTAMP 
+                 WHERE user_id = $1 AND time_out IS NULL`,
+                [id]
+            );
+            
+            // 2. Mark user as deleted
+            const result = await client.query(
+                `UPDATE library_schema.users 
+                 SET is_deleted = true, is_active = false
+                 WHERE id = $1 AND is_deleted = false
+                 RETURNING id`,
+                [id]
+            );
+            
+            await client.query('COMMIT');
+            return result.rowCount > 0;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 
     // Get user statistics
