@@ -9,9 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../css/styles.css">
     <script src="../js/api-node.js"></script>
-<script src="../js/manage-users.js"></script>
-<script src="../js/confirm-dialog.js"></script>
-<script src="../simple-users-display.js"></script>
+    <script src="../js/confirm-dialog.js"></script>
+    <script src="../js/manage-users.js"></script>
 </head>
 <body>
 
@@ -181,14 +180,14 @@ window.showAddUserModal = () => {
             const data = await response.json();
             
             if (data.success) {
-                alert('User added successfully!');
+                showSuccess('User added successfully!');
                 loadUsers();
             } else {
                 throw new Error(data.message || 'Failed to add user');
             }
         } catch(e) { 
             console.error('Add user error:', e);
-            alert(e.message || 'Failed to add user'); 
+            showError(e.message || 'Failed to add user'); 
         }
     }, 'Add User');
 };

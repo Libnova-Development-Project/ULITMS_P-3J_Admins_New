@@ -40,6 +40,7 @@
 <aside id="sidebar"></aside>
 <script src="../js/sidebar-loader.js"></script>
 <script>loadSidebar();</script>
+<script src="../js/confirm-dialog.js"></script>
 
 <div id="main">
     <header id="topbar">
@@ -262,16 +263,16 @@ async function saveProfile() {
         }
         
         if (infoRes.ok) {
-            alert('Profile updated successfully!');
+            showSuccess('Profile updated successfully!');
             closeEditModal();
             loadProfile();
         } else {
             const data = await infoRes.json();
-            alert(data.message || 'Failed to update profile');
+            showError(data.message || 'Failed to update profile');
         }
     } catch (error) {
         console.error(error);
-        alert('An error occurred while saving profile');
+        showError('An error occurred while saving profile');
     }
 }
 

@@ -109,25 +109,31 @@ async function loadBorrowings() {
 
 // Return Book
 async function returnBook(id) {
-    if (!confirm('Are you sure you want to return this book?')) return;
-    
-    try {
-        const response = await fetch(`${API_URL}/borrowings/${id}/return`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': 'Bearer ' + getToken()
+    confirmAction('Are you sure you want to return this book?', async () => {
+        try {
+            showLoading('Processing return...');
+            const response = await fetch(`${API_URL}/borrowings/${id}/return`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + getToken()
+                }
+            });
+            
+            const data = await response.json();
+            hideLoading();
+            
+            if (data.success || response.ok) {
+                showSuccess('Book returned successfully!');
+                loadBorrowings();
+            } else {
+                showError('Failed to return book: ' + (data.message || 'Unknown error'));
             }
-        });
-        
-        if (response.ok) {
-            alert('Book returned successfully!');
-            loadBorrowings();
-        } else {
-            throw new Error('Failed to return book');
+        } catch (error) {
+            hideLoading();
+            console.error('Return error:', error);
+            showError('Failed to return book');
         }
-    } catch (error) {
-        alert('Failed to return book');
-    }
+    }, { title: 'Return Book', confirmText: 'Return' });
 }
 
 // Initialize Page

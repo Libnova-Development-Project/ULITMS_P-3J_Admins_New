@@ -20,10 +20,8 @@
     </aside>
 
     <script src="../js/sidebar-loader.js"></script>
-    <script>
-        // Load appropriate sidebar based on user role
-        loadSidebar();
-    </script>
+    <script>loadSidebar();</script>
+    <script src="../js/confirm-dialog.js"></script>
 
 <div id="main">
     <header id="topbar">
@@ -69,7 +67,7 @@
 </div>
 
 <script>
-const API_URL = 'http://localhost:5000/api';
+const API_URL = window.location.origin + '/api';
 
 function getToken() { return localStorage.getItem('ulitms_token'); }
 function getUserId() { return localStorage.getItem('ulitms_user_id'); }
@@ -117,19 +115,28 @@ async function loadBorrowings() {
 }
 
 window.returnBook = async (id) => {
-    if (!confirm('Return this book?')) return;
-    try {
-        const response = await fetch(`${API_URL}/borrowings/${id}/return`, {
-            method: 'PUT',
-            headers: { 'Authorization': 'Bearer ' + getToken() }
-        });
-        if (response.ok) {
-            alert('Book returned!');
-            loadBorrowings();
+    confirmAction('Are you sure you want to return this book?', async () => {
+        try {
+            showLoading('Processing return...');
+            const response = await fetch(`${API_URL}/borrowings/${id}/return`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            
+            if (response.ok) {
+                hideLoading();
+                showSuccess('Book returned successfully!');
+                loadBorrowings();
+            } else {
+                const data = await response.json();
+                hideLoading();
+                showError('Failed to return: ' + (data.message || 'Unknown error'));
+            }
+        } catch(e) { 
+            hideLoading();
+            showError('Failed to return book'); 
         }
-    } catch(e) { 
-        alert('Failed to return book'); 
-    }
+    }, { title: 'Return Book', confirmText: 'Return', type: 'warning' });
 };
 
 checkAuth();

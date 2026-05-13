@@ -54,38 +54,41 @@ async function loadCatalog() {
 }
 
 window.borrowBook = async (bookId, title) => {
-    if (!confirm(`Are you sure you want to borrow "${title}"?`)) return;
-    
-    const userId = localStorage.getItem('ulitms_user_id');
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 7); // Default 7 days
-    
-    try {
-        const response = await fetch(`${API_URL}/borrowings`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': 'Bearer ' + localStorage.getItem('ulitms_token'),
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                user_id: userId,
-                book_id: bookId,
-                due_date: dueDate.toISOString()
-            })
-        });
+    confirmAction(`Are you sure you want to borrow "${title}"?`, async () => {
+        const userId = localStorage.getItem('ulitms_user_id');
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7); // Default 7 days
         
-        const data = await response.json();
-        
-        if (data.success) {
-            alert('Book borrowed successfully! Check "My Borrowings" for details.');
-            loadCatalog(); // Refresh catalog
-        } else {
-            alert('Failed to borrow: ' + data.message);
+        try {
+            showLoading('Processing borrowing request...');
+            const response = await fetch(`${API_URL}/borrowings`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': 'Bearer ' + localStorage.getItem('ulitms_token'),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    book_id: bookId,
+                    due_date: dueDate.toISOString()
+                })
+            });
+            
+            const data = await response.json();
+            hideLoading();
+            
+            if (data.success) {
+                showSuccess('Book borrowed successfully! Check "My Borrowings" for details.');
+                loadCatalog(); // Refresh catalog
+            } else {
+                showError('Failed to borrow: ' + data.message);
+            }
+        } catch (error) {
+            hideLoading();
+            console.error('Borrow error:', error);
+            showError('An error occurred while borrowing the book.');
         }
-    } catch (error) {
-        console.error('Borrow error:', error);
-        alert('An error occurred while borrowing the book.');
-    }
+    }, { title: 'Borrow Book', confirmText: 'Borrow' });
 };
 
 // Search functionality

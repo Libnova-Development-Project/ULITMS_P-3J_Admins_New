@@ -18,6 +18,7 @@
 <aside id="sidebar"></aside>
 <script src="../js/sidebar-loader.js"></script>
 <script>loadSidebar();</script>
+<script src="../js/confirm-dialog.js"></script>
 
 <div id="main">
     <header id="topbar">
@@ -254,7 +255,7 @@ async function startNewSession() {
     const purpose = document.getElementById('session-purpose').value;
     
     if (!unitId) {
-        alert('Please select a PC unit');
+        showWarning('Please select a PC unit');
         return;
     }
     
@@ -274,7 +275,7 @@ async function startNewSession() {
         if (!response.ok) throw new Error('Failed to start session');
         
         const data = await response.json();
-        alert('✓ E-Library session started successfully!');
+        showSuccess('E-Library session started successfully!');
         
         // Clear form
         document.getElementById('session-unit').value = '';
@@ -286,33 +287,33 @@ async function startNewSession() {
         
     } catch (error) {
         console.error('Error starting session:', error);
-        alert('✗ Failed to start session. Please try again.');
+        showError('Failed to start session. Please try again.');
     }
 }
 
 // End Session
 async function endSession(sessionId) {
-    if (!confirm('End this session?')) return;
-    
-    try {
-        const response = await fetch(`${API_URL}/elibrary/sessions/${sessionId}/end`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            }
-        });
-        
-        if (!response.ok) throw new Error('Failed to end session');
-        
-        alert('✓ Session ended successfully!');
-        loadUserSessions();
-        loadAvailablePCs();
-        
-    } catch (error) {
-        console.error('Error ending session:', error);
-        alert('✗ Failed to end session. Please try again.');
-    }
+    confirmAction('Are you sure you want to end this session?', async () => {
+        try {
+            const response = await fetch(`${API_URL}/elibrary/sessions/${sessionId}/end`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to end session');
+            
+            showSuccess('Session ended successfully!');
+            loadUserSessions();
+            loadAvailablePCs();
+            
+        } catch (error) {
+            console.error('Error ending session:', error);
+            showError('Failed to end session. Please try again.');
+        }
+    }, { title: 'End Session', confirmText: 'End Session', type: 'danger' });
 }
 
 // Show Session Statistics

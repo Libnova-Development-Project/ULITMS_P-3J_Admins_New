@@ -211,14 +211,14 @@ async function editBook(id) {
             });
             
             if (upResponse.ok) {
-                alert('Book updated successfully!');
+                showSuccess('Book updated successfully!');
                 loadManageBooks();
             } else {
-                alert('Failed to update book');
+                showError('Failed to update book');
             }
         }, 'Update Book');
     } catch(e) {
-        alert('Error: ' + e.message);
+        showError('Error: ' + e.message);
     }
 }
 
@@ -251,13 +251,13 @@ function showAddBookModal() {
             });
             
             if (response.ok) {
-                alert('Book added successfully!');
+                showSuccess('Book added successfully!');
                 loadManageBooks();
             } else {
                 throw new Error('Failed to add book');
             }
         } catch(e) { 
-            alert('Failed to add book'); 
+            showError('Failed to add book'); 
         }
     }, 'Add Book');
 }
