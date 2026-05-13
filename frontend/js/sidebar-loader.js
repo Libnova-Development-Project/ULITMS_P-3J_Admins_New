@@ -1,13 +1,16 @@
 // Dynamic Sidebar Loading Based on User Role
 function updateUserInfo() {
-    const name = localStorage.getItem('ulitms_name') || 'Guest';
+    const name = localStorage.getItem('ulitms_name');
     const role = localStorage.getItem('ulitms_role') || 'visitor';
     const avatarUrl = localStorage.getItem('ulitms_avatar');
-    const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    
+    // Fallback if name is missing
+    const displayName = (name && name !== 'undefined' && name !== 'null') ? name : 'User';
+    const initials = displayName.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
     
     const updateAvatar = (el) => {
         if (!el) return;
-        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined' && avatarUrl !== '') {
             el.style.backgroundImage = `url(${window.location.origin}${avatarUrl})`;
             el.style.backgroundSize = 'cover';
             el.style.backgroundPosition = 'center';
@@ -22,14 +25,14 @@ function updateUserInfo() {
     updateAvatar(document.getElementById('sidebar-avatar'));
     const sidebarName = document.getElementById('sidebar-name');
     const sidebarRole = document.getElementById('sidebar-role');
-    if (sidebarName) sidebarName.textContent = name;
+    if (sidebarName) sidebarName.textContent = displayName;
     if (sidebarRole) sidebarRole.textContent = role === 'admin' ? 'Administrator' : 'Student';
     
     // Header elements (Top bar)
     updateAvatar(document.getElementById('header-avatar'));
     const headerName = document.getElementById('header-name');
     const headerRole = document.getElementById('header-role');
-    if (headerName) headerName.textContent = name;
+    if (headerName) headerName.textContent = displayName;
     if (headerRole) headerRole.textContent = role === 'admin' ? 'Administrator' : 'Student';
 }
 
@@ -93,9 +96,16 @@ function toggleNotifications() {
             ${notifs.length === 0 ? '<div class="notification-item" style="text-align:center;padding:20px;color:var(--text-muted);">No new notifications</div>' : 
                 notifs.map(n => `
                 <div class="notification-item ${n.is_read ? '' : 'unread'}" onclick="markAsRead(${n.id})">
-                    <div class="notification-title">${n.title}</div>
-                    <div class="notification-message">${n.message}</div>
-                    <div class="notification-time">${new Date(n.created_at).toLocaleDateString()}</div>
+                    <div style="display: flex; gap: 12px;">
+                        <div class="notif-icon-circle" style="width:32px;height:32px;border-radius:50%;background:rgba(39, 196, 204, 0.1);display:flex;align-items:center;justify-content:center;color:var(--teal-primary);">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="notification-title">${n.title}</div>
+                            <div class="notification-message">${n.message}</div>
+                            <div class="notification-time">${new Date(n.created_at).toLocaleDateString()}</div>
+                        </div>
+                    </div>
                 </div>
             `).join('')}
         </div>
@@ -187,50 +197,45 @@ function loadSidebar() {
 function loadAdminSidebar(sidebar) {
     sidebar.innerHTML = `
         <div class="logo-area">
-            <div class="logo-title">ULITMS</div>
-            <div class="logo-sub">Library Management System</div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="logo-icon" style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--teal-primary), var(--teal-dark)); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #0b1120; font-size: 1.2rem; box-shadow: 0 4px 12px rgba(39, 196, 204, 0.3);">
+                    <i class="fas fa-university"></i>
+                </div>
+                <div>
+                    <div class="logo-title">ULITMS</div>
+                    <div class="logo-sub">Library Management System</div>
+                </div>
+            </div>
         </div>
         <nav class="nav-section">
             <!-- Main Menu -->
             <div class="nav-label">Main Menu</div>
             <a href="dashboard.html" class="nav-item">
-                <span class="icon"><i class="fas fa-th-large"></i></span>
-                <span>Dashboard</span>
-            </a>
-            <a href="catalog.html" class="nav-item">
-                <span class="icon"><i class="fas fa-book"></i></span>
-                <span>Book Catalog</span>
-            </a>
-            <a href="borrowings.html" class="nav-item">
-                <span class="icon"><i class="fas fa-bookmark"></i></span>
-                <span>My Borrowings</span>
-            </a>
-            <a href="elibrary.html" class="nav-item">
-                <span class="icon"><i class="fas fa-desktop"></i></span>
-                <span>E-Library</span>
+                <span class="icon" style="color: #60a5fa;"><i class="fas fa-chart-line"></i></span>
+                <span>Admin Dashboard</span>
             </a>
             
             <!-- Admin Panel -->
             <div class="nav-divider"></div>
-            <div class="nav-label">Admin Panel</div>
+            <div class="nav-label">Management</div>
             <a href="manage-books.html" class="nav-item">
-                <span class="icon"><i class="fas fa-book"></i></span>
+                <span class="icon" style="color: #34d399;"><i class="fas fa-book-open"></i></span>
                 <span>Manage Books</span>
             </a>
             <a href="manage-users.html" class="nav-item">
-                <span class="icon"><i class="fas fa-users"></i></span>
+                <span class="icon" style="color: #f472b6;"><i class="fas fa-user-shield"></i></span>
                 <span>Manage Users</span>
             </a>
             <a href="manage-equipment.html" class="nav-item">
-                <span class="icon"><i class="fas fa-laptop"></i></span>
+                <span class="icon" style="color: #fbbf24;"><i class="fas fa-desktop"></i></span>
                 <span>Hardware Management</span>
             </a>
             <a href="damage-reports.html" class="nav-item">
-                <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+                <span class="icon" style="color: #f87171;"><i class="fas fa-tools"></i></span>
                 <span>Damage Reports</span>
             </a>
             <a href="system-settings.html" class="nav-item">
-                <span class="icon"><i class="fas fa-cog"></i></span>
+                <span class="icon" style="color: #a78bfa;"><i class="fas fa-sliders-h"></i></span>
                 <span>System Settings</span>
             </a>
             
@@ -238,16 +243,16 @@ function loadAdminSidebar(sidebar) {
             <div class="nav-divider"></div>
             <div class="nav-label">Account</div>
             <a href="profile.html" class="nav-item">
-                <span class="icon"><i class="fas fa-user"></i></span>
+                <span class="icon" style="color: #94a3b8;"><i class="fas fa-id-card"></i></span>
                 <span>My Profile</span>
             </a>
             <a href="password.html" class="nav-item">
-                <span class="icon"><i class="fas fa-lock"></i></span>
+                <span class="icon" style="color: #94a3b8;"><i class="fas fa-key"></i></span>
                 <span>Change Password</span>
             </a>
             <div class="nav-divider"></div>
             <a href="javascript:void(0)" onclick="logout()" class="nav-item" style="color:#f87171;">
-                <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+                <span class="icon"><i class="fas fa-power-off"></i></span>
                 <span>Logout</span>
             </a>
         </nav>
@@ -268,26 +273,33 @@ function loadAdminSidebar(sidebar) {
 function loadUserSidebar(sidebar) {
     sidebar.innerHTML = `
         <div class="logo-area">
-            <div class="logo-title">ULITMS</div>
-            <div class="logo-sub">Library Management System</div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="logo-icon" style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--teal-primary), var(--teal-dark)); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #0b1120; font-size: 1.2rem; box-shadow: 0 4px 12px rgba(39, 196, 204, 0.3);">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <div class="logo-title">ULITMS</div>
+                    <div class="logo-sub">Library Management System</div>
+                </div>
+            </div>
         </div>
         <nav class="nav-section">
             <!-- Main Menu -->
             <div class="nav-label">Main Menu</div>
             <a href="dashboard.html" class="nav-item">
-                <span class="icon"><i class="fas fa-th-large"></i></span>
+                <span class="icon" style="color: #60a5fa;"><i class="fas fa-th-large"></i></span>
                 <span>Dashboard</span>
             </a>
             <a href="catalog.html" class="nav-item">
-                <span class="icon"><i class="fas fa-book"></i></span>
+                <span class="icon" style="color: #34d399;"><i class="fas fa-book"></i></span>
                 <span>Book Catalog</span>
             </a>
             <a href="borrowings.html" class="nav-item">
-                <span class="icon"><i class="fas fa-bookmark"></i></span>
+                <span class="icon" style="color: #f472b6;"><i class="fas fa-bookmark"></i></span>
                 <span>My Borrowings</span>
             </a>
             <a href="elibrary.html" class="nav-item">
-                <span class="icon"><i class="fas fa-desktop"></i></span>
+                <span class="icon" style="color: #fbbf24;"><i class="fas fa-desktop"></i></span>
                 <span>E-Library</span>
             </a>
             

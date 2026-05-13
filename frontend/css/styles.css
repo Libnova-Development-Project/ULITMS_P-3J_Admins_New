@@ -211,6 +211,14 @@ h1, h2, h3, h4, h5, h6 {
     width: 20px;
     text-align: center;
     font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fas, .far, .fab, .fa, [class^="fa-"], [class*=" fa-"] {
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900;
 }
 
 .nav-divider {
@@ -429,14 +437,14 @@ table {
 }
 
 thead th {
-    padding: 12px 14px;
-    text-align: left;
-    font-size: 0.7rem;
+    padding: 16px 14px;
+    text-align: center !important;
+    font-size: 0.75rem;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--teal-primary);
-    border-bottom: 1px solid var(--border-color);
-    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 700;
 }
 
 tbody tr {
@@ -449,9 +457,10 @@ tbody tr:hover {
 }
 
 tbody td {
-    padding: 14px;
+    padding: 16px 14px;
     color: var(--text-secondary);
     vertical-align: middle;
+    text-align: center !important;
 }
 
 tbody tr:last-child {
@@ -579,6 +588,16 @@ tbody tr:last-child {
 
 .btn-danger:hover {
     background: rgba(239, 68, 68, 0.25);
+}
+
+.btn-warning {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #fbbf24;
+}
+
+.btn-warning:hover {
+    background: rgba(245, 158, 11, 0.25);
 }
 
 .btn-small {

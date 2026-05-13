@@ -93,7 +93,18 @@ class ElibraryModel {
 
     // Start session
     static async startSession(userId, unitId, purpose = null, monitoredBy = null) {
-        // Check if unit is available (more accurate check)
+        // 1. Check if user already has an active session on ANY unit
+        const userActiveSession = await pool.query(
+            `SELECT id FROM library_schema.elibrary_sessions 
+             WHERE user_id = $1 AND time_out IS NULL`,
+            [userId]
+        );
+        
+        if (userActiveSession.rows.length > 0) {
+            throw new Error('You already have an active session. Please end your current session before starting a new one.');
+        }
+
+        // 2. Check if unit is available (more accurate check)
         const activeSession = await pool.query(
             `SELECT es.* FROM library_schema.elibrary_sessions es
              JOIN library_schema.users u ON es.user_id = u.id
@@ -110,7 +121,7 @@ class ElibraryModel {
             
             // Allow new session if current session is older than 5 minutes
             if (sessionTime > fiveMinutesAgo) {
-                throw new Error('Unit is currently in use');
+                throw new Error('This PC unit is currently in use by another user.');
             }
         }
         

@@ -1,5 +1,5 @@
 // API Configuration for Node.js Backend
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = window.location.origin + '/api';
 
 // Token Management
 let authToken = localStorage.getItem('ulitms_token');

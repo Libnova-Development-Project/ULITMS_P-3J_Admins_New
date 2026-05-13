@@ -36,8 +36,15 @@
         </div>
     </header>
     <div id="content">
-        <div class="section-title">Damage Reports</div>
-        <div class="stats-grid" id="damage-stats"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <div class="section-title" style="margin-bottom: 0;">Damage Reports</div>
+            <button class="btn btn-primary" onclick="showReportModal()">
+                <i class="fas fa-plus" style="margin-right: 8px;"></i> Report New Damage
+            </button>
+        </div>
+        
+        <div class="stats-grid" id="damage-stats" style="margin-bottom: 30px;"></div>
+        
         <div class="card">
             <div class="tbl-wrap">
                 <table class="table-damage">
@@ -45,7 +52,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Reporter</th>
-                            <th>Equipment</th>
+                            <th>Item Name</th>
                             <th>Type</th>
                             <th>Severity</th>
                             <th>Status</th>
@@ -53,7 +60,7 @@
                         </tr>
                     </thead>
                     <tbody id="damage-tbody">
-                        <tr><td colspan="7" style="text-align:center;">Loading...</td></tr>
+                        <tr><td colspan="7" style="text-align:center; padding: 40px;">Loading reports...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -77,7 +84,7 @@
 </div>
 
 <script>
-const API_URL = 'http://localhost:5000/api';
+const API_URL = window.location.origin + '/api';
 
 function getToken() { return localStorage.getItem('ulitms_token'); }
 
@@ -108,76 +115,191 @@ async function loadDamageReports() {
         const response = await fetch(`${API_URL}/damage-reports`, {
             headers: { 'Authorization': 'Bearer ' + getToken() }
         });
-        const data = await response.json();
-        const reports = data.reports || [];
+        const resData = await response.json();
+        const reports = resData.data?.reports || resData.reports || [];
         
-        // Calculate stats
-        const total = reports.length;
-        const pending = reports.filter(r => r.status === 'pending').length;
-        const resolved = reports.filter(r => r.status === 'resolved').length;
-        const critical = reports.filter(r => r.severity === 'critical').length;
+        // Fetch stats
+        const statsRes = await fetch(`${API_URL}/damage-reports/stats`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const statsData = await statsRes.json();
+        const stats = statsData.data?.stats || statsData.stats || {};
         
         statsContainer.innerHTML = `
-            <div class="stat-card"><div class="label">Total Reports</div><div class="value">${total}</div></div>
-            <div class="stat-card"><div class="label">Pending</div><div class="value" style="color:#f59e0b;">${pending}</div></div>
-            <div class="stat-card"><div class="label">Resolved</div><div class="value" style="color:#10b981;">${resolved}</div></div>
-            <div class="stat-card"><div class="label">Critical</div><div class="value" style="color:#ef4444;">${critical}</div></div>
+            <div class="stat-card">
+                <div class="label">Total Reports</div>
+                <div class="value">${stats.total_reports || 0}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Pending</div>
+                <div class="value" style="color:#f59e0b;">${stats.pending || 0}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Book Damage</div>
+                <div class="value" style="color:#27c4cc;">${stats.book_reports || 0}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Critical</div>
+                <div class="value" style="color:#ef4444;">${stats.critical || 0}</div>
+            </div>
         `;
         
-        tbody.innerHTML = reports.map(report => `
-            <tr>
-                <td><span style="color:#27c4cc;">#${report.id}</span></td>
-                <td>${report.reporter_name || 'N/A'}</td>
-                <td>${report.equipment_name || 'N/A'}</td>
-                <td>${report.damage_type || 'N/A'}</td>
-                <td><span class="badge badge-${report.severity === 'critical' ? 'danger' : report.severity === 'medium' ? 'warning' : 'info'}">${report.severity || 'Unknown'}</span></td>
-                <td><span class="badge badge-${report.status === 'resolved' ? 'success' : report.status === 'in_progress' ? 'warning' : 'info'}">${report.status === 'resolved' ? 'Resolved' : report.status === 'in_progress' ? 'In Progress' : 'Pending'}</span></td>
-                <td>
-                    ${report.status !== 'resolved' ? `
-                        <button class="btn btn-small btn-secondary" onclick="updateReportStatus(${report.id}, 'resolved')">Resolve</button>
-                        <button class="btn btn-small btn-warning" onclick="updateReportStatus(${report.id}, 'in_progress')">In Progress</button>
-                    ` : '<span style="color:#94a3b8;">Resolved</span>'}
-                </td>
-            </tr>
-        `).join('');
+        if (reports.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--text-muted);">No damage reports found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = reports.map(report => {
+            const itemName = report.item_type === 'book' ? report.book_title : (report.peripheral_name || `PC Unit #${report.unit_number}`);
+            return `
+                <tr>
+                    <td><span style="color:#27c4cc;">#${report.id}</span></td>
+                    <td>${report.reporter_name || 'System'}</td>
+                    <td>
+                        <div style="font-weight: 600;">${itemName}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">${report.item_type}</div>
+                    </td>
+                    <td>${report.damage_type || 'General'}</td>
+                    <td><span class="badge badge-${report.severity === 'critical' ? 'danger' : report.severity === 'medium' ? 'warning' : 'info'}">${report.severity.toUpperCase()}</span></td>
+                    <td><span class="badge badge-${report.resolved_at ? 'success' : 'danger'}">${report.resolved_at ? 'RESOLVED' : 'PENDING'}</span></td>
+                    <td>
+                        <div style="display: flex; justify-content: center; align-items: center;">
+                        ${!report.resolved_at ? `
+                            <button class="btn btn-small btn-secondary" onclick="resolveDamage(${report.id})">Resolve</button>
+                        ` : '<span style="color: var(--success); font-weight: 600; font-size: 0.8rem;">CLEARED</span>'}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     } catch(e) {
-        tbody.innerHTML = '<tr><td colspan="7">Failed to load</td></tr>';
+        console.error('Load reports error:', e);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: #ef4444;">Failed to load reports.</td></tr>';
     }
 }
 
-window.updateReportStatus = async (reportId, newStatus) => {
-    if (!confirm(`Mark this report as ${newStatus === 'resolved' ? 'resolved' : 'in progress'}?`)) return;
+window.showReportModal = async (preType = 'hardware', preId = null) => {
+    // Show form to report damage
+    showModal('Report New Damage', `
+        <div class="form-group">
+            <label class="form-label">Item Category</label>
+            <select id="report-type" class="form-select" onchange="updateItemDropdown()">
+                <option value="hardware" ${preType === 'hardware' ? 'selected' : ''}>Hardware / Device</option>
+                <option value="book" ${preType === 'book' ? 'selected' : ''}>Library Book</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Select Item</label>
+            <select id="report-item-id" class="form-select">
+                <option value="">Loading items...</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Issue Type</label>
+            <input type="text" id="report-damage-type" class="form-input" placeholder="e.g. Torn pages, Broken keys">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Severity</label>
+            <select id="report-severity" class="form-select">
+                <option value="low">Low (Minor issue)</option>
+                <option value="medium">Medium (Needs attention)</option>
+                <option value="high">High (Damaged but usable)</option>
+                <option value="critical">Critical (Unusable)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="report-description" class="form-input" style="height: 100px; padding: 10px;"></textarea>
+        </div>
+    `, async () => {
+        const payload = {
+            item_type: document.getElementById('report-type').value,
+            damage_type: document.getElementById('report-damage-type').value,
+            severity: document.getElementById('report-severity').value,
+            description: document.getElementById('report-description').value
+        };
+        
+        const itemId = document.getElementById('report-item-id').value;
+        if (payload.item_type === 'book') payload.book_id = itemId;
+        else payload.peripheral_id = itemId; // For now default to peripheral
+        
+        if (!itemId || !payload.damage_type) {
+            alert('Please select an item and specify the issue.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/damage-reports`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (response.ok) {
+                loadDamageReports();
+            }
+        } catch(e) { console.error(e); }
+    }, 'Submit Report');
+    
+    updateItemDropdown();
+};
+
+window.updateItemDropdown = async (preId = null) => {
+    const type = document.getElementById('report-type').value;
+    const dropdown = document.getElementById('report-item-id');
+    dropdown.innerHTML = '<option value="">Loading...</option>';
     
     try {
-        const response = await fetch(`${API_URL}/damage-reports/${reportId}/status`, {
-            method: 'PUT',
+        let items = [];
+        if (type === 'book') {
+            const res = await fetch(`${API_URL}/books`);
+            const data = await res.json();
+            items = (data.data?.books || data.books || []).map(b => ({ id: b.id, name: b.title }));
+        } else {
+            const res = await fetch(`${API_URL}/peripherals`);
+            const data = await res.json();
+            items = (data.data?.peripherals || data.peripherals || data.data || []).map(p => ({ id: p.id, name: p.name }));
+        }
+        
+        dropdown.innerHTML = items.map(i => `<option value="${i.id}" ${parseInt(preId) === i.id ? 'selected' : ''}>${i.name}</option>`).join('') || '<option value="">No items found</option>';
+    } catch(e) {
+        dropdown.innerHTML = '<option value="">Error loading items</option>';
+    }
+};
+
+window.resolveDamage = async (id) => {
+    const notes = prompt('Enter resolution notes:');
+    if (notes === null) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/damage-reports/${id}/resolve`, {
+            method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + getToken()
             },
-            body: JSON.stringify({ status: newStatus })
+            body: JSON.stringify({ resolution_notes: notes })
         });
         
         if (response.ok) {
-            alert('Report status updated!');
             loadDamageReports();
-        } else {
-            throw new Error('Failed to update status');
         }
-    } catch(e) { 
-        alert('Failed to update report status'); 
-    }
+    } catch(e) { console.error(e); }
 };
 
-function checkAuth() {
-    const token = getToken();
-    const role = localStorage.getItem('ulitms_role');
-    if (!token || role !== 'admin') window.location.href = '../login.html';
-}
-
-checkAuth();
-updateUserInfo();
 loadDamageReports();
+
+// Check for URL parameters to auto-open modal
+window.addEventListener('load', () => {
+    const params = new URLSearchParams(window.location.search);
+    const bookId = params.get('bookId');
+    if (bookId) {
+        showReportModal('book', bookId);
+    }
+});
 </script>
 </body>
 </html>

@@ -237,3 +237,52 @@ exports.logout = async (req, res) => {
         });
     }
 };
+
+exports.requestPasswordReset = async (req, res) => {
+    try {
+        const { identifier } = req.body;
+        if (!identifier) return res.status(400).json({ success: false, message: 'ID or Email required' });
+
+        let user = await UserModel.findByEmail(identifier);
+        if (!user) user = await UserModel.findByStudentId(identifier);
+
+        if (!user) {
+            // Security best practice: don't reveal if user exists, but for demo we will
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Generate 6-digit PIN
+        const resetPin = Math.floor(100000 + Math.random() * 900000).toString();
+        await UserModel.setResetToken(user.id, resetPin);
+
+        // In a real app, send email here. For demo, we return it.
+        res.json({
+            success: true,
+            message: 'A reset PIN has been generated for your account.',
+            debug_pin: resetPin, // REMOVE IN PRODUCTION
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+        if (!token || !newPassword) return res.status(400).json({ success: false, message: 'Token and new password required' });
+
+        const user = await UserModel.findByResetToken(token);
+        if (!user) return res.status(400).json({ success: false, message: 'Invalid or expired reset PIN' });
+
+        await UserModel.changePassword(user.id, newPassword);
+
+        res.json({
+            success: true,
+            message: 'Password has been reset successfully.',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

@@ -175,7 +175,7 @@
 </div>
 
 <script>
-const API_URL = 'http://localhost:5000/api';
+const API_URL = window.location.origin + '/api';
 
 function getToken() { return localStorage.getItem('ulitms_token'); }
 
@@ -279,9 +279,9 @@ async function loadEquipment() {
                 <td><span class="badge badge-${item.condition === 'good' ? 'success' : item.condition === 'repair_needed' ? 'warning' : 'danger'}">${(item.condition || 'good').toUpperCase()}</span></td>
                 <td><div style="font-size: 0.85rem;">PC Unit #${item.unit_number || '?'} - ${item.location || 'Library'}</div></td>
                 <td>
-                    <div style="display: flex; gap: 6px;">
-                        <button class="btn btn-small btn-secondary" title="Edit" onclick="editEquipment(${item.id})"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-small btn-danger" title="Delete" onclick="deleteEquipment(${item.id})"><i class="fas fa-trash"></i></button>
+                    <div style="display: flex; gap: 6px; justify-content: center;">
+                        <button class="btn btn-small btn-secondary" onclick="editEquipment(${item.id})">Edit</button>
+                        <button class="btn btn-small btn-danger" onclick="deleteEquipment(${item.id})">Delete</button>
                     </div>
                 </td>
             </tr>
@@ -549,8 +549,8 @@ async function loadCategories() {
                 <td><div style="font-size: 0.85rem; color: var(--text-muted);">${cat.description || 'No description'}</div></td>
                 <td><span class="badge badge-teal">${cat.device_count || 0} Devices</span></td>
                 <td><div style="font-size: 0.8rem;">${new Date(cat.created_at).toLocaleDateString()}</div></td>
-                <td>
-                    <button class="btn btn-small btn-secondary" onclick="editCategory(${cat.id})"><i class="fas fa-edit"></i></button>
+                <td style="display: flex; gap: 5px; justify-content: center;">
+                    <button class="btn btn-small btn-secondary" onclick="editCategory(${cat.id})">Edit</button>
                 </td>
             </tr>
         `).join('');
@@ -585,7 +585,7 @@ async function loadMaintenanceReports() {
                 <td><span class="badge badge-${rep.resolved_at ? 'success' : 'danger'}">${rep.resolved_at ? 'RESOLVED' : 'PENDING'}</span></td>
                 <td><div style="font-size: 0.8rem;">${new Date(rep.created_at).toLocaleDateString()}</div></td>
                 <td>
-                    ${!rep.resolved_at ? `<button class="btn btn-small btn-primary" onclick="resolveReport(${rep.id})">Resolve</button>` : '<i class="fas fa-check-circle" style="color: var(--success);"></i>'}
+                    ${!rep.resolved_at ? `<button class="btn btn-small btn-primary" onclick="resolveReport(${rep.id})">Resolve</button>` : '<span style="color: var(--success); font-size: 0.8rem; font-weight: 600;">RESOLVED</span>'}
                 </td>
             </tr>
         `).join('');

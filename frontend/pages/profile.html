@@ -134,12 +134,17 @@ async function loadProfile() {
         const response = await fetch(`${API_URL}/users/${getUserId()}`, {
             headers: { 'Authorization': 'Bearer ' + getToken() }
         });
-        const data = await response.json();
-        const user = data.user || {};
+        const json = await response.json();
+        
+        if (!json.success) throw new Error(json.message);
+        
+        const user = json.data?.user || {};
+        const stats = json.data?.stats || {};
         currentUserData = user; // Store for editing
         
         // Construct full name
-        const fullName = user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Guest User';
+        const storedName = localStorage.getItem('ulitms_name');
+        const fullName = user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : (storedName && storedName !== 'User' ? storedName : 'User');
         const initials = fullName.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
         
         // Avatar logic
@@ -180,10 +185,10 @@ async function loadProfile() {
 
                 <div class="card">
                     <div class="card-title"><i class="fas fa-chart-bar" style="color:#27c4cc;margin-right:8px;"></i>Library Summary</div>
-                    <div class="detail-row"><span class="detail-key">Borrowed Books</span><span class="detail-val">${data.stats?.total_borrowed || 0} total</span></div>
-                    <div class="detail-row"><span class="detail-key">Active Borrowing</span><span class="detail-val">${data.stats?.current_borrowed || 0} books</span></div>
-                    <div class="detail-row"><span class="detail-key">Total Fines</span><span class="detail-val" style="color:#ef4444;">₱${data.stats?.total_fines || '0.00'}</span></div>
-                    <div class="detail-row"><span class="detail-key">E-Library Visits</span><span class="detail-val">${data.stats?.total_sessions || 0} sessions</span></div>
+                    <div class="detail-row"><span class="detail-key">Borrowed Books</span><span class="detail-val">${stats.total_borrowed || 0} total</span></div>
+                    <div class="detail-row"><span class="detail-key">Active Borrowing</span><span class="detail-val">${stats.current_borrowed || 0} books</span></div>
+                    <div class="detail-row"><span class="detail-key">Total Fines</span><span class="detail-val" style="color:#ef4444;">₱${parseFloat(stats.total_fines || 0).toFixed(2)}</span></div>
+                    <div class="detail-row"><span class="detail-key">E-Library Visits</span><span class="detail-val">${stats.total_sessions || 0} sessions</span></div>
                     <div class="detail-row"><span class="detail-key">Account Status</span><span class="detail-val"><span class="badge badge-success">Active</span></span></div>
                     <div style="margin-top:20px; padding:15px; background:rgba(39, 196, 204, 0.05); border-radius:10px; border:1px solid rgba(39, 196, 204, 0.1);">
                         <div style="font-size:0.75rem; color:var(--teal-primary); margin-bottom:5px; font-weight:600;">ACTIVITY QUOTA</div>

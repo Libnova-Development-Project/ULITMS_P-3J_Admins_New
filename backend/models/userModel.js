@@ -130,10 +130,33 @@ static async create(userData) {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         const result = await pool.query(
             `UPDATE library_schema.users 
-             SET password = $1
+             SET password = $1, reset_token = NULL, reset_token_expiry = NULL
              WHERE id = $2 AND is_deleted = false
              RETURNING id`,
             [hashedPassword, id]
+        );
+        return result.rows[0];
+    }
+
+    // Set reset token
+    static async setResetToken(id, token, expiryMinutes = 30) {
+        const expiry = new Date(Date.now() + expiryMinutes * 60000);
+        const result = await pool.query(
+            `UPDATE library_schema.users 
+             SET reset_token = $1, reset_token_expiry = $2
+             WHERE id = $3 AND is_deleted = false
+             RETURNING id`,
+            [token, expiry, id]
+        );
+        return result.rows[0];
+    }
+
+    // Find by reset token
+    static async findByResetToken(token) {
+        const result = await pool.query(
+            `SELECT * FROM library_schema.users 
+             WHERE reset_token = $1 AND reset_token_expiry > CURRENT_TIMESTAMP AND is_deleted = false`,
+            [token]
         );
         return result.rows[0];
     }

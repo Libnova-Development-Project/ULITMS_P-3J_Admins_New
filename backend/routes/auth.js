@@ -41,4 +41,16 @@ router.post('/login', authLimiter, validateLoginInput, authController.login);
  */
 router.post('/logout', authController.logout);
 
+/**
+ * POST /api/auth/forgot-password
+ * Request a password reset PIN
+ */
+router.post('/forgot-password', authLimiter, authController.requestPasswordReset);
+
+/**
+ * POST /api/auth/reset-password
+ * Reset password using PIN
+ */
+router.post('/reset-password', authLimiter, authController.resetPassword);
+
 module.exports = router;
