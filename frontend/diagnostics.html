@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS - System Diagnostics</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+        
+        .diagnostic-section {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .diagnostic-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .status-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .status-icon.success {
+            background: #10b981;
+        }
+        
+        .status-icon.error {
+            background: #ef4444;
+        }
+        
+        .status-icon.loading {
+            background: #f59e0b;
+        }
+        
+        .test-content {
+            flex: 1;
+        }
+        
+        .test-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .test-result {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #333;
+            border: 1px solid #d1d5db;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .info-box {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            color: #1e40af;
+        }
+        
+        .success-box {
+            background: #dcfce7;
+            border-left: 4px solid #16a34a;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            color: #15803d;
+        }
+        
+        .error-box {
+            background: #fee2e2;
+            border-left: 4px solid #dc2626;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            color: #991b1b;
+        }
+        
+        .code-block {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        table th,
+        table td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        table th {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        table tr:hover {
+            background: #f9fafb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 ULITMS System Diagnostics</h1>
+        <p class="subtitle">Test your frontend-backend integration and verify all systems are working correctly</p>
+        
+        <!-- API Connectivity Tests -->
+        <div class="diagnostic-section">
+            <h2>🌐 API Connectivity</h2>
+            <div id="api-tests"></div>
+            <button class="btn-primary" onclick="testAPIConnectivity()">
+                <span id="test-api-btn">▶ Run API Tests</span>
+            </button>
+        </div>
+        
+        <!-- Authentication Tests -->
+        <div class="diagnostic-section">
+            <h2>🔐 Authentication</h2>
+            <div id="auth-tests"></div>
+            <button class="btn-primary" onclick="testAuthentication()">
+                <span id="test-auth-btn">▶ Run Auth Tests</span>
+            </button>
+        </div>
+        
+        <!-- E-Library Tests -->
+        <div class="diagnostic-section">
+            <h2>💻 E-Library PC Management</h2>
+            <div id="elibrary-tests"></div>
+            <button class="btn-primary" onclick="testELibrary()">
+                <span id="test-elibrary-btn">▶ Test E-Library</span>
+            </button>
+        </div>
+        
+        <!-- Book Management Tests -->
+        <div class="diagnostic-section">
+            <h2>📚 Book Management</h2>
+            <div id="book-tests"></div>
+            <button class="btn-primary" onclick="testBooks()">
+                <span id="test-book-btn">▶ Test Books</span>
+            </button>
+        </div>
+        
+        <!-- User Management Tests -->
+        <div class="diagnostic-section">
+            <h2>👥 User Management</h2>
+            <div id="user-tests"></div>
+            <button class="btn-primary" onclick="testUsers()">
+                <span id="test-user-btn">▶ Test Users</span>
+            </button>
+        </div>
+        
+        <!-- Storage Check -->
+        <div class="diagnostic-section">
+            <h2>💾 Local Storage</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="storage-table"></tbody>
+            </table>
+            <button class="btn-secondary" onclick="checkLocalStorage()">Refresh Storage</button>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="diagnostic-section">
+            <h2>⚡ Quick Actions</h2>
+            <div class="button-group">
+                <button class="btn-primary" onclick="runAllTests()">▶ Run All Tests</button>
+                <button class="btn-secondary" onclick="clearStorage()">Clear Local Storage</button>
+                <button class="btn-secondary" onclick="goToDashboard()">Go to Dashboard</button>
+            </div>
+        </div>
+        
+        <!-- Results Summary -->
+        <div id="summary" style="display: none;">
+            <div class="diagnostic-section">
+                <h2>📋 Summary</h2>
+                <div id="summary-content"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        
+        function addTestResult(containerId, name, status, message) {
+            const container = document.getElementById(containerId);
+            const statusMap = {
+                'success': { icon: '✓', class: 'success' },
+                'error': { icon: '✗', class: 'error' },
+                'loading': { icon: '⟳', class: 'loading' }
+            };
+            
+            const s = statusMap[status] || statusMap['error'];
+            const div = document.createElement('div');
+            div.className = 'test-item';
+            div.innerHTML = `
+                <div class="status-icon ${s.class}">${s.icon}</div>
+                <div class="test-content">
+                    <div class="test-name">${name}</div>
+                    <div class="test-result">${message}</div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+        
+        function clearContainer(containerId) {
+            document.getElementById(containerId).innerHTML = '';
+        }
+        
+        async function testAPIConnectivity() {
+            clearContainer('api-tests');
+            addTestResult('api-tests', 'Server Connection', 'loading', 'Testing...');
+            
+            try {
+                const response = await fetch(`${API_URL}/books`, {
+                    headers: { 'Authorization': `Bearer test_token` }
+                });
+                addTestResult('api-tests', 'Server Connection', 'success', `Server responding (HTTP ${response.status})`);
+            } catch (error) {
+                addTestResult('api-tests', 'Server Connection', 'error', `Connection failed: ${error.message}`);
+            }
+        }
+        
+        async function testAuthentication() {
+            clearContainer('auth-tests');
+            const token = localStorage.getItem('ulitms_token');
+            const userId = localStorage.getItem('ulitms_user_id');
+            
+            if (!token) {
+                addTestResult('auth-tests', 'Token', 'error', 'No authentication token found');
+            } else {
+                addTestResult('auth-tests', 'Token', 'success', `Token found (${token.substring(0, 20)}...)`);
+            }
+            
+            if (!userId) {
+                addTestResult('auth-tests', 'User ID', 'error', 'No user ID found');
+            } else {
+                addTestResult('auth-tests', 'User ID', 'success', `User ID: ${userId}`);
+            }
+            
+            // Test if token is valid
+            if (token) {
+                try {
+                    const response = await fetch(`${API_URL}/users`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (response.ok) {
+                        addTestResult('auth-tests', 'Token Validity', 'success', 'Token is valid');
+                    } else {
+                        addTestResult('auth-tests', 'Token Validity', 'error', `Token invalid (HTTP ${response.status})`);
+                    }
+                } catch (error) {
+                    addTestResult('auth-tests', 'Token Validity', 'error', error.message);
+                }
+            }
+        }
+        
+        async function testELibrary() {
+            clearContainer('elibrary-tests');
+            const token = localStorage.getItem('ulitms_token');
+            
+            if (!token) {
+                addTestResult('elibrary-tests', 'E-Library API', 'error', 'No authentication token');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/elibrary/units`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const unitCount = data.units ? data.units.length : 0;
+                    addTestResult('elibrary-tests', 'PC Units', 'success', `Found ${unitCount} PC units`);
+                    
+                    if (data.units && data.units.length > 0) {
+                        data.units.forEach(unit => {
+                            addTestResult('elibrary-tests', `PC #${unit.unit_number}`, 'success', `Status: ${unit.is_active ? 'Active' : 'Inactive'}`);
+                        });
+                    }
+                } else {
+                    addTestResult('elibrary-tests', 'E-Library API', 'error', `API Error (HTTP ${response.status})`);
+                }
+            } catch (error) {
+                addTestResult('elibrary-tests', 'E-Library API', 'error', error.message);
+            }
+        }
+        
+        async function testBooks() {
+            clearContainer('book-tests');
+            const token = localStorage.getItem('ulitms_token');
+            
+            if (!token) {
+                addTestResult('book-tests', 'Books API', 'error', 'No authentication token');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/books`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const bookCount = data.books ? data.books.length : 0;
+                    addTestResult('book-tests', 'Books API', 'success', `Found ${bookCount} books`);
+                } else {
+                    addTestResult('book-tests', 'Books API', 'error', `API Error (HTTP ${response.status})`);
+                }
+            } catch (error) {
+                addTestResult('book-tests', 'Books API', 'error', error.message);
+            }
+        }
+        
+        async function testUsers() {
+            clearContainer('user-tests');
+            const token = localStorage.getItem('ulitms_token');
+            
+            if (!token) {
+                addTestResult('user-tests', 'Users API', 'error', 'No authentication token');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/users`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const userCount = data.users ? data.users.length : 0;
+                    addTestResult('user-tests', 'Users API', 'success', `Found ${userCount} users`);
+                } else {
+                    addTestResult('user-tests', 'Users API', 'error', `API Error (HTTP ${response.status})`);
+                }
+            } catch (error) {
+                addTestResult('user-tests', 'Users API', 'error', error.message);
+            }
+        }
+        
+        function checkLocalStorage() {
+            const table = document.getElementById('storage-table');
+            table.innerHTML = '';
+            
+            const keys = ['ulitms_token', 'ulitms_user_id', 'ulitms_name', 'ulitms_role', 'ulitms_email'];
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                const row = document.createElement('tr');
+                
+                let displayValue = value ? (value.length > 50 ? value.substring(0, 50) + '...' : value) : '(empty)';
+                let status = value ? '✓' : '✗';
+                let statusColor = value ? '#10b981' : '#ef4444';
+                
+                row.innerHTML = `
+                    <td><code>${key}</code></td>
+                    <td><code>${displayValue}</code></td>
+                    <td style="color: ${statusColor}">${status}</td>
+                `;
+                table.appendChild(row);
+            });
+        }
+        
+        function clearStorage() {
+            if (confirm('Are you sure you want to clear all local storage? You will need to log in again.')) {
+                localStorage.clear();
+                checkLocalStorage();
+                alert('Local storage cleared!');
+            }
+        }
+        
+        function goToDashboard() {
+            if (localStorage.getItem('ulitms_token')) {
+                window.location.href = './pages/dashboard.html';
+            } else {
+                alert('Please log in first!');
+            }
+        }
+        
+        async function runAllTests() {
+            document.getElementById('summary').style.display = 'none';
+            testAPIConnectivity();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            testAuthentication();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            testELibrary();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            testBooks();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            testUsers();
+            checkLocalStorage();
+        }
+        
+        // Initialize
+        window.addEventListener('load', checkLocalStorage);
+    </script>
+</body>
+</html>

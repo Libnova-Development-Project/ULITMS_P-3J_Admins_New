@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { authLimiter } = require('../middleware/rateLimiter');
@@ -34,5 +34,11 @@ router.post('/register', authLimiter, validateRegisterInput, authController.regi
  * Login user and return JWT token with rate limiting
  */
 router.post('/login', authLimiter, validateLoginInput, authController.login);
+
+/**
+ * POST /api/auth/logout
+ * Logout user (client-side token removal)
+ */
+router.post('/logout', authController.logout);
 
 module.exports = router;

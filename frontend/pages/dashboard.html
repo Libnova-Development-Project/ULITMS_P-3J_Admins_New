@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<!-- Dynamic Sidebar Loading Script -->
+    <aside id="sidebar">
+    </aside>
+
+    <script src="../js/sidebar-loader.js"></script>
+    <script>
+        // Load appropriate sidebar based on user role
+        loadSidebar();
+    </script>
+
+<div id="main">
+    <header id="topbar">
+        <div class="page-title">Dashboard</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Visitor</div>
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <div class="section-title" id="welcome-message">Welcome back!</div>
+        <div class="section-sub" id="welcome-subtitle">Here's your library summary</div>
+        <div class="stats-grid" id="dashboard-stats">
+            <div class="stat-card"><div class="label">Loading...</div><div class="value">--</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:5000/api';
+
+function getToken() { return localStorage.getItem('ulitms_token'); }
+function getUserId() { return localStorage.getItem('ulitms_user_id'); }
+
+
+
+async function loadDashboard() {
+    const statsContainer = document.getElementById('dashboard-stats');
+    statsContainer.innerHTML = '<div class="stat-card"><div class="label">Loading...</div><div class="value">--</div></div>';
+    
+    try {
+        // Load books statistics
+        const booksResponse = await fetch(`${API_URL}/books`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        
+        if (!booksResponse.ok) {
+            throw new Error('Failed to connect to server');
+        }
+        
+        const booksData = await booksResponse.json();
+        
+        if (!booksData.success) {
+            throw new Error(booksData.message || 'Failed to load books');
+        }
+        
+        const books = booksData.data.books || booksData.data || [];
+        const bookCount = booksData.data.total || books.length;
+        const availableCount = books.filter(b => b.available_copies > 0).length;
+        const borrowedCount = books.filter(b => b.available_copies === 0).length;
+
+        // Load user's borrowing statistics
+        const userId = getUserId();
+        let userBorrowingCount = 0;
+        let userOverdueCount = 0;
+        
+        if (userId) {
+            try {
+                const borrowingsResponse = await fetch(`${API_URL}/borrowings/user/${userId}`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                
+                if (borrowingsResponse.ok) {
+                    const borrowingsData = await borrowingsResponse.json();
+                    
+                    if (borrowingsData.success) {
+                        const borrowings = borrowingsData.data.borrowings || borrowingsData.data || [];
+                        userBorrowingCount = borrowings.filter(b => b.status === 'borrowed').length;
+                        userOverdueCount = borrowings.filter(b => {
+                            return b.status === 'borrowed' && new Date(b.due_date) < new Date();
+                        }).length;
+                    }
+                }
+            } catch (borrowError) {
+                console.error('Failed to load borrowings:', borrowError);
+            }
+        }
+
+        // Update dashboard with real statistics
+        const statsHtml = `
+            <div class="stat-card">
+                <div class="label">📚 Total Books</div>
+                <div class="value">${bookCount}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">✅ Available</div>
+                <div class="value" style="color: #10b981;">${availableCount}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">📖 Borrowed</div>
+                <div class="value" style="color: #f59e0b;">${borrowedCount}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">👤 My Borrowings</div>
+                <div class="value" style="color: #3b82f6;">${userBorrowingCount}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">⚠️ Overdue</div>
+                <div class="value" style="color: #ef4444;">${userOverdueCount}</div>
+            </div>
+        `;
+        
+        statsContainer.innerHTML = statsHtml;
+        
+    } catch (e) { 
+        console.error('Dashboard loading error:', e);
+        statsContainer.innerHTML = `
+            <div class="stat-card"><div class="label">❌ Error</div><div class="value">Failed to load</div></div>
+        `;
+    }
+}
+
+function checkAuth() {
+    if (!getToken()) window.location.href = '../login.html';
+}
+
+checkAuth();
+document.getElementById('welcome-message').innerHTML = `Welcome back, ${localStorage.getItem('ulitms_name') || 'User'}! 👋`;
+loadDashboard();
+</script>
+</body>
+</html>

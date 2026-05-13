@@ -1,121 +1,478 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ULITMS — E-Library</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js" crossorigin="anonymous"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="../css/styles.css">
-<script src="../js/config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — E-Library</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
 </head>
 <body>
 
 <div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
 
-<!-- ── SIDEBAR ── -->
-<aside id="sidebar">
-  <div class="logo-area">
-    <div class="logo-title">ULITMS</div>
-    <div class="logo-sub">with E-Lib Integration</div>
-  </div>
+<!-- Dynamic Sidebar Loading -->
+<aside id="sidebar"></aside>
+<script src="../js/sidebar-loader.js"></script>
+<script>loadSidebar();</script>
 
-  <nav class="nav-section">
-    <div class="nav-label">Main Menu</div>
-    <a href="../index.html" class="nav-item">
-      <span class="icon"><i class="fas fa-house"></i></span> Home
-    </a>
-    <a href="catalog.html" class="nav-item">
-      <span class="icon"><i class="fas fa-book"></i></span> Book Catalog
-    </a>
-    <a href="borrowings.html" class="nav-item">
-      <span class="icon"><i class="fas fa-bookmark"></i></span> My Borrowings
-    </a>
-    <a href="elibrary.html" class="nav-item active">
-      <span class="icon"><i class="fas fa-desktop"></i></span> E-Library
-    </a>
-
-    <div class="nav-divider"></div>
-    <div class="nav-label">Account</div>
-    <a href="profile.html" class="nav-item">
-      <span class="icon"><i class="fas fa-user"></i></span> My Profile
-    </a>
-    <a href="password.html" class="nav-item">
-      <span class="icon"><i class="fas fa-lock"></i></span> Change Password
-    </a>
-    <div class="nav-divider"></div>
-    <div class="nav-item" style="color:#f87171;" onclick="alert('Logging out...')">
-      <span class="icon"><i class="fas fa-arrow-right-from-bracket"></i></span> Logout
-    </div>
-  </nav>
-
-  <div class="user-footer">
-    <div class="avatar">JM</div>
-    <div>
-      <div class="user-name">Jaylord Manolong</div>
-      <div class="user-role">Student</div>
-    </div>
-  </div>
-</aside>
-
-<!-- ── MAIN ── -->
 <div id="main">
-  <!-- Header -->
-  <header id="topbar">
-    <div class="page-title">E-Library</div>
-    <div class="topbar-right">
-      <div class="notif-btn"><i class="fas fa-bell"></i></div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="avatar" style="width:36px;height:36px;font-size:.8rem;">JM</div>
-        <div>
-          <div style="font-size:.82rem;font-weight:600;color:#e2e8f0;">Jaylord Manolong</div>
-          <div style="font-size:.7rem;color:#475569;">Student</div>
+    <header id="topbar">
+        <div class="page-title">E-Library</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Visitor</div>
+            </div>
         </div>
-      </div>
-    </div>
-  </header>
+    </header>
+    
+    <div id="content">
+        <div class="section-title">E-Library</div>
+        <div class="section-sub">Manage your PC sessions and view availability</div>
+        
+        <!-- PC Availability Section -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">💻 Available PC Units</div>
+                <button class="btn btn-secondary btn-small" onclick="loadAvailablePCs()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div id="available-pcs" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; min-height: 150px;">
+                <div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #94a3b8;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading PCs...
+                </div>
+            </div>
+        </div>
 
-  <div id="content">
-    <!-- ═══════════ E-LIBRARY ═══════════ -->
-    <div class="section-title">E-Library</div>
-    <div class="section-sub">Your personal PC session history</div>
+        <!-- Start Session Section -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🖥️ Start New Session</div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500;">Select PC Unit:</label>
+                    <select id="session-unit" class="form-select" style="width: 100%;">
+                        <option value="">Loading units...</option>
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500;">Purpose (optional):</label>
+                    <input type="text" id="session-purpose" class="form-input" placeholder="Study, Research, etc." style="width: 100%;">
+                </div>
+                <button class="btn btn-primary" onclick="startNewSession()">
+                    <i class="fas fa-play"></i> Start Session
+                </button>
+            </div>
+        </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;">
-      <div class="stat-card">
-        <div class="label">Total Sessions</div>
-        <div class="value" style="color:#27c4cc;">8</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Total Hours</div>
-        <div class="value" style="color:#60a5fa;">14h</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">This Month</div>
-        <div class="value" style="color:#4ade80;">5</div>
-      </div>
+        <!-- Session History Section -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📊 Your Session History</div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary btn-small" onclick="loadUserSessions()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-primary btn-small" onclick="showSessionStats()">
+                        <i class="fas fa-chart-bar"></i> View Stats
+                    </button>
+                </div>
+            </div>
+            <div class="tbl-wrap" style="overflow-x: auto;">
+                <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: rgba(39, 196, 204, 0.1); border-bottom: 2px solid #27c4cc;">
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Date</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Unit</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Time In</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Time Out</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Duration</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Status</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessions-tbody">
+                        <tr>
+                            <td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading sessions...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
+</div>
 
-    <div class="card">
-      <div class="card-title"><i class="fas fa-desktop" style="color:#27c4cc;margin-right:8px;"></i>My Session History</div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr>
-            <th>Date</th><th>Station</th><th>Time In</th><th>Time Out</th><th>Duration</th><th>Status</th>
-          </tr></thead>
-          <tbody>
-            <tr><td>May 1, 2026</td><td>PC #04</td><td>8:00 AM</td><td>--:--</td><td style="color:#94a3b8;font-style:italic;">ongoing</td><td><span class="badge badge-teal"><i class="fas fa-circle" style="font-size:.5rem;"></i> In Use</span></td></tr>
-            <tr><td>Apr 28, 2026</td><td>PC #07</td><td>9:00 AM</td><td>11:00 AM</td><td>2h 00m</td><td><span class="badge badge-gray"><i class="fas fa-check" style="font-size:.6rem;"></i> Done</span></td></tr>
-            <tr><td>Apr 25, 2026</td><td>PC #11</td><td>1:00 PM</td><td>3:30 PM</td><td>2h 30m</td><td><span class="badge badge-gray"><i class="fas fa-check" style="font-size:.6rem;"></i> Done</span></td></tr>
-            <tr><td>Apr 20, 2026</td><td>PC #04</td><td>8:30 AM</td><td>10:00 AM</td><td>1h 30m</td><td><span class="badge badge-gray"><i class="fas fa-check" style="font-size:.6rem;"></i> Done</span></td></tr>
-            <tr><td>Apr 18, 2026</td><td>PC #03</td><td>2:00 PM</td><td>4:00 PM</td><td>2h 00m</td><td><span class="badge badge-gray"><i class="fas fa-check" style="font-size:.6rem;"></i> Done</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div><!-- /content -->
-</div><!-- /main -->
+<script>
+// API Base URL
+const API_URL = 'http://localhost:5000/api';
+
+// Utility Functions
+function getToken() {
+    return localStorage.getItem('ulitms_token');
+}
+
+function getUserId() {
+    return localStorage.getItem('ulitms_user_id');
+}
+
+function updateUserInfo() {
+    const name = localStorage.getItem('ulitms_name') || 'Guest';
+    const role = localStorage.getItem('ulitms_role') || 'visitor';
+    const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    
+    const elements = {
+        'sidebar-avatar': initials,
+        'sidebar-name': name,
+        'sidebar-role': role === 'admin' ? 'Administrator' : 'Student',
+        'header-avatar': initials,
+        'header-name': name,
+        'header-role': role === 'admin' ? 'Administrator' : 'Student'
+    };
+    
+    Object.entries(elements).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    });
+}
+
+// Load Available PCs
+async function loadAvailablePCs() {
+    const container = document.getElementById('available-pcs');
+    container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Loading PCs...</div>';
+    
+    try {
+        const response = await fetch(`${API_URL}/elibrary/units?activeOnly=true`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load PCs');
+        
+        const data = await response.json();
+        const units = data.units || [];
+        
+        if (units.length === 0) {
+            container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #94a3b8;">No PC units available</div>';
+            return;
+        }
+        
+        // Get active sessions to show availability
+        const activeSessions = await getActiveSessions();
+        const busyUnitIds = new Set(activeSessions.map(s => s.unit_id));
+        
+        // Update session select dropdown
+        const unitSelect = document.getElementById('session-unit');
+        unitSelect.innerHTML = '<option value="">Select PC Unit</option>';
+        
+        // Display PC cards
+        container.innerHTML = units.map(unit => {
+            const isAvailable = !busyUnitIds.has(unit.id);
+            const statusColor = isAvailable ? '#10b981' : '#ef4444';
+            const statusText = isAvailable ? '✓ Available' : '✗ In Use';
+            const statusIcon = isAvailable ? 'fa-check-circle' : 'fa-times-circle';
+            
+            unitSelect.innerHTML += `<option value="${unit.id}" ${isAvailable ? '' : 'disabled'}>PC #${String(unit.unit_number).padStart(2, '0')}${isAvailable ? '' : ' (In Use)'}</option>`;
+            
+            return `
+                <div style="background: rgba(255,255,255,0.08); padding: 16px; border-radius: 8px; text-align: center; border: 2px solid ${isAvailable ? 'transparent' : '#ef4444'}; cursor: ${isAvailable ? 'pointer' : 'not-allowed'}; opacity: ${isAvailable ? '1' : '0.6'};" ${isAvailable ? `onclick="document.getElementById('session-unit').value = ${unit.id}"` : ''}>
+                    <div style="font-size: 2.5rem; margin-bottom: 8px;">💻</div>
+                    <div style="font-weight: 600; margin-bottom: 4px;">PC #${String(unit.unit_number).padStart(2, '0')}</div>
+                    <div style="font-size: 0.85rem; color: ${statusColor}; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <i class="fas ${statusIcon}"></i> ${statusText}
+                    </div>
+                    ${unit.location ? `<div style="font-size: 0.75rem; color: #94a3b8; margin-top: 6px;">${unit.location}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Error loading PCs:', error);
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: #ef4444;"><i class="fas fa-exclamation-circle"></i> Failed to load PCs. Please try again.</div>';
+    }
+}
+
+// Get Active Sessions
+async function getActiveSessions() {
+    try {
+        const response = await fetch(`${API_URL}/elibrary/sessions/active`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.sessions || [];
+    } catch (error) {
+        console.error('Error getting active sessions:', error);
+        return [];
+    }
+}
+
+// Load User Sessions
+async function loadUserSessions() {
+    const tbody = document.getElementById('sessions-tbody');
+    tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading sessions...</td></tr>';
+    
+    try {
+        const userId = getUserId();
+        if (!userId) {
+            tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center;">Please log in to view sessions</td></tr>';
+            return;
+        }
+        
+        const response = await fetch(`${API_URL}/elibrary/sessions/user/${userId}`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load sessions');
+        
+        const data = await response.json();
+        const sessions = data.sessions || [];
+        
+        if (sessions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8;">No session records found</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = sessions.map(session => {
+            const duration = session.time_out ? calculateDuration(session.time_in, session.time_out) : '<span style="color:#94a3b8;font-style:italic;">Ongoing</span>';
+            const isActive = !session.time_out;
+            const statusBadgeColor = isActive ? '#10b981' : '#6b7280';
+            const statusText = isActive ? '🔵 Active' : '✓ Completed';
+            
+            return `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 12px;">${formatDate(session.time_in)}</td>
+                    <td style="padding: 12px;">PC #${String(session.unit_id).padStart(2, '0')}</td>
+                    <td style="padding: 12px;">${formatTime(session.time_in)}</td>
+                    <td style="padding: 12px;">${session.time_out ? formatTime(session.time_out) : '--:--'}</td>
+                    <td style="padding: 12px;">${duration}</td>
+                    <td style="padding: 12px;"><span style="color: ${statusBadgeColor}; display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; background: rgba(${isActive ? '16, 185, 129' : '107, 114, 128'}, 0.1);">${statusText}</span></td>
+                    <td style="padding: 12px;">${isActive ? `<button class="btn btn-small btn-secondary" onclick="endSession(${session.id})"><i class="fas fa-stop"></i> End</button>` : '-'}</td>
+                </tr>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Error loading sessions:', error);
+        tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #ef4444;"><i class="fas fa-exclamation-circle"></i> Failed to load sessions</td></tr>';
+    }
+}
+
+// Start New Session
+async function startNewSession() {
+    const unitId = document.getElementById('session-unit').value;
+    const purpose = document.getElementById('session-purpose').value;
+    
+    if (!unitId) {
+        alert('Please select a PC unit');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/elibrary/sessions/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({
+                unit_id: parseInt(unitId),
+                purpose: purpose || null
+            })
+        });
+        
+        if (!response.ok) throw new Error('Failed to start session');
+        
+        const data = await response.json();
+        alert('✓ E-Library session started successfully!');
+        
+        // Clear form
+        document.getElementById('session-unit').value = '';
+        document.getElementById('session-purpose').value = '';
+        
+        // Reload data
+        loadUserSessions();
+        loadAvailablePCs();
+        
+    } catch (error) {
+        console.error('Error starting session:', error);
+        alert('✗ Failed to start session. Please try again.');
+    }
+}
+
+// End Session
+async function endSession(sessionId) {
+    if (!confirm('End this session?')) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/elibrary/sessions/${sessionId}/end`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to end session');
+        
+        alert('✓ Session ended successfully!');
+        loadUserSessions();
+        loadAvailablePCs();
+        
+    } catch (error) {
+        console.error('Error ending session:', error);
+        alert('✗ Failed to end session. Please try again.');
+    }
+}
+
+// Show Session Statistics
+async function showSessionStats() {
+    try {
+        const userId = getUserId();
+        if (!userId) {
+            alert('Please log in to view statistics');
+            return;
+        }
+        
+        const response = await fetch(`${API_URL}/elibrary/sessions/user/${userId}`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load sessions');
+        
+        const data = await response.json();
+        const sessions = data.sessions || [];
+        
+        // Calculate statistics
+        const totalSessions = sessions.length;
+        const completedSessions = sessions.filter(s => s.time_out).length;
+        const activeSessions = sessions.filter(s => !s.time_out).length;
+        
+        let totalMinutes = 0;
+        sessions.forEach(session => {
+            if (session.time_out) {
+                const duration = calculateDurationInMinutes(session.time_in, session.time_out);
+                totalMinutes += duration;
+            }
+        });
+        
+        const totalHours = (totalMinutes / 60).toFixed(1);
+        const avgDuration = completedSessions > 0 ? ((totalMinutes / completedSessions) / 60).toFixed(2) : 0;
+        
+        // Create modal
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+        modal.innerHTML = `
+            <div style="background: rgba(15, 23, 42, 0.95); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 25px 50px rgba(0,0,0,0.3); border: 1px solid rgba(39, 196, 204, 0.2);">
+                <h3 style="color: #27c4cc; margin-bottom: 20px; font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-chart-bar"></i> Session Statistics
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                    <div style="background: rgba(39, 196, 204, 0.1); padding: 16px; border-radius: 8px; border-left: 3px solid #27c4cc;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #27c4cc;">${totalSessions}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Total Sessions</div>
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.1); padding: 16px; border-radius: 8px; border-left: 3px solid #10b981;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #10b981;">${completedSessions}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Completed</div>
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.1); padding: 16px; border-radius: 8px; border-left: 3px solid #f59e0b;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #f59e0b;">${totalHours}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Total Hours</div>
+                    </div>
+                    <div style="background: rgba(168, 85, 247, 0.1); padding: 16px; border-radius: 8px; border-left: 3px solid #a855f7;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #a855f7;">${avgDuration}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Avg Duration (hrs)</div>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <button class="btn btn-secondary" onclick="this.closest('[style*=\"position: fixed\"]').remove()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+        
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+        alert('Failed to load session statistics');
+    }
+}
+
+// Helper Functions
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+function formatTime(dateString) {
+    return new Date(dateString).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+function calculateDuration(timeIn, timeOut) {
+    const minutes = calculateDurationInMinutes(timeIn, timeOut);
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+}
+
+function calculateDurationInMinutes(timeIn, timeOut) {
+    try {
+        const inDate = new Date(timeIn);
+        const outDate = new Date(timeOut);
+        return Math.floor((outDate - inDate) / 60000);
+    } catch {
+        return 0;
+    }
+}
+
+// Authentication Check
+function checkAuth() {
+    if (!getToken()) {
+        window.location.href = '../login.html';
+    }
+}
+
+// Initialize on page load
+window.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    updateUserInfo();
+    loadAvailablePCs();
+    loadUserSessions();
+});
+
+// Show admin navigation if user is admin
+const role = localStorage.getItem('ulitms_role');
+if (role === 'admin') {
+    const navSection = document.querySelector('.nav-section');
+    if (navSection) {
+        const adminItems = navSection.querySelectorAll('[href*="manage"], [href*="reports"], [href*="settings"], [href*="equipment"], [href*="damage"]');
+        adminItems.forEach(item => item.style.display = 'block');
+    }
+}
+</script>
 
 </body>
 </html>

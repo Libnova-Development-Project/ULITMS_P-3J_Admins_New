@@ -93,15 +93,24 @@ class ElibraryModel {
 
     // Start session
     static async startSession(userId, unitId, purpose = null, monitoredBy = null) {
-        // Check if unit is available
+        // Check if unit is available (more accurate check)
         const activeSession = await pool.query(
             `SELECT * FROM library_schema.elibrary_sessions 
-             WHERE unit_id = $1 AND time_out IS NULL`,
+             WHERE unit_id = $1 AND time_out IS NULL
+             ORDER BY time_in DESC
+             LIMIT 1`,
             [unitId]
         );
         
+        // Check if there's a recent active session (within last 5 minutes)
         if (activeSession.rows.length > 0) {
-            throw new Error('Unit is currently in use');
+            const sessionTime = new Date(activeSession.rows[0].time_in);
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            
+            // Allow new session if current session is older than 5 minutes
+            if (sessionTime > fiveMinutesAgo) {
+                throw new Error('Unit is currently in use');
+            }
         }
         
         const result = await pool.query(

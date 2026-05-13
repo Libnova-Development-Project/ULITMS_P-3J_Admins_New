@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — System Settings</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<aside id="sidebar">
+    <div class="logo-area">
+        <div class="logo-title">ULITMS</div>
+        <div class="logo-sub">Library Management System</div>
+    </div>
+    <nav class="nav-section">
+        <div class="nav-label">Main Menu</div>
+        <a href="dashboard.html" class="nav-item">
+            <span class="icon"><i class="fas fa-th-large"></i></span>
+            <span>Dashboard</span>
+        </a>
+        <a href="catalog.html" class="nav-item">
+            <span class="icon"><i class="fas fa-book"></i></span>
+            <span>Book Catalog</span>
+        </a>
+        <a href="borrowings.html" class="nav-item">
+            <span class="icon"><i class="fas fa-bookmark"></i></span>
+            <span>My Borrowings</span>
+        </a>
+        <a href="elibrary.html" class="nav-item">
+            <span class="icon"><i class="fas fa-desktop"></i></span>
+            <span>E-Library</span>
+        </a>
+        <div class="nav-divider"></div>
+        <div class="nav-label">Admin Panel</div>
+        <a href="manage-books.html" class="nav-item">
+            <span class="icon"><i class="fas fa-book"></i></span>
+            <span>Manage Books</span>
+        </a>
+        <a href="manage-users.html" class="nav-item">
+            <span class="icon"><i class="fas fa-users"></i></span>
+            <span>Manage Users</span>
+        </a>
+        <a href="manage-equipment.html" class="nav-item">
+            <span class="icon"><i class="fas fa-laptop"></i></span>
+            <span>Equipment</span>
+        </a>
+        <a href="damage-reports.html" class="nav-item">
+            <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+            <span>Damage Reports</span>
+        </a>
+        <a href="system-settings.html" class="nav-item active">
+            <span class="icon"><i class="fas fa-cog"></i></span>
+            <span>System Settings</span>
+        </a>
+        <div class="nav-divider"></div>
+        <div class="nav-label">Account</div>
+        <a href="profile.html" class="nav-item">
+            <span class="icon"><i class="fas fa-user"></i></span>
+            <span>My Profile</span>
+        </a>
+        <a href="password.html" class="nav-item">
+            <span class="icon"><i class="fas fa-lock"></i></span>
+            <span>Change Password</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="../login.html" class="nav-item" style="color:#f87171;">
+            <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+            <span>Logout</span>
+        </a>
+    </nav>
+    <div class="user-footer">
+        <div class="avatar" id="sidebar-avatar">G</div>
+        <div>
+            <div class="user-name" id="sidebar-name">Guest</div>
+            <div class="user-role" id="sidebar-role">Administrator</div>
+        </div>
+    </div>
+</aside>
+
+<div id="main">
+    <header id="topbar">
+        <div class="page-title">System Settings</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Administrator</div>
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <div class="section-title">System Settings</div>
+        <div class="section-sub">Configure system-wide preferences and policies</div>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-book" style="color:#27c4cc;margin-right:8px;"></i>Library Settings</div>
+                <div class="form-group">
+                    <label class="form-label">Max Books Per Student</label>
+                    <input type="number" id="max-books" class="form-input" value="5" min="1" max="20">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Default Loan Period (Days)</label>
+                    <input type="number" id="loan-period" class="form-input" value="14" min="1" max="60">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fine Per Day (₱)</label>
+                    <input type="number" id="fine-per-day" class="form-input" value="5" min="0" step="0.50">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Auto-Remind Before Due</label>
+                    <select id="remind-days" class="form-select">
+                        <option value="1">1 Day</option>
+                        <option value="2">2 Days</option>
+                        <option value="3" selected>3 Days</option>
+                        <option value="7">1 Week</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-desktop" style="color:#27c4cc;margin-right:8px;"></i>E-Library Settings</div>
+                <div class="form-group">
+                    <label class="form-label">Max Session Duration (Hours)</label>
+                    <input type="number" id="max-session" class="form-input" value="4" min="1" max="12">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sessions Per Day Limit</label>
+                    <input type="number" id="sessions-per-day" class="form-input" value="3" min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Require Purpose</label>
+                    <select id="require-purpose" class="form-select">
+                        <option value="yes" selected>Yes</option>
+                        <option value="no">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Auto-logout Inactivity (Minutes)</label>
+                    <input type="number" id="inactivity-timeout" class="form-input" value="15" min="5" max="60">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-user-shield" style="color:#27c4cc;margin-right:8px;"></i>Security Settings</div>
+                <div class="form-group">
+                    <label class="form-label">Password Min Length</label>
+                    <input type="number" id="password-length" class="form-input" value="8" min="6" max="20">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Session Timeout (Minutes)</label>
+                    <input type="number" id="session-timeout" class="form-input" value="30" min="15" max="120">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max Login Attempts</label>
+                    <input type="number" id="max-attempts" class="form-input" value="5" min="3" max="10">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Lockout Duration (Minutes)</label>
+                    <input type="number" id="lockout-duration" class="form-input" value="15" min="5" max="60">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-bell" style="color:#27c4cc;margin-right:8px;"></i>Notification Settings</div>
+                <div class="form-group">
+                    <label class="form-label">System Email</label>
+                    <input type="email" id="system-email" class="form-input" placeholder="system@ulitms.edu">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Enable Email Notifications</label>
+                    <select id="email-notifications" class="form-select">
+                        <option value="yes" selected>Yes</option>
+                        <option value="no">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Low Stock Alert</label>
+                    <input type="number" id="low-stock" class="form-input" value="10" min="1" max="50">
+                    <small style="color:#94a3b8;">Alert when available copies fall below this number</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Maintenance Mode</label>
+                    <select id="maintenance-mode" class="form-select">
+                        <option value="off" selected>Off</option>
+                        <option value="on">On</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:30px;display:flex;gap:15px;">
+            <button class="btn btn-primary" onclick="saveSettings()">
+                <i class="fas fa-save" style="margin-right:8px;"></i>Save Settings
+            </button>
+            <button class="btn btn-secondary" onclick="resetSettings()">
+                <i class="fas fa-undo" style="margin-right:8px;"></i>Reset to Defaults
+            </button>
+            <button class="btn btn-secondary" onclick="backupSettings()">
+                <i class="fas fa-download" style="margin-right:8px;"></i>Export Settings
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:5000/api';
+
+function getToken() { return localStorage.getItem('ulitms_token'); }
+
+function updateUserInfo() {
+    const name = localStorage.getItem('ulitms_name') || 'Guest';
+    const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('sidebar-avatar').textContent = initials;
+    document.getElementById('sidebar-name').textContent = name;
+    document.getElementById('header-avatar').textContent = initials;
+    document.getElementById('header-name').textContent = name;
+}
+
+async function loadSettings() {
+    try {
+        const response = await fetch(`${API_URL}/settings`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await response.json();
+        const settings = data.settings || {};
+        
+        // Load settings into form
+        document.getElementById('max-books').value = settings.max_books_per_student || 5;
+        document.getElementById('loan-period').value = settings.default_loan_period || 14;
+        document.getElementById('fine-per-day').value = settings.fine_per_day || 5;
+        document.getElementById('remind-days').value = settings.remind_before_due || 3;
+        document.getElementById('max-session').value = settings.max_session_duration || 4;
+        document.getElementById('sessions-per-day').value = settings.sessions_per_day || 3;
+        document.getElementById('require-purpose').value = settings.require_purpose ? 'yes' : 'no';
+        document.getElementById('inactivity-timeout').value = settings.inactivity_timeout || 15;
+        document.getElementById('password-length').value = settings.password_min_length || 8;
+        document.getElementById('session-timeout').value = settings.session_timeout || 30;
+        document.getElementById('max-attempts').value = settings.max_login_attempts || 5;
+        document.getElementById('lockout-duration').value = settings.lockout_duration || 15;
+        document.getElementById('system-email').value = settings.system_email || '';
+        document.getElementById('email-notifications').value = settings.email_notifications ? 'yes' : 'no';
+        document.getElementById('low-stock').value = settings.low_stock_alert || 10;
+        document.getElementById('maintenance-mode').value = settings.maintenance_mode ? 'on' : 'off';
+    } catch(e) {
+        console.error('Failed to load settings:', e);
+    }
+}
+
+window.saveSettings = async () => {
+    const settings = {
+        max_books_per_student: parseInt(document.getElementById('max-books').value),
+        default_loan_period: parseInt(document.getElementById('loan-period').value),
+        fine_per_day: parseFloat(document.getElementById('fine-per-day').value),
+        remind_before_due: parseInt(document.getElementById('remind-days').value),
+        max_session_duration: parseInt(document.getElementById('max-session').value),
+        sessions_per_day: parseInt(document.getElementById('sessions-per-day').value),
+        require_purpose: document.getElementById('require-purpose').value === 'yes',
+        inactivity_timeout: parseInt(document.getElementById('inactivity-timeout').value),
+        password_min_length: parseInt(document.getElementById('password-length').value),
+        session_timeout: parseInt(document.getElementById('session-timeout').value),
+        max_login_attempts: parseInt(document.getElementById('max-attempts').value),
+        lockout_duration: parseInt(document.getElementById('lockout-duration').value),
+        system_email: document.getElementById('system-email').value,
+        email_notifications: document.getElementById('email-notifications').value === 'yes',
+        low_stock_alert: parseInt(document.getElementById('low-stock').value),
+        maintenance_mode: document.getElementById('maintenance-mode').value === 'on'
+    };
+    
+    try {
+        const response = await fetch(`${API_URL}/settings`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getToken()
+            },
+            body: JSON.stringify(settings)
+        });
+        
+        if (response.ok) {
+            alert('Settings saved successfully!');
+        } else {
+            throw new Error('Failed to save settings');
+        }
+    } catch(e) { 
+        alert('Failed to save settings'); 
+    }
+};
+
+window.resetSettings = () => {
+    if (!confirm('Reset all settings to default values?')) return;
+    
+    // Reset form to defaults
+    document.getElementById('max-books').value = 5;
+    document.getElementById('loan-period').value = 14;
+    document.getElementById('fine-per-day').value = 5;
+    document.getElementById('remind-days').value = 3;
+    document.getElementById('max-session').value = 4;
+    document.getElementById('sessions-per-day').value = 3;
+    document.getElementById('require-purpose').value = 'yes';
+    document.getElementById('inactivity-timeout').value = 15;
+    document.getElementById('password-length').value = 8;
+    document.getElementById('session-timeout').value = 30;
+    document.getElementById('max-attempts').value = 5;
+    document.getElementById('lockout-duration').value = 15;
+    document.getElementById('system-email').value = '';
+    document.getElementById('email-notifications').value = 'yes';
+    document.getElementById('low-stock').value = 10;
+    document.getElementById('maintenance-mode').value = 'off';
+    
+    alert('Settings reset to defaults. Click "Save Settings" to apply.');
+};
+
+window.backupSettings = () => {
+    const settings = {
+        max_books_per_student: document.getElementById('max-books').value,
+        default_loan_period: document.getElementById('loan-period').value,
+        fine_per_day: document.getElementById('fine-per-day').value,
+        remind_before_due: document.getElementById('remind-days').value,
+        max_session_duration: document.getElementById('max-session').value,
+        sessions_per_day: document.getElementById('sessions-per-day').value,
+        require_purpose: document.getElementById('require-purpose').value === 'yes',
+        inactivity_timeout: document.getElementById('inactivity-timeout').value,
+        password_min_length: document.getElementById('password-length').value,
+        session_timeout: document.getElementById('session-timeout').value,
+        max_login_attempts: document.getElementById('max-attempts').value,
+        lockout_duration: document.getElementById('lockout-duration').value,
+        system_email: document.getElementById('system-email').value,
+        email_notifications: document.getElementById('email-notifications').value === 'yes',
+        low_stock_alert: document.getElementById('low-stock').value,
+        maintenance_mode: document.getElementById('maintenance-mode').value === 'on'
+    };
+    
+    const dataStr = JSON.stringify(settings, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `ulitms-settings-${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+};
+
+function checkAuth() {
+    const token = getToken();
+    const role = localStorage.getItem('ulitms_role');
+    if (!token || role !== 'admin') window.location.href = '../login.html';
+}
+
+checkAuth();
+updateUserInfo();
+loadSettings();
+</script>
+</body>
+</html>

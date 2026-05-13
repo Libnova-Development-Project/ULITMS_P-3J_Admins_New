@@ -68,22 +68,21 @@ exports.borrowBook = async (req, res) => {
     try {
         const { user_id, book_id, due_date } = req.body;
         
-        if (!user_id || !book_id || !due_date) {
-            return res.status(400).json({ 
+        console.log('🔵 BORROW REQUEST:', { user_id, book_id, due_date });
+        console.log('🔵 User from token:', req.user);
+        
+        // Check permission - allow users to borrow books for themselves
+        
+        if (req.user.role !== 'admin' && parseInt(req.user.id) !== parseInt(user_id)) {
+            console.log('❌ Permission denied:', { reqUserId: req.user.id, bodyUserId: user_id });
+            return res.status(403).json({ 
                 success: false,
-                message: 'Missing required fields: user_id, book_id, due_date',
+                message: 'Access denied - You can only borrow books for yourself',
                 timestamp: new Date().toISOString()
             });
         }
         
-        // Check permission
-        if (req.user.role !== 'admin' && req.user.id !== user_id) {
-            return res.status(403).json({ 
-                success: false,
-                message: 'Access denied',
-                timestamp: new Date().toISOString()
-            });
-        }
+        console.log('✅ Permission granted');
         
         const borrowing = await BorrowingModel.create(user_id, book_id, due_date, req.user.id);
         

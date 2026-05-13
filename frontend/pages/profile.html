@@ -1,126 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ULITMS — My Profile</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js" crossorigin="anonymous"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="../css/styles.css">
-<script src="../js/config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — My Profile</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
 </head>
 <body>
 
 <div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
 
-<!-- ── SIDEBAR ── -->
 <aside id="sidebar">
-  <div class="logo-area">
-    <div class="logo-title">ULITMS</div>
-    <div class="logo-sub">with E-Lib Integration</div>
-  </div>
-
-  <nav class="nav-section">
-    <div class="nav-label">Main Menu</div>
-    <a href="../index.html" class="nav-item">
-      <span class="icon"><i class="fas fa-house"></i></span> Home
-    </a>
-    <a href="catalog.html" class="nav-item">
-      <span class="icon"><i class="fas fa-book"></i></span> Book Catalog
-    </a>
-    <a href="borrowings.html" class="nav-item">
-      <span class="icon"><i class="fas fa-bookmark"></i></span> My Borrowings
-    </a>
-    <a href="elibrary.html" class="nav-item">
-      <span class="icon"><i class="fas fa-desktop"></i></span> E-Library
-    </a>
-
-    <div class="nav-divider"></div>
-    <div class="nav-label">Account</div>
-    <a href="profile.html" class="nav-item active">
-      <span class="icon"><i class="fas fa-user"></i></span> My Profile
-    </a>
-    <a href="password.html" class="nav-item">
-      <span class="icon"><i class="fas fa-lock"></i></span> Change Password
-    </a>
-    <div class="nav-divider"></div>
-    <div class="nav-item" style="color:#f87171;" onclick="alert('Logging out...')">
-      <span class="icon"><i class="fas fa-arrow-right-from-bracket"></i></span> Logout
+    <div class="logo-area">
+        <div class="logo-title">ULITMS</div>
+        <div class="logo-sub">Library Management System</div>
     </div>
-  </nav>
-
-  <div class="user-footer">
-    <div class="avatar">JM</div>
-    <div>
-      <div class="user-name">Jaylord Manolong</div>
-      <div class="user-role">Student</div>
+    <nav class="nav-section">
+        <div class="nav-label">Main Menu</div>
+        <a href="dashboard.html" class="nav-item">
+            <span class="icon"><i class="fas fa-th-large"></i></span>
+            <span>Dashboard</span>
+        </a>
+        <a href="catalog.html" class="nav-item">
+            <span class="icon"><i class="fas fa-book"></i></span>
+            <span>Book Catalog</span>
+        </a>
+        <a href="borrowings.html" class="nav-item">
+            <span class="icon"><i class="fas fa-bookmark"></i></span>
+            <span>My Borrowings</span>
+        </a>
+        <a href="elibrary.html" class="nav-item">
+            <span class="icon"><i class="fas fa-desktop"></i></span>
+            <span>E-Library</span>
+        </a>
+        <div class="nav-divider"></div>
+        <div class="nav-label">Account</div>
+        <a href="profile.html" class="nav-item active">
+            <span class="icon"><i class="fas fa-user"></i></span>
+            <span>My Profile</span>
+        </a>
+        <a href="password.html" class="nav-item">
+            <span class="icon"><i class="fas fa-lock"></i></span>
+            <span>Change Password</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="../login.html" class="nav-item" style="color:#f87171;">
+            <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+            <span>Logout</span>
+        </a>
+    </nav>
+    <div class="user-footer">
+        <div class="avatar" id="sidebar-avatar">G</div>
+        <div>
+            <div class="user-name" id="sidebar-name">Guest</div>
+            <div class="user-role" id="sidebar-role">Visitor</div>
+        </div>
     </div>
-  </div>
 </aside>
 
-<!-- ── MAIN ── -->
 <div id="main">
-  <!-- Header -->
-  <header id="topbar">
-    <div class="page-title">My Profile</div>
-    <div class="topbar-right">
-      <div class="notif-btn"><i class="fas fa-bell"></i></div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="avatar" style="width:36px;height:36px;font-size:.8rem;">JM</div>
-        <div>
-          <div style="font-size:.82rem;font-weight:600;color:#e2e8f0;">Jaylord Manolong</div>
-          <div style="font-size:.7rem;color:#475569;">Student</div>
+    <header id="topbar">
+        <div class="page-title">My Profile</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Visitor</div>
+            </div>
         </div>
-      </div>
+    </header>
+    <div id="content">
+        <div class="section-title">My Profile</div>
+        <div class="section-sub">Your personal account information</div>
+        <div id="profile-content"></div>
     </div>
-  </header>
+</div>
 
-  <div id="content">
-    <!-- ═══════════ PROFILE ═══════════ -->
-    <div class="section-title">My Profile</div>
-    <div class="section-sub">Your personal account information</div>
+<script>
+const API_URL = 'http://localhost:5000/api';
 
-    <div class="profile-header">
-      <div class="profile-avatar">JM</div>
-      <div>
-        <div class="profile-name">Jaylord Manolong</div>
-        <div class="profile-meta">24-A-01018 · Student · Joined June 2024</div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <span class="badge badge-green">Active</span>
-          <span class="badge badge-red">Student</span>
-        </div>
-      </div>
-      <button class="edit-btn"><i class="fas fa-pen" style="margin-right:6px;font-size:.75rem;"></i>Edit Info</button>
-    </div>
+function getToken() { return localStorage.getItem('ulitms_token'); }
+function getUserId() { return localStorage.getItem('ulitms_user_id'); }
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-      <div class="card">
-        <div class="card-title"><i class="fas fa-id-card" style="color:#27c4cc;margin-right:8px;"></i>Personal Details</div>
-        <div class="detail-row"><span class="detail-key">ID Number</span><span class="detail-val">24-A-01018</span></div>
-        <div class="detail-row"><span class="detail-key">Full Name</span><span class="detail-val">Jaylord Manolong</span></div>
-        <div class="detail-row"><span class="detail-key">Role</span><span class="detail-val">Student</span></div>
-        <div class="detail-row"><span class="detail-key">Course</span><span class="detail-val">BS Information Technology</span></div>
-        <div class="detail-row"><span class="detail-key">Year Level</span><span class="detail-val">3rd Year</span></div>
-        <div class="detail-row"><span class="detail-key">Email</span><span class="detail-val">j.manolong@uulmis.com</span></div>
-        <div class="detail-row"><span class="detail-key">Contact</span><span class="detail-val">+63 910 123 4567</span></div>
-        <div class="detail-row"><span class="detail-key">Join Date</span><span class="detail-val">June 2024</span></div>
-      </div>
+function updateUserInfo() {
+    const name = localStorage.getItem('ulitms_name') || 'Guest';
+    const role = localStorage.getItem('ulitms_role') || 'visitor';
+    const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('sidebar-avatar').textContent = initials;
+    document.getElementById('sidebar-name').textContent = name;
+    document.getElementById('sidebar-role').textContent = role === 'admin' ? 'Administrator' : 'Student';
+    document.getElementById('header-avatar').textContent = initials;
+    document.getElementById('header-name').textContent = name;
+    document.getElementById('header-role').textContent = role === 'admin' ? 'Administrator' : 'Student';
+}
 
-      <div class="card">
-        <div class="card-title"><i class="fas fa-chart-bar" style="color:#27c4cc;margin-right:8px;"></i>Library Card Summary</div>
-        <div class="detail-row"><span class="detail-key">Books Borrowed</span><span class="detail-val">13 total</span></div>
-        <div class="detail-row"><span class="detail-key">Currently Borrowed</span><span class="detail-val">2 books</span></div>
-        <div class="detail-row"><span class="detail-key">Overdue Count</span><span class="detail-val">0</span></div>
-        <div class="detail-row"><span class="detail-key">Unpaid Fines</span><span class="detail-val" style="color:#4ade80;">₱0.00</span></div>
-        <div class="detail-row"><span class="detail-key">E-Library Sessions</span><span class="detail-val">8 sessions</span></div>
-        <div class="detail-row"><span class="detail-key">Total Hours Used</span><span class="detail-val">14 hours</span></div>
-        <div class="detail-row"><span class="detail-key">Account Status</span><span class="detail-val"><span class="badge badge-green">Active</span></span></div>
-      </div>
-    </div>
-  </div><!-- /content -->
-</div><!-- /main -->
+async function loadProfile() {
+    const profileContent = document.getElementById('profile-content');
+    
+    try {
+        const response = await fetch(`${API_URL}/users/${getUserId()}`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await response.json();
+        const user = data.user || {};
+        
+        profileContent.innerHTML = `
+            <div class="profile-header">
+                <div class="profile-avatar">${user.name ? user.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'GU'}</div>
+                <div>
+                    <div class="profile-name">${user.name || 'Guest User'}</div>
+                    <div class="profile-meta">${user.student_id || 'N/A'} · ${user.role === 'admin' ? 'Administrator' : 'Student'} · Joined ${user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown'}</div>
+                    <div style="display:flex;gap:8px;margin-top:8px;">
+                        <span class="badge badge-success">Active</span>
+                        <span class="badge badge-${user.role === 'admin' ? 'danger' : 'info'}">${user.role === 'admin' ? 'Admin' : 'Student'}</span>
+                    </div>
+                </div>
+                <button class="edit-btn" onclick="editProfile()">
+                    <i class="fas fa-pen" style="margin-right:6px;font-size:.75rem;"></i>Edit Info
+                </button>
+            </div>
 
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-id-card" style="color:#27c4cc;margin-right:8px;"></i>Personal Details</div>
+                    <div class="detail-row"><span class="detail-key">ID Number</span><span class="detail-val">${user.student_id || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Full Name</span><span class="detail-val">${user.name || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Role</span><span class="detail-val">${user.role === 'admin' ? 'Administrator' : 'Student'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Course</span><span class="detail-val">${user.course || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Year Level</span><span class="detail-val">${user.year_level || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Email</span><span class="detail-val">${user.email || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Contact</span><span class="detail-val">${user.contact || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Join Date</span><span class="detail-val">${user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-chart-bar" style="color:#27c4cc;margin-right:8px;"></i>Library Card Summary</div>
+                    <div class="detail-row"><span class="detail-key">Books Borrowed</span><span class="detail-val">13 total</span></div>
+                    <div class="detail-row"><span class="detail-key">Currently Borrowed</span><span class="detail-val">2 books</span></div>
+                    <div class="detail-row"><span class="detail-key">Overdue Count</span><span class="detail-val">0</span></div>
+                    <div class="detail-row"><span class="detail-key">Unpaid Fines</span><span class="detail-val" style="color:#4ade80;">₱0.00</span></div>
+                    <div class="detail-row"><span class="detail-key">E-Library Sessions</span><span class="detail-val">8 sessions</span></div>
+                    <div class="detail-row"><span class="detail-key">Total Hours Used</span><span class="detail-val">14 hours</span></div>
+                    <div class="detail-row"><span class="detail-key">Account Status</span><span class="detail-val"><span class="badge badge-success">Active</span></span></div>
+                </div>
+            </div>
+        `;
+    } catch(e) {
+        profileContent.innerHTML = '<div class="card"><p>Failed to load profile information</p></div>';
+    }
+}
+
+window.editProfile = () => {
+    alert('Profile editing feature coming soon!');
+};
+
+function checkAuth() {
+    if (!getToken()) window.location.href = '../login.html';
+}
+
+checkAuth();
+updateUserInfo();
+loadProfile();
+</script>
 </body>
 </html>

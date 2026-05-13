@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — Damage Reports</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<aside id="sidebar">
+    <div class="logo-area">
+        <div class="logo-title">ULITMS</div>
+        <div class="logo-sub">Library Management System</div>
+    </div>
+    <nav class="nav-section">
+        <div class="nav-label">Main Menu</div>
+        <a href="dashboard.html" class="nav-item">
+            <span class="icon"><i class="fas fa-th-large"></i></span>
+            <span>Dashboard</span>
+        </a>
+        <a href="catalog.html" class="nav-item">
+            <span class="icon"><i class="fas fa-book"></i></span>
+            <span>Book Catalog</span>
+        </a>
+        <a href="borrowings.html" class="nav-item">
+            <span class="icon"><i class="fas fa-bookmark"></i></span>
+            <span>My Borrowings</span>
+        </a>
+        <a href="elibrary.html" class="nav-item">
+            <span class="icon"><i class="fas fa-desktop"></i></span>
+            <span>E-Library</span>
+        </a>
+        <div class="nav-divider"></div>
+        <div class="nav-label">Admin Panel</div>
+        <a href="manage-books.html" class="nav-item">
+            <span class="icon"><i class="fas fa-book"></i></span>
+            <span>Manage Books</span>
+        </a>
+        <a href="manage-users.html" class="nav-item">
+            <span class="icon"><i class="fas fa-users"></i></span>
+            <span>Manage Users</span>
+        </a>
+        <a href="manage-equipment.html" class="nav-item">
+            <span class="icon"><i class="fas fa-laptop"></i></span>
+            <span>Equipment</span>
+        </a>
+        <a href="damage-reports.html" class="nav-item active">
+            <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+            <span>Damage Reports</span>
+        </a>
+        <a href="system-settings.html" class="nav-item">
+            <span class="icon"><i class="fas fa-cog"></i></span>
+            <span>System Settings</span>
+        </a>
+        <div class="nav-divider"></div>
+        <div class="nav-label">Account</div>
+        <a href="profile.html" class="nav-item">
+            <span class="icon"><i class="fas fa-user"></i></span>
+            <span>My Profile</span>
+        </a>
+        <a href="password.html" class="nav-item">
+            <span class="icon"><i class="fas fa-lock"></i></span>
+            <span>Change Password</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="../login.html" class="nav-item" style="color:#f87171;">
+            <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+            <span>Logout</span>
+        </a>
+    </nav>
+    <div class="user-footer">
+        <div class="avatar" id="sidebar-avatar">G</div>
+        <div>
+            <div class="user-name" id="sidebar-name">Guest</div>
+            <div class="user-role" id="sidebar-role">Administrator</div>
+        </div>
+    </div>
+</aside>
+
+<div id="main">
+    <header id="topbar">
+        <div class="page-title">Damage Reports</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Administrator</div>
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <div class="section-title">Damage Reports</div>
+        <div class="stats-grid" id="damage-stats"></div>
+        <div class="card">
+            <div class="tbl-wrap">
+                <table class="table-damage">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Reporter</th>
+                            <th>Equipment</th>
+                            <th>Type</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="damage-tbody">
+                        <tr><td colspan="7" style="text-align:center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 id="modalTitle">Modal Title</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:5000/api';
+
+function getToken() { return localStorage.getItem('ulitms_token'); }
+
+function updateUserInfo() {
+    const name = localStorage.getItem('ulitms_name') || 'Guest';
+    const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('sidebar-avatar').textContent = initials;
+    document.getElementById('sidebar-name').textContent = name;
+    document.getElementById('header-avatar').textContent = initials;
+    document.getElementById('header-name').textContent = name;
+}
+
+function showModal(title, bodyHtml, onConfirm, confirmText = 'Confirm') {
+    const modal = document.getElementById('modalOverlay');
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').innerHTML = bodyHtml;
+    document.getElementById('modalConfirmBtn').textContent = confirmText;
+    modal.classList.add('active');
+    
+    const newBtn = document.getElementById('modalConfirmBtn').cloneNode(true);
+    document.getElementById('modalConfirmBtn').parentNode.replaceChild(newBtn, document.getElementById('modalConfirmBtn'));
+    newBtn.addEventListener('click', () => {
+        if (onConfirm) onConfirm();
+        closeModal();
+    });
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+}
+
+async function loadDamageReports() {
+    const tbody = document.getElementById('damage-tbody');
+    const statsContainer = document.getElementById('damage-stats');
+    
+    try {
+        const response = await fetch(`${API_URL}/damage-reports`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await response.json();
+        const reports = data.reports || [];
+        
+        // Calculate stats
+        const total = reports.length;
+        const pending = reports.filter(r => r.status === 'pending').length;
+        const resolved = reports.filter(r => r.status === 'resolved').length;
+        const critical = reports.filter(r => r.severity === 'critical').length;
+        
+        statsContainer.innerHTML = `
+            <div class="stat-card"><div class="label">Total Reports</div><div class="value">${total}</div></div>
+            <div class="stat-card"><div class="label">Pending</div><div class="value" style="color:#f59e0b;">${pending}</div></div>
+            <div class="stat-card"><div class="label">Resolved</div><div class="value" style="color:#10b981;">${resolved}</div></div>
+            <div class="stat-card"><div class="label">Critical</div><div class="value" style="color:#ef4444;">${critical}</div></div>
+        `;
+        
+        tbody.innerHTML = reports.map(report => `
+            <tr>
+                <td><span style="color:#27c4cc;">#${report.id}</span></td>
+                <td>${report.reporter_name || 'N/A'}</td>
+                <td>${report.equipment_name || 'N/A'}</td>
+                <td>${report.damage_type || 'N/A'}</td>
+                <td><span class="badge badge-${report.severity === 'critical' ? 'danger' : report.severity === 'medium' ? 'warning' : 'info'}">${report.severity || 'Unknown'}</span></td>
+                <td><span class="badge badge-${report.status === 'resolved' ? 'success' : report.status === 'in_progress' ? 'warning' : 'info'}">${report.status === 'resolved' ? 'Resolved' : report.status === 'in_progress' ? 'In Progress' : 'Pending'}</span></td>
+                <td>
+                    ${report.status !== 'resolved' ? `
+                        <button class="btn btn-small btn-secondary" onclick="updateReportStatus(${report.id}, 'resolved')">Resolve</button>
+                        <button class="btn btn-small btn-warning" onclick="updateReportStatus(${report.id}, 'in_progress')">In Progress</button>
+                    ` : '<span style="color:#94a3b8;">Resolved</span>'}
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="7">Failed to load</td></tr>';
+    }
+}
+
+window.updateReportStatus = async (reportId, newStatus) => {
+    if (!confirm(`Mark this report as ${newStatus === 'resolved' ? 'resolved' : 'in progress'}?`)) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/damage-reports/${reportId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getToken()
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (response.ok) {
+            alert('Report status updated!');
+            loadDamageReports();
+        } else {
+            throw new Error('Failed to update status');
+        }
+    } catch(e) { 
+        alert('Failed to update report status'); 
+    }
+};
+
+function checkAuth() {
+    const token = getToken();
+    const role = localStorage.getItem('ulitms_role');
+    if (!token || role !== 'admin') window.location.href = '../login.html';
+}
+
+checkAuth();
+updateUserInfo();
+loadDamageReports();
+</script>
+</body>
+</html>

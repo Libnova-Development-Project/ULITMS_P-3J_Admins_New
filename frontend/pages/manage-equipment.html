@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — Equipment Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+    <script src="../js/confirm-dialog.js"></script>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<!-- Dynamic Sidebar Loading Script -->
+<aside id="sidebar">
+</aside>
+
+<script src="../js/sidebar-loader.js"></script>
+<script>
+    // Load appropriate sidebar based on user role
+    loadSidebar();
+</script>
+
+<div id="main">
+    <header id="topbar">
+        <div class="page-title">Hardware Management</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Administrator</div>
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <div class="section-title" style="font-size: 2.2rem; margin-bottom: 8px;">Hardware & Peripherals Management</div>
+        <div class="section-sub" style="margin-bottom: 24px;">Manage library equipment, devices, and maintenance reports</div>
+
+        <!-- Stat Cards -->
+        <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 32px;">
+            <div class="stat-card">
+                <div class="label">TOTAL DEVICES</div>
+                <div class="value" id="total-devices">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">GOOD CONDITION</div>
+                <div class="value" id="good-condition">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">NEED REPAIR</div>
+                <div class="value" id="need-repair">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">OPEN REPORTS</div>
+                <div class="value" id="open-reports">0</div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-bar" style="display: flex; gap: 12px; margin-bottom: 32px;">
+            <button class="btn btn-primary" onclick="showAddEquipmentModal()">
+                <i class="fas fa-plus"></i> Add Device
+            </button>
+            <button class="btn btn-secondary" onclick="showAddCategoryModal()">
+                <i class="fas fa-folder-plus"></i> Add Category
+            </button>
+            <button class="btn btn-secondary" style="border-color: var(--teal-primary);" onclick="showMaintenanceModal()">
+                <i class="fas fa-tools"></i> Report Maintenance
+            </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-header" style="display: flex; gap: 24px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px; padding-bottom: 0;">
+            <div class="tab-item active" id="tab-devices" onclick="switchTab('devices')" style="cursor: pointer; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; position: relative;">
+                <i class="fas fa-desktop"></i> Devices & Peripherals
+            </div>
+            <div class="tab-item" id="tab-categories" onclick="switchTab('categories')" style="cursor: pointer; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; position: relative;">
+                <i class="fas fa-folder"></i> Categories
+            </div>
+            <div class="tab-item" id="tab-reports" onclick="switchTab('reports')" style="cursor: pointer; display: flex; align-items: center; gap: 8px; padding-bottom: 8px; position: relative;">
+                <i class="fas fa-wrench"></i> Maintenance Reports
+            </div>
+        </div>
+
+        <div id="devices-section">
+            <div class="section-title" style="font-size: 1.2rem; margin-bottom: 20px;">Peripheral Inventory</div>
+            <div class="card">
+                <div class="tbl-wrap">
+                    <table class="table-equipment">
+                        <thead>
+                            <tr>
+                                <th>DEVICE</th>
+                                <th>CATEGORY</th>
+                                <th>SPECIFICATIONS</th>
+                                <th>CONDITION</th>
+                                <th>LOCATION</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="equipment-tbody">
+                            <tr><td colspan="6" style="text-align:center;">Loading inventory...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="categories-section" style="display: none;">
+            <div class="section-title" style="font-size: 1.2rem; margin-bottom: 20px;">Peripheral Categories</div>
+            <div class="card">
+                <div class="tbl-wrap">
+                    <table class="table-equipment">
+                        <thead>
+                            <tr>
+                                <th>CATEGORY NAME</th>
+                                <th>DESCRIPTION</th>
+                                <th>DEVICES COUNT</th>
+                                <th>CREATED AT</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categories-tbody">
+                            <tr><td colspan="5" style="text-align:center;">Loading categories...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="reports-section" style="display: none;">
+            <div class="section-title" style="font-size: 1.2rem; margin-bottom: 20px;">Maintenance & Damage Reports</div>
+            <div class="card">
+                <div class="tbl-wrap">
+                    <table class="table-equipment">
+                        <thead>
+                            <tr>
+                                <th>REPORT ID</th>
+                                <th>DEVICE / UNIT</th>
+                                <th>ISSUE TYPE</th>
+                                <th>SEVERITY</th>
+                                <th>STATUS</th>
+                                <th>DATE REPORTED</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-tbody">
+                            <tr><td colspan="7" style="text-align:center;">Loading reports...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 id="modalTitle">Modal Title</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:5000/api';
+
+function getToken() { return localStorage.getItem('ulitms_token'); }
+
+function updateUserInfo() {
+    const name = localStorage.getItem('ulitms_name') || 'Guest';
+    const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('sidebar-avatar').textContent = initials;
+    document.getElementById('sidebar-name').textContent = name;
+    document.getElementById('header-avatar').textContent = initials;
+    document.getElementById('header-name').textContent = name;
+}
+
+function showModal(title, bodyHtml, onConfirm, confirmText = 'Confirm') {
+    const modal = document.getElementById('modalOverlay');
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').innerHTML = bodyHtml;
+    document.getElementById('modalConfirmBtn').textContent = confirmText;
+    modal.classList.add('active');
+    
+    const newBtn = document.getElementById('modalConfirmBtn').cloneNode(true);
+    document.getElementById('modalConfirmBtn').parentNode.replaceChild(newBtn, document.getElementById('modalConfirmBtn'));
+    newBtn.addEventListener('click', () => {
+        if (onConfirm) onConfirm();
+        closeModal();
+    });
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+}
+
+function switchTab(tab) {
+    // Hide all sections
+    document.getElementById('devices-section').style.display = 'none';
+    document.getElementById('categories-section').style.display = 'none';
+    document.getElementById('reports-section').style.display = 'none';
+    
+    // Reset tab styles
+    document.querySelectorAll('.tab-item').forEach(el => {
+        el.classList.remove('active');
+        el.style.color = 'var(--text-secondary)';
+        el.style.borderBottom = 'none';
+    });
+    
+    // Show selected section
+    const activeTab = document.getElementById(`tab-${tab}`);
+    activeTab.classList.add('active');
+    activeTab.style.color = 'var(--teal-primary)';
+    activeTab.style.borderBottom = '2px solid var(--teal-primary)';
+    
+    document.getElementById(`${tab}-section`).style.display = 'block';
+    
+    // Load data
+    if (tab === 'devices') loadEquipment();
+    if (tab === 'categories') loadCategories();
+    if (tab === 'reports') loadMaintenanceReports();
+}
+
+async function loadEquipment() {
+    console.log('📦 Fetching peripherals from:', `${API_URL}/peripherals`);
+    const tbody = document.getElementById('equipment-tbody');
+    const token = getToken();
+    
+    if (!token) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);">Authentication required. Please login again.</td></tr>';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/peripherals`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.message || 'Server error');
+        }
+
+        const data = await response.json();
+        console.log('📥 API Response:', data);
+        
+        // Extract peripherals array correctly
+        let equipment = [];
+        if (data.peripherals) equipment = data.peripherals;
+        else if (data.data && data.data.peripherals) equipment = data.data.peripherals;
+        else if (data.data && Array.isArray(data.data)) equipment = data.data;
+        else if (Array.isArray(data)) equipment = data;
+        
+        console.log('✅ Parsed Equipment:', equipment);
+        
+        // Update Stats
+        document.getElementById('total-devices').textContent = equipment.length;
+        document.getElementById('good-condition').textContent = equipment.filter(e => e.condition === 'good').length;
+        document.getElementById('need-repair').textContent = equipment.filter(e => e.condition === 'repair_needed' || e.condition === 'damaged').length;
+        document.getElementById('open-reports').textContent = equipment.filter(e => !e.is_active).length;
+
+        if (equipment.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">No equipment found in inventory. <br><small>Click "Add Device" to get started.</small></td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = equipment.map(item => `
+            <tr>
+                <td>
+                    <div style="font-weight: 600; color: var(--text-primary);">${item.name}</div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">SN: ${item.serial_number || 'N/A'}</div>
+                </td>
+                <td><span class="badge badge-teal">${item.category_name || 'General'}</span></td>
+                <td><div style="font-size: 0.85rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.brand || ''} ${item.model || ''}</div></td>
+                <td><span class="badge badge-${item.condition === 'good' ? 'success' : item.condition === 'repair_needed' ? 'warning' : 'danger'}">${(item.condition || 'good').toUpperCase()}</span></td>
+                <td><div style="font-size: 0.85rem;">PC Unit #${item.unit_number || '?'} - ${item.location || 'Library'}</div></td>
+                <td>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="btn btn-small btn-secondary" title="Edit" onclick="editEquipment(${item.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-small btn-danger" title="Delete" onclick="deleteEquipment(${item.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) {
+        console.error('❌ Load equipment error:', e);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger); padding: 40px;">Failed to load inventory: ' + e.message + '</td></tr>';
+    }
+}
+
+function showAddCategoryModal() {
+    showModal('Add Peripheral Category', `
+        <div class="form-group">
+            <label class="form-label">Category Name</label>
+            <input type="text" id="category-name" class="form-input" placeholder="e.g. Mechanical Keyboard">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="category-desc" class="form-input" style="height:100px;" placeholder="Optional details..."></textarea>
+        </div>
+    `, async () => {
+        const name = document.getElementById('category-name').value;
+        if (!name) return showError('Name is required');
+        
+        try {
+            const res = await fetch(`${API_URL}/peripherals/categories`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify({ name, description: document.getElementById('category-desc').value })
+            });
+            
+            if (res.ok) {
+                showSuccess('Category added successfully!');
+            } else {
+                throw new Error('Failed to add category');
+            }
+        } catch(e) { showError(e.message); }
+    }, 'Add Category');
+}
+
+function showMaintenanceModal(peripheralId = null) {
+    showModal('Report Maintenance / Damage', `
+        <div class="form-group">
+            <label class="form-label">Damage Type</label>
+            <input type="text" id="damage-type" class="form-input" placeholder="e.g. Stuck Key, Flickering Screen">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Severity</label>
+            <select id="damage-severity" class="form-select">
+                <option value="low">Low - Still Usable</option>
+                <option value="medium">Medium - Needs Attention</option>
+                <option value="high">High - Not Usable</option>
+                <option value="critical">Critical - Hardware Failure</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Details</label>
+            <textarea id="damage-desc" class="form-input" style="height:100px;" placeholder="Describe the issue..."></textarea>
+        </div>
+    `, async () => {
+        const type = document.getElementById('damage-type').value;
+        if (!type) return showError('Damage type is required');
+        
+        const reportData = {
+            peripheral_id: peripheralId,
+            damage_type: type,
+            severity: document.getElementById('damage-severity').value,
+            description: document.getElementById('damage-desc').value
+        };
+        
+        try {
+            const res = await fetch(`${API_URL}/damage-reports`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify(reportData)
+            });
+            
+            if (res.ok) {
+                showSuccess('Maintenance report submitted!');
+                loadEquipment();
+            } else {
+                throw new Error('Failed to submit report');
+            }
+        } catch(e) { showError(e.message); }
+    }, 'Submit Report');
+}
+
+
+async function showAddEquipmentModal() {
+    // Fetch units for dropdown
+    let units = [];
+    try {
+        const uRes = await fetch(`${API_URL}/elibrary/units`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const uData = await uRes.json();
+        units = uData.units || [];
+    } catch(e) {}
+
+    showModal('Add New Device', `
+        <div class="form-group"><label class="form-label">PC Unit Assignment</label>
+            <select id="equipment-unit" class="form-select">
+                ${units.map(u => `<option value="${u.id}">PC Unit #${u.unit_number} (${u.label || 'No Label'})</option>`).join('')}
+            </select>
+        </div>
+        <div class="form-group"><label class="form-label">Device Name</label><input type="text" id="equipment-name" class="form-input" placeholder="e.g. Logitech K120"></div>
+        <div class="form-group"><label class="form-label">Category</label><input type="text" id="equipment-category" class="form-input" placeholder="e.g. Keyboard"></div>
+        <div class="form-group"><label class="form-label">Brand / Specifications</label><input type="text" id="equipment-brand" class="form-input" placeholder="e.g. USB Wired Keyboard"></div>
+        <div class="form-group"><label class="form-label">Serial Number</label><input type="text" id="equipment-serial" class="form-input" placeholder="SN12345"></div>
+        <div class="form-group"><label class="form-label">Condition</label><select id="equipment-condition" class="form-select">
+            <option value="good">Good</option>
+            <option value="repair_needed">Repair Needed</option>
+            <option value="damaged">Damaged</option>
+            <option value="missing">Missing</option>
+        </select></div>
+    `, async () => {
+        const equipmentData = {
+            unit_id: parseInt(document.getElementById('equipment-unit').value),
+            name: document.getElementById('equipment-name').value,
+            category_name: document.getElementById('equipment-category').value,
+            brand: document.getElementById('equipment-brand').value,
+            condition: document.getElementById('equipment-condition').value,
+            serial_number: document.getElementById('equipment-serial').value
+        };
+        
+        try {
+            const response = await fetch(`${API_URL}/peripherals`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify(equipmentData)
+            });
+            
+            if (response.ok) {
+                showSuccess('Equipment added successfully!');
+                loadEquipment();
+            } else {
+                const err = await response.json();
+                throw new Error(err.message || 'Failed to add equipment');
+            }
+        } catch(e) { 
+            showError('Error: ' + e.message); 
+        }
+    }, 'Add Device');
+}
+
+async function editEquipment(id) {
+    try {
+        const response = await fetch(`${API_URL}/peripherals/${id}`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await response.json();
+        const item = data.data?.peripheral || data.data || data;
+        
+        // Fetch units for dropdown
+        let units = [];
+        try {
+            const uRes = await fetch(`${API_URL}/elibrary/units`, {
+                headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            const uData = await uRes.json();
+            units = uData.units || [];
+        } catch(e) {}
+
+        showModal('Edit Device', `
+            <div class="form-group"><label class="form-label">PC Unit Assignment</label>
+                <select id="edit-unit" class="form-select">
+                    ${units.map(u => `<option value="${u.id}" ${u.id === item.unit_id ? 'selected' : ''}>PC Unit #${u.unit_number}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group"><label class="form-label">Device Name</label><input type="text" id="edit-name" class="form-input" value="${item.name}"></div>
+            <div class="form-group"><label class="form-label">Brand / Specifications</label><input type="text" id="edit-brand" class="form-input" value="${item.brand || ''}"></div>
+            <div class="form-group"><label class="form-label">Serial Number</label><input type="text" id="edit-serial" class="form-input" value="${item.serial_number || ''}"></div>
+            <div class="form-group"><label class="form-label">Condition</label><select id="edit-condition" class="form-select">
+                <option value="good" ${item.condition === 'good' ? 'selected' : ''}>Good</option>
+                <option value="repair_needed" ${item.condition === 'repair_needed' ? 'selected' : ''}>Repair Needed</option>
+                <option value="damaged" ${item.condition === 'damaged' ? 'selected' : ''}>Damaged</option>
+                <option value="missing" ${item.condition === 'missing' ? 'selected' : ''}>Missing</option>
+            </select></div>
+        `, async () => {
+            const updates = {
+                unit_id: parseInt(document.getElementById('edit-unit').value),
+                name: document.getElementById('edit-name').value,
+                brand: document.getElementById('edit-brand').value,
+                condition: document.getElementById('edit-condition').value,
+                serial_number: document.getElementById('edit-serial').value
+            };
+            
+            try {
+                const upResponse = await fetch(`${API_URL}/peripherals/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + getToken()
+                    },
+                    body: JSON.stringify(updates)
+                });
+                
+                if (upResponse.ok) {
+                    showSuccess('Equipment updated successfully!');
+                    loadEquipment();
+                } else {
+                    throw new Error('Failed to update equipment');
+                }
+            } catch(e) { 
+                showError('Failed to update equipment'); 
+            }
+        }, 'Update Device');
+    } catch(e) {
+        showError('Could not fetch device details');
+    }
+}
+
+async function deleteEquipment(id) {
+    confirmDelete('Are you sure you want to delete this device? This will remove all associated maintenance records.', async () => {
+        try {
+            const response = await fetch(`${API_URL}/peripherals/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            
+            if (response.ok) {
+                showSuccess('Equipment deleted successfully!');
+                loadEquipment();
+            } else {
+                throw new Error('Failed to delete equipment');
+            }
+        } catch(e) { 
+            showError('Failed to delete equipment'); 
+        }
+    });
+}
+
+function checkAuth() {
+    const token = getToken();
+    const role = localStorage.getItem('ulitms_role');
+    if (!token || role !== 'admin') window.location.href = '../login.html';
+}
+
+async function loadCategories() {
+    const tbody = document.getElementById('categories-tbody');
+    try {
+        const res = await fetch(`${API_URL}/peripherals/categories`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await res.json();
+        const categories = data.categories || data.data?.categories || data.data || [];
+        
+        if (categories.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 30px;">No categories found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = categories.map(cat => `
+            <tr>
+                <td><div style="font-weight: 600;">${cat.name}</div></td>
+                <td><div style="font-size: 0.85rem; color: var(--text-muted);">${cat.description || 'No description'}</div></td>
+                <td><span class="badge badge-teal">${cat.device_count || 0} Devices</span></td>
+                <td><div style="font-size: 0.8rem;">${new Date(cat.created_at).toLocaleDateString()}</div></td>
+                <td>
+                    <button class="btn btn-small btn-secondary" onclick="editCategory(${cat.id})"><i class="fas fa-edit"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--danger);">Failed to load categories.</td></tr>';
+    }
+}
+
+async function loadMaintenanceReports() {
+    const tbody = document.getElementById('reports-tbody');
+    try {
+        const res = await fetch(`${API_URL}/damage-reports`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await res.json();
+        const reports = data.reports || data.data?.reports || data.data || [];
+        
+        if (reports.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;">No maintenance reports found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = reports.map(rep => `
+            <tr>
+                <td><div style="font-family: monospace; font-size: 0.8rem;">#${rep.id}</div></td>
+                <td>
+                    <div style="font-weight: 600;">${rep.peripheral_name || 'System Unit'}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">Unit #${rep.unit_number}</div>
+                </td>
+                <td><span class="badge badge-teal">${rep.damage_type}</span></td>
+                <td><span class="badge badge-${rep.severity === 'critical' || rep.severity === 'high' ? 'danger' : 'warning'}">${rep.severity.toUpperCase()}</span></td>
+                <td><span class="badge badge-${rep.resolved_at ? 'success' : 'danger'}">${rep.resolved_at ? 'RESOLVED' : 'PENDING'}</span></td>
+                <td><div style="font-size: 0.8rem;">${new Date(rep.created_at).toLocaleDateString()}</div></td>
+                <td>
+                    ${!rep.resolved_at ? `<button class="btn btn-small btn-primary" onclick="resolveReport(${rep.id})">Resolve</button>` : '<i class="fas fa-check-circle" style="color: var(--success);"></i>'}
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color: var(--danger);">Failed to load reports.</td></tr>';
+    }
+}
+
+async function resolveReport(id) {
+    showModal('Resolve Maintenance Report', `
+        <div class="form-group">
+            <label class="form-label">Resolution Notes</label>
+            <textarea id="resolve-notes" class="form-input" style="height:100px;" placeholder="What was fixed?"></textarea>
+        </div>
+    `, async () => {
+        try {
+            const res = await fetch(`${API_URL}/damage-reports/${id}/resolve`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify({ resolution_notes: document.getElementById('resolve-notes').value })
+            });
+            if (res.ok) {
+                showSuccess('Report resolved successfully!');
+                loadMaintenanceReports();
+            }
+        } catch(e) { showError('Failed to resolve report'); }
+    }, 'Mark as Resolved');
+}
+
+checkAuth();
+updateUserInfo();
+// Initial load
+switchTab('devices');
+</script>
+</body>
+</html>

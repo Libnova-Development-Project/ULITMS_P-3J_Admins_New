@@ -3,15 +3,17 @@ const pool = require('../database/db');
 class BorrowingModel {
     // Create borrowing transaction
     static async create(userId, bookId, dueDate, processedBy = null) {
-        // Start transaction
         const client = await pool.connect();
         
         try {
             await client.query('BEGIN');
             
+            console.log('📚 Creating borrowing:', { userId, bookId, dueDate });
+            
             // Check book availability
             const book = await client.query(
-                `SELECT * FROM library_schema.books 
+                `SELECT id, title, total_copies, available_copies 
+                 FROM library_schema.books 
                  WHERE id = $1 AND is_deleted = false AND available_copies > 0`,
                 [bookId]
             );
@@ -20,34 +22,42 @@ class BorrowingModel {
                 throw new Error('Book not available');
             }
             
-            // Create borrowing record
+            console.log('📖 Book found:', book.rows[0].title);
+            
+            // Create borrowing record - use 'borrowed' not 'active'
             const result = await client.query(
                 `INSERT INTO library_schema.borrow_transactions 
-                 (user_id, book_id, due_date, processed_by)
-                 VALUES ($1, $2, $3, $4)
+                 (user_id, book_id, due_date, processed_by, status, borrowed_at)
+                 VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
                  RETURNING *`,
-                [userId, bookId, dueDate, processedBy]
+                [userId, bookId, dueDate, processedBy, 'borrowed']
             );
+            
+            console.log('✅ Borrowing record created, ID:', result.rows[0].id);
             
             // Update book availability
             await client.query(
                 `UPDATE library_schema.books 
-                 SET available_copies = available_copies - 1
-                 WHERE id = $1`,
-                [bookId]
+                 SET available_copies = available_copies - 1,
+                     status = $1
+                 WHERE id = $2`,
+                [book.rows[0].available_copies - 1 <= 0 ? 'borrowed' : 'available', bookId]
             );
             
             // Log activity
             await client.query(
                 `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
                  VALUES ($1, $2, $3)`,
-                [userId, 'BORROW_BOOK', { book_id: bookId, due_date: dueDate }]
+                [userId, 'BORROW_BOOK', JSON.stringify({ book_id: bookId, due_date: dueDate })]
             );
             
             await client.query('COMMIT');
+            console.log('✅ Transaction committed');
             return result.rows[0];
+            
         } catch (error) {
             await client.query('ROLLBACK');
+            console.error('❌ Borrow error:', error.message);
             throw error;
         } finally {
             client.release();
@@ -61,7 +71,6 @@ class BorrowingModel {
         try {
             await client.query('BEGIN');
             
-            // Get borrowing record
             const borrowing = await client.query(
                 `SELECT * FROM library_schema.borrow_transactions 
                  WHERE id = $1 AND status = 'borrowed' AND is_deleted = false`,
@@ -79,10 +88,9 @@ class BorrowingModel {
             
             if (today > dueDate) {
                 const daysOverdue = Math.ceil((today - dueDate) / (1000 * 60 * 60 * 24));
-                fine = daysOverdue * 10; // ₱10 per day
+                fine = daysOverdue * 10;
             }
             
-            // Update borrowing record
             const result = await client.query(
                 `UPDATE library_schema.borrow_transactions 
                  SET returned_at = CURRENT_TIMESTAMP, 
@@ -94,19 +102,18 @@ class BorrowingModel {
                 [fine, returnedBy, borrowingId]
             );
             
-            // Update book availability
             await client.query(
                 `UPDATE library_schema.books 
-                 SET available_copies = available_copies + 1
+                 SET available_copies = available_copies + 1,
+                     status = 'available'
                  WHERE id = $1`,
                 [borrowing.rows[0].book_id]
             );
             
-            // Log activity
             await client.query(
                 `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
                  VALUES ($1, $2, $3)`,
-                [borrowing.rows[0].user_id, 'RETURN_BOOK', { borrowing_id: borrowingId, fine }]
+                [borrowing.rows[0].user_id, 'RETURN_BOOK', JSON.stringify({ borrowing_id: borrowingId, fine })]
             );
             
             await client.query('COMMIT');

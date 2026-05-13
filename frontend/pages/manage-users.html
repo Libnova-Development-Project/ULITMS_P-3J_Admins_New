@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — User Management</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+<script src="../js/manage-users.js"></script>
+<script src="../js/confirm-dialog.js"></script>
+<script src="../simple-users-display.js"></script>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<!-- Dynamic Sidebar Loading Script -->
+    <aside id="sidebar">
+    </aside>
+
+    <script src="../js/sidebar-loader.js"></script>
+    <script>
+        // Load appropriate sidebar based on user role
+        loadSidebar();
+    </script>
+        <div class="avatar" id="sidebar-avatar">G</div>
+        <div>
+            <div class="user-name" id="sidebar-name">Guest</div>
+            <div class="user-role" id="sidebar-role">Administrator</div>
+        </div>
+    </div>
+</aside>
+
+<div id="main">
+    <header id="topbar">
+        <div class="page-title">User Management</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Administrator</div>
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <div class="section-title">User Management</div>
+                <div class="card">
+            <div class="tbl-wrap">
+                <table class="table-users">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Student ID</th>
+                            <th>Course</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr><td colspan="6" style="text-align:center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 id="modalTitle">Modal Title</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:5000/api';
+
+function getToken() { return localStorage.getItem('ulitms_token'); }
+
+function updateUserInfo() {
+    const name = localStorage.getItem('ulitms_name') || 'Guest';
+    const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('sidebar-avatar').textContent = initials;
+    document.getElementById('sidebar-name').textContent = name;
+    document.getElementById('header-avatar').textContent = initials;
+    document.getElementById('header-name').textContent = name;
+}
+
+function showModal(title, bodyHtml, onConfirm, confirmText = 'Confirm') {
+    const modal = document.getElementById('modalOverlay');
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').innerHTML = bodyHtml;
+    document.getElementById('modalConfirmBtn').textContent = confirmText;
+    modal.classList.add('active');
+    
+    const newBtn = document.getElementById('modalConfirmBtn').cloneNode(true);
+    document.getElementById('modalConfirmBtn').parentNode.replaceChild(newBtn, document.getElementById('modalConfirmBtn'));
+    newBtn.addEventListener('click', () => {
+        if (onConfirm) onConfirm();
+        closeModal();
+    });
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+}
+
+async function loadUsers() {
+    const tbody = document.getElementById('users-tbody');
+    try {
+        const response = await fetch(`${API_URL}/users`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to connect to server');
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to load users');
+        }
+        
+        const users = data.data.users || data.data || [];
+        
+        tbody.innerHTML = users.map(user => `
+            <tr>
+                <td><strong>${user.name}</strong></td>
+                <td>${user.email}</td>
+                <td>${user.student_id || 'N/A'}</td>
+                <td>${user.course || 'N/A'}</td>
+                <td><span class="badge badge-${user.role === 'admin' ? 'danger' : 'info'}">${user.role === 'admin' ? 'Admin' : 'Student'}</span></td>
+                <td>
+                    <button class="btn btn-small btn-secondary" onclick="editUser(${user.id})">Edit</button>
+                    <button class="btn btn-small btn-danger" onclick="deleteUser(${user.id})">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) {
+        console.error('Load users error:', e);
+        tbody.innerHTML = '<tr><td colspan="6">Failed to load users. Please try again.</td></tr>';
+    }
+}
+
+window.showAddUserModal = () => {
+    showModal('Add User', `
+        <div class="form-group"><label class="form-label">First Name</label><input type="text" id="user-firstname" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Last Name</label><input type="text" id="user-lastname" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Email</label><input type="email" id="user-email" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Student ID</label><input type="text" id="user-studentid" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Course</label><input type="text" id="user-course" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Year Level</label><select id="user-year" class="form-select">
+            <option value="">Select Year</option>
+            <option value="1">1st Year</option>
+            <option value="2">2nd Year</option>
+            <option value="3">3rd Year</option>
+            <option value="4">4th Year</option>
+        </select></div>
+        <div class="form-group"><label class="form-label">Contact Number</label><input type="text" id="user-contact" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Password</label><input type="password" id="user-password" class="form-input"></div>
+        <div class="form-group"><label class="form-label">Role</label><select id="user-role" class="form-select">
+            <option value="student">Student</option>
+            <option value="admin">Administrator</option>
+        </select></div>
+    `, async () => {
+        const userData = {
+            first_name: document.getElementById('user-firstname').value,
+            last_name: document.getElementById('user-lastname').value,
+            email: document.getElementById('user-email').value,
+            student_id: document.getElementById('user-studentid').value,
+            course: document.getElementById('user-course').value,
+            year_level: parseInt(document.getElementById('user-year').value),
+            contact: document.getElementById('user-contact').value,
+            password: document.getElementById('user-password').value,
+            role: document.getElementById('user-role').value
+        };
+        
+        try {
+            const response = await fetch(`${API_URL}/users`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify(userData)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('User added successfully!');
+                loadUsers();
+            } else {
+                throw new Error(data.message || 'Failed to add user');
+            }
+        } catch(e) { 
+            console.error('Add user error:', e);
+            alert(e.message || 'Failed to add user'); 
+        }
+    }, 'Add User');
+};
+
+window.deleteUser = async (id) => {
+    const userRow = document.querySelector(`tr[data-user-id="${id}"]`);
+    const userName = userRow ? userRow.querySelector('td:first-child strong').textContent : 'this user';
+    
+    confirmDelete(`Are you sure you want to delete "${userName}"? This action cannot be undone.`, async () => {
+        showLoading('Deleting user...');
+        
+        try {
+            const response = await fetch(`${API_URL}/users/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                hideLoading();
+                showSuccess('User deleted successfully!');
+                loadUsers();
+            } else {
+                throw new Error(data.message || 'Failed to delete user');
+            }
+        } catch(e) { 
+            hideLoading();
+            showError('Failed to delete user: ' + e.message); 
+        }
+    });
+};
+
+function checkAuth() {
+    const token = getToken();
+    const role = localStorage.getItem('ulitms_role');
+    if (!token || role !== 'admin') window.location.href = '../login.html';
+}
+
+checkAuth();
+updateUserInfo();
+loadUsers();
+</script>
+</body>
+</html>

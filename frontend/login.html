@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,308 +7,744 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #6b7280;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --border-color: #e5e7eb;
+            --text-primary: #1f2937;
+            --text-secondary: #64748b;
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            --border-radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-gradient);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+            overflow-x: hidden;
         }
-        .login-container {
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+
+        /* Animated Background Elements */
+        .bg-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 450px;
+            height: 100%;
+            pointer-events: none;
             overflow: hidden;
         }
-        .tabs { display: flex; border-bottom: 1px solid #e5e7eb; }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .shape:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+            animation-duration: 25s;
+        }
+
+        .shape:nth-child(2) {
+            width: 120px;
+            height: 120px;
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+            animation-duration: 30s;
+        }
+
+        .shape:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 4s;
+            animation-duration: 20s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            33% { transform: translateY(-20px) rotate(120deg); }
+            66% { transform: translateY(10px) rotate(240deg); }
+        }
+
+        /* Login Container */
+        .login-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transform: translateY(0);
+            transition: var(--transition);
+        }
+
+        .login-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header */
+        .login-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 24px;
+            text-align: center;
+            position: relative;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .login-subtitle {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--border-color);
+        }
+
         .tab {
             flex: 1;
             padding: 16px;
             text-align: center;
             background: none;
             border: none;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            color: #6b7280;
-            transition: all 0.3s;
-        }
-        .tab.active { color: #667eea; border-bottom: 2px solid #667eea; }
-        .form-container { padding: 32px; }
-        .form-group { margin-bottom: 20px; }
-        .form-label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #6b7280;
-            margin-bottom: 8px;
-        }
-        .form-input, .form-select {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-        .form-input:focus, .form-select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
-        }
-        .btn {
-            width: 100%;
-            padding: 12px;
-            background: #667eea;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            position: relative;
         }
-        .btn:hover { background: #5a67d8; transform: translateY(-1px); }
-        .error-message, .success-message {
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            margin-bottom: 20px;
+
+        .tab:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* Form Container */
+        .form-container {
+            padding: 32px;
+            position: relative;
+        }
+
+        .form-section {
             display: none;
+            animation: fadeIn 0.5s ease;
         }
-        .error-message { background: #fee2e2; color: #dc2626; }
-        .success-message { background: #d1fae5; color: #059669; }
-        .demo-info {
-            margin-top: 24px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-            font-size: 0.75rem;
-            color: #6b7280;
+
+        .form-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Form Elements */
+        .form-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 24px;
             text-align: center;
         }
-        .demo-info p { margin: 5px 0; }
-        .format-hint { font-size: 0.7rem; color: #9ca3af; margin-top: 5px; }
-        h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; color: #1f2937; }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Messages */
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .message.show {
+            display: flex;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+        }
+
+        .message.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success);
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Demo Section */
+        .demo-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .demo-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 12px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+        }
+
+        .demo-accounts {
+            display: grid;
+            gap: 12px;
+        }
+
+        .demo-account {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 16px;
+            border-radius: 10px;
+            border: 2px solid #d1d5db;
+            transition: var(--transition);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-account:hover {
+            background: rgba(255, 255, 255, 1);
+            border-color: var(--primary);
+        }
+
+        .demo-account-type {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .demo-credentials {
+            font-size: 0.95rem;
+            color: #1f2937;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #d1d5db;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 640px) {
+            body { padding: 12px; }
+            .login-container { max-width: 100%; }
+            .form-container { padding: 24px; }
+            .logo-text { font-size: 1.3rem; }
+            .demo-section { padding: 16px; }
+        }
     </style>
 </head>
 <body>
-<div class="login-container">
-    <div class="tabs">
-        <button class="tab active" onclick="switchTab('login')">Login</button>
-        <button class="tab" onclick="switchTab('signup')">Sign Up</button>
+    <!-- Animated Background -->
+    <div class="bg-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
     </div>
-    
-    <div class="form-container">
-        <div id="login-form">
-            <h3>Welcome Back</h3>
-            <div id="login-error" class="error-message"></div>
-            <div class="form-group">
-                <label class="form-label">Student ID or Email</label>
-                <input type="text" id="login-identifier" class="form-input" placeholder="24-A-00599 or email@example.com">
+
+    <!-- Login Container -->
+    <div class="login-container">
+        <!-- Header -->
+        <div class="login-header">
+            <div class="logo-section">
+                <div class="logo-icon">📚</div>
+                <div class="logo-text">ULITMS</div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" id="login-password" class="form-input" placeholder="Enter your password">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Login as</label>
-                <select id="login-role" class="form-select">
-                    <option value="student">Student</option>
-                    <option value="admin">Administrator</option>
-                </select>
-            </div>
-            <button class="btn" onclick="handleLogin()">Login</button>
-            <div class="demo-info">
-                <strong>Demo Accounts</strong>
-                <p>Student: 24-A-00599 / student123</p>
-                <p>Admin: admin@ulitms.com / admin123</p>
-            </div>
+            <div class="login-subtitle">Library Management System</div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('login')">Login</button>
+            <button class="tab" onclick="switchTab('signup')">Sign Up</button>
         </div>
         
-        <div id="signup-form" style="display: none;">
-            <h3>Create Account</h3>
-            <div id="signup-error" class="error-message"></div>
-            <div id="signup-success" class="success-message"></div>
-            <div class="form-group">
-                <label class="form-label">First Name</label>
-                <input type="text" id="signup-firstname" class="form-input" placeholder="John">
+        <!-- Form Container -->
+        <div class="form-container">
+            <!-- Login Form -->
+            <div id="login-form" class="form-section active">
+                <h2 class="form-title">Welcome Back</h2>
+                <div id="login-error" class="message error"></div>
+                
+                <div class="form-group">
+                    <label class="form-label">Student ID or Email</label>
+                    <input type="text" id="login-identifier" class="form-input" 
+                           placeholder="24-A-00599 or email@example.com" 
+                           autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="login-password" class="form-input" 
+                           placeholder="Enter your password" 
+                           autocomplete="current-password">
+                </div>
+                
+                <button class="btn" onclick="handleLogin()" id="login-btn">
+                    <span id="login-text">Login</span>
+                </button>
             </div>
-            <div class="form-group">
-                <label class="form-label">Last Name</label>
-                <input type="text" id="signup-lastname" class="form-input" placeholder="Doe">
+            
+            <!-- Signup Form -->
+            <div id="signup-form" class="form-section">
+                <h2 class="form-title">Create Account</h2>
+                <div id="signup-error" class="message error"></div>
+                <div id="signup-success" class="message success"></div>
+                
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text" id="signup-firstname" class="form-input" 
+                           placeholder="John" autocomplete="given-name">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" id="signup-lastname" class="form-input" 
+                           placeholder="Doe" autocomplete="family-name">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Student ID</label>
+                    <input type="text" id="signup-studentid" class="form-input" 
+                           placeholder="24-A-00599" autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="signup-email" class="form-input" 
+                           placeholder="email@example.com" autocomplete="email">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Course</label>
+                    <input type="text" id="signup-course" class="form-input" 
+                           placeholder="Computer Science" autocomplete="organization">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Year Level</label>
+                    <select id="signup-year" class="form-select">
+                        <option value="">Select Year</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="signup-password" class="form-input" 
+                           placeholder="Min. 8 characters" autocomplete="new-password">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" id="signup-confirmpassword" class="form-input" 
+                           placeholder="Confirm password" autocomplete="new-password">
+                </div>
+                
+                <button class="btn" onclick="handleSignup()" id="signup-btn">
+                    <span id="signup-text">Create Account</span>
+                </button>
             </div>
-            <div class="form-group">
-                <label class="form-label">Student ID</label>
-                <input type="text" id="signup-studentid" class="form-input" placeholder="24-A-00599">
-                <div class="format-hint">Format: YY-B-XXXXX (e.g., 24-A-00599)</div>
+            
+            <!-- Demo Section -->
+            <div class="demo-section">
+                <div class="demo-title">🔑 Demo Accounts - Quick Login</div>
+                <div class="demo-accounts">
+                    <div class="demo-account" style="border-color: #10b981;">
+                        <div class="demo-account-type" style="color: #10b981;">👨‍🎓 Student Account</div>
+                        <div class="demo-credentials">
+                            <strong>ID:</strong> 24-A-00599<br>
+                            <strong>Password:</strong> student123
+                        </div>
+                    </div>
+                    <div class="demo-account" style="border-color: #f59e0b;">
+                        <div class="demo-account-type" style="color: #f59e0b;">👨‍💼 Admin Account</div>
+                        <div class="demo-credentials">
+                            <strong>Email:</strong> admin@ulitms.local<br>
+                            <strong>Password:</strong> admin123
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" id="signup-email" class="form-input" placeholder="student@university.edu">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Course</label>
-                <input type="text" id="signup-course" class="form-input" placeholder="BS Information Technology">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Year Level</label>
-                <select id="signup-year" class="form-select">
-                    <option value="">Select Year</option>
-                    <option value="1">1st Year</option>
-                    <option value="2">2nd Year</option>
-                    <option value="3">3rd Year</option>
-                    <option value="4">4th Year</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Contact Number</label>
-                <input type="tel" id="signup-contact" class="form-input" placeholder="09123456789">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" id="signup-password" class="form-input" placeholder="Min. 6 characters">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Confirm Password</label>
-                <input type="password" id="signup-confirm" class="form-input" placeholder="Confirm your password">
-            </div>
-            <button class="btn" onclick="handleSignup()">Create Account</button>
         </div>
     </div>
-</div>
 
-<script>
-const API_URL = 'http://localhost:5000/api';
+    <script>
+        const API_URL = 'http://localhost:5000/api';
 
-function switchTab(tab) {
-    document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
-    document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
-    document.querySelectorAll('.tab').forEach((t, i) => {
-        t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'signup' && i === 1));
-    });
-}
-
-async function handleLogin() {
-    const identifier = document.getElementById('login-identifier').value.trim();
-    const password = document.getElementById('login-password').value;
-    const role = document.getElementById('login-role').value;
-    const errorDiv = document.getElementById('login-error');
-    
-    if (!identifier || !password) {
-        errorDiv.textContent = 'Please enter your credentials';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    errorDiv.style.display = 'none';
-    
-    try {
-        const response = await fetch(`${API_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identifier, password, role })
-        });
-        
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message);
-        
-        const token = data.token || data.data?.token;
-        const user = data.user || data.data?.user;
-        
-        if (token && user) {
-            localStorage.setItem('ulitms_token', token);
-            localStorage.setItem('ulitms_role', user.role);
-            localStorage.setItem('ulitms_name', `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User');
-            localStorage.setItem('ulitms_email', user.email);
-            localStorage.setItem('ulitms_studentid', user.student_id || '');
-            localStorage.setItem('ulitms_user_id', user.id);
-            window.location.href = '/index.html';
+        function switchTab(tab) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+            
+            // Update forms
+            document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
+            document.getElementById(`${tab}-form`).classList.add('active');
+            
+            // Clear messages
+            hideAllMessages();
         }
-    } catch (error) {
-        errorDiv.textContent = error.message;
-        errorDiv.style.display = 'block';
-    }
-}
 
-async function handleSignup() {
-    const data = {
-        first_name: document.getElementById('signup-firstname').value.trim(),
-        last_name: document.getElementById('signup-lastname').value.trim(),
-        student_id: document.getElementById('signup-studentid').value.trim().toUpperCase(),
-        email: document.getElementById('signup-email').value.trim(),
-        course: document.getElementById('signup-course').value.trim(),
-        year_level: document.getElementById('signup-year').value,
-        contact_number: document.getElementById('signup-contact').value.trim(),
-        password: document.getElementById('signup-password').value,
-        confirm: document.getElementById('signup-confirm').value
-    };
-    
-    const errorDiv = document.getElementById('signup-error');
-    const successDiv = document.getElementById('signup-success');
-    
-    if (!data.first_name || !data.last_name || !data.student_id || !data.email || !data.password) {
-        errorDiv.textContent = 'Please fill all required fields';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    if (data.password !== data.confirm) {
-        errorDiv.textContent = 'Passwords do not match';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    if (data.password.length < 6) {
-        errorDiv.textContent = 'Password must be at least 6 characters';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    if (!/^\d{2}-[A-Za-z]-\d{5}$/.test(data.student_id)) {
-        errorDiv.textContent = 'Student ID must be in format: YY-B-XXXXX (e.g., 24-A-00599)';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    errorDiv.style.display = 'none';
-    
-    try {
-        const response = await fetch(`${API_URL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                first_name: data.first_name,
-                last_name: data.last_name,
-                student_id: data.student_id,
-                email: data.email,
-                course: data.course || null,
-                year_level: data.year_level ? parseInt(data.year_level) : null,
-                contact_number: data.contact_number || null,
-                password: data.password,
-                role: 'student'
-            })
+        function showMessage(elementId, message, type = 'error') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `message ${type} show`;
+            
+            // Auto hide after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    element.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        function hideMessage(elementId) {
+            const element = document.getElementById(elementId);
+            element.classList.remove('show');
+        }
+
+        function hideAllMessages() {
+            document.querySelectorAll('.message').forEach(msg => {
+                msg.classList.remove('show');
+            });
+        }
+
+        function setLoading(buttonId, text) {
+            const btn = document.getElementById(buttonId);
+            btn.disabled = true;
+            document.getElementById(`${buttonId.replace('-btn', '-text')}`).textContent = text;
+        }
+
+        function setReady(buttonId, text) {
+            const btn = document.getElementById(buttonId);
+            btn.disabled = false;
+            document.getElementById(`${buttonId.replace('-btn', '-text')}`).textContent = text;
+        }
+
+        async function handleLogin() {
+            const identifier = document.getElementById('login-identifier').value.trim();
+            const password = document.getElementById('login-password').value;
+            
+            if (!identifier || !password) {
+                showMessage('login-error', 'Please fill in all fields');
+                return;
+            }
+            
+            setLoading('login-btn', 'Logging in...');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ identifier, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('ulitms_token', data.token);
+                    localStorage.setItem('ulitms_user_id', data.user.id);
+                    localStorage.setItem('ulitms_name', `${data.user.first_name} ${data.user.last_name}`);
+                    localStorage.setItem('ulitms_role', data.user.role);
+                    localStorage.setItem('ulitms_email', data.user.email);
+                    
+                    showMessage('login-error', 'Login successful! Redirecting...', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'pages/dashboard.html';
+                    }, 1500);
+                } else {
+                    throw new Error(data.message || 'Login failed');
+                }
+            } catch (error) {
+                showMessage('login-error', error.message);
+                setReady('login-btn', 'Login');
+            }
+        }
+
+        async function handleSignup() {
+            const firstName = document.getElementById('signup-firstname').value.trim();
+            const lastName = document.getElementById('signup-lastname').value.trim();
+            const studentId = document.getElementById('signup-studentid').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const course = document.getElementById('signup-course').value.trim();
+            const yearLevel = document.getElementById('signup-year').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirmpassword').value;
+            
+            // Validation
+            if (!firstName || !lastName || !studentId || !email || !password) {
+                showMessage('signup-error', 'Please fill in all required fields');
+                return;
+            }
+            
+            if (password.length < 8) {
+                showMessage('signup-error', 'Password must be at least 8 characters long');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showMessage('signup-error', 'Passwords do not match');
+                return;
+            }
+            
+            if (!email.includes('@')) {
+                showMessage('signup-error', 'Please enter a valid email address');
+                return;
+            }
+            
+            setLoading('signup-btn', 'Creating Account...');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        first_name: firstName,
+                        last_name: lastName,
+                        student_id: studentId,
+                        email: email,
+                        course: course,
+                        year_level: parseInt(yearLevel) || null,
+                        password: password,
+                        role: 'student'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('signup-success', 'Account created successfully! You can now login.');
+                    // Clear form
+                    document.getElementById('signup-firstname').value = '';
+                    document.getElementById('signup-lastname').value = '';
+                    document.getElementById('signup-studentid').value = '';
+                    document.getElementById('signup-email').value = '';
+                    document.getElementById('signup-course').value = '';
+                    document.getElementById('signup-year').value = '';
+                    document.getElementById('signup-password').value = '';
+                    document.getElementById('signup-confirmpassword').value = '';
+                    
+                    // Switch to login tab after 2 seconds
+                    setTimeout(() => {
+                        switchTab('login');
+                    }, 2000);
+                } else {
+                    throw new Error(data.message || 'Registration failed');
+                }
+            } catch (error) {
+                showMessage('signup-error', error.message);
+                setReady('signup-btn', 'Create Account');
+            }
+        }
+
+        // Handle Enter key for login
+        document.getElementById('login-password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
         });
-        
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.message);
-        
-        successDiv.textContent = 'Account created! Redirecting to login...';
-        successDiv.style.display = 'block';
-        
-        setTimeout(() => switchTab('login'), 2000);
-    } catch (error) {
-        errorDiv.textContent = error.message;
-        errorDiv.style.display = 'block';
-    }
-}
-</script>
+
+        // Handle Enter key for signup
+        document.getElementById('signup-confirmpassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleSignup();
+            }
+        });
+
+        // Auto-focus on load
+        window.addEventListener('load', () => {
+            document.getElementById('login-identifier').focus();
+        });
+    </script>
 </body>
 </html>

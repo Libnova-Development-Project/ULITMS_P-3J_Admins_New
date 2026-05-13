@@ -220,3 +220,19 @@ exports.login = async (req, res) => {
         });
     }
 };
+
+exports.logout = async (req, res) => {
+    try {
+        res.json({
+            success: true,
+            message: 'Logged out successfully',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Logout failed',
+            error: error.message
+        });
+    }
+};

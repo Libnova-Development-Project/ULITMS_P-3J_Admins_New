@@ -133,6 +133,50 @@ h1, h2, h3, h4, h5, h6 {
     color: rgba(100, 220, 226, 0.45);
     padding: 0 12px;
     margin: var(--spacing-md) 0 6px;
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Force admin panel navigation to display - more specific */
+.nav-section > div:nth-of-type(5),
+.nav-section > div:nth-of-type(6),
+.nav-section > div:nth-of-type(7),
+.nav-section > div:nth-of-type(8),
+.nav-section > div:nth-of-type(9),
+.nav-section > div:nth-of-type(10),
+.nav-section > div:nth-of-type(11),
+.nav-section > div:nth-of-type(12),
+.nav-section > div:nth-of-type(13),
+.nav-section > div:nth-of-type(14) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Force all admin panel nav items to display */
+.nav-section .nav-item[href*="manage"],
+.nav-section .nav-item[href*="reports"],
+.nav-section .nav-item[href*="settings"],
+.nav-section .nav-item[href*="equipment"],
+.nav-section .nav-item[href*="damage"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Hide admin panel by default, only show for admin users */
+.admin-panel {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+.nav-section > a[href*="manage"],
+.nav-section > a[href*="reports"],
+.nav-section > a[href*="settings"],
+.nav-section > a[href*="equipment"],
+.nav-section > a[href*="damage"] {
+    display: none !important;
+    visibility: hidden !important;
 }
 
 .nav-item {
@@ -1548,6 +1592,190 @@ tbody tr:last-child {
             animation: slideIn 0.3s ease;
             border-left: 4px solid var(--teal-primary);
         }
+
+        /* Confirmation Dialogs */
+        .confirm-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .confirm-content {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-xl);
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-color);
+            animation: slideUp 0.3s ease;
+        }
+
+        .confirm-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .confirm-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .confirm-icon.danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 2px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .confirm-icon.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 2px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .confirm-icon.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 2px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .confirm-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .confirm-body {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: flex-end;
+        }
+
+        .confirm-btn {
+            padding: 10px 20px;
+            border-radius: var(--border-radius-sm);
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .confirm-btn-primary {
+            background: var(--teal-primary);
+            color: white;
+        }
+
+        .confirm-btn-primary:hover {
+            background: var(--teal-dark);
+            transform: translateY(-1px);
+        }
+
+        .confirm-btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .confirm-btn-secondary:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .confirm-btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .confirm-btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        /* Loading States */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--teal-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Success Messages */
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-sm);
+            margin-bottom: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-sm);
+            margin-bottom: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .warning-message {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-sm);
+            margin-bottom: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        }
         .toast.success { border-left-color: var(--success); }
         .toast.error { border-left-color: var(--danger); }
         .toast.warning { border-left-color: var(--warning); }
@@ -1587,4 +1815,83 @@ tbody tr:last-child {
             .profile-header { flex-wrap: wrap; }
             .edit-btn { margin-left: 0; width: 100%; }
         }
-  
+
+/* ========================================
+   Modals
+   ======================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal-container {
+    transform: translateY(0);
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--teal-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: var(--danger);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}

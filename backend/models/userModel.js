@@ -135,7 +135,7 @@ static async create(userData) {
              RETURNING id`,
             [id]
         );
-        return result.rows[0];
+        return result.rowCount > 0; // Return true if a row was updated
     }
 
     // Get user statistics
