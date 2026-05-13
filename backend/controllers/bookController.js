@@ -91,9 +91,22 @@ exports.createBook = async (req, res) => {
             }
         }
         
+        let finalCategoryId = category_id;
+        
+        // If no category_id but category_name is provided, try to find it
+        if (!finalCategoryId && req.body.category_name) {
+            const catResult = await pool.query(
+                'SELECT id FROM library_schema.book_categories WHERE name ILIKE $1',
+                [req.body.category_name.trim()]
+            );
+            if (catResult.rows.length > 0) {
+                finalCategoryId = catResult.rows[0].id;
+            }
+        }
+
         const book = await BookModel.create({
             isbn, title, author, publisher, publication_year,
-            category_id, total_copies, description, cover_image_url, metadata
+            category_id: finalCategoryId, total_copies, description, cover_image_url, metadata
         });
         
         // Log activity

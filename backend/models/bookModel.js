@@ -50,7 +50,7 @@ class BookModel {
             paramIndex++;
         }
 
-        query += ` ORDER BY b.title ASC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        query += ` ORDER BY b.id DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
         values.push(limit, offset);
 
         const result = await pool.query(query, values);

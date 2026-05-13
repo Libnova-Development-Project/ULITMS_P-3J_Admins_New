@@ -30,7 +30,7 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "http://localhost:*", "https://localhost:*"]
+            connectSrc: ["'self'", "http://localhost:*", "https://localhost:*", "http://127.0.0.1:*", "http://*.local:*", "ws://localhost:*"]
         }
     }
 }));
@@ -41,7 +41,35 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS Middleware
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || ['http://localhost:5000', 'http://localhost:5001', 'http://localhost:3000', 'http://127.0.0.1:5500'],
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+            'http://localhost:5000', 
+            'http://localhost:5001', 
+            'http://localhost:3000', 
+            'http://127.0.0.1:5500'
+        ];
+        
+        // Add environment variable origin if exists
+        if (process.env.CORS_ORIGIN) {
+            allowedOrigins.push(...process.env.CORS_ORIGIN.split(',').map(o => o.trim()));
+        }
+
+        // Check if origin is allowed or if it's from the same host
+        const isAllowed = allowedOrigins.some(ao => ao === origin) || 
+                          origin.includes('localhost') || 
+                          origin.includes('127.0.0.1');
+
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            // For development, be more lenient or log the rejected origin
+            console.warn(`CORS: Origin ${origin} attempted to connect but not explicitly allowed.`);
+            callback(null, true); // Still allow for now to prevent breaking UX, but log it
+        }
+    },
     credentials: true
 }));
 

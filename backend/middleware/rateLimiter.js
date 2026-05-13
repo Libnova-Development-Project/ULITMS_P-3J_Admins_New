@@ -5,61 +5,71 @@
 
 const rateLimit = require('express-rate-limit');
 
+// Helper to send JSON error instead of plain text
+const jsonHandler = (req, res, next, options) => {
+    res.status(options.statusCode).json({
+        success: false,
+        message: options.message,
+        timestamp: new Date().toISOString()
+    });
+};
+
 /**
  * General API rate limiter
- * 100 requests per 15 minutes per IP
+ * Increased to 1000 requests per 15 minutes for development/active use
  */
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // 100 requests per windowMs
+    max: 1000, // Increased from 100
     message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
-    legacyHeaders: false, // Disable `X-RateLimit-*` headers
+    handler: jsonHandler,
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 
 /**
- * Auth rate limiter (stricter)
- * 5 login/register attempts per 15 minutes per IP
+ * Auth rate limiter
+ * Increased to 50 attempts per 15 minutes
  */
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 attempts
+    max: 50, // Increased from 5
     message: 'Too many login attempts. Please try again after 15 minutes.',
-    skipSuccessfulRequests: true, // Don't count successful requests
+    handler: jsonHandler,
+    skipSuccessfulRequests: true,
     keyGenerator: (req, res) => {
-        // Use email as key if provided (more granular)
         return req.body.email || req.body.identifier || req.ip;
     },
 });
 
 /**
  * Borrow/Return rate limiter
- * 20 operations per hour (prevent spam)
  */
 const borrowLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 20,
+    max: 100, // Increased from 20
     message: 'Too many borrow/return requests. Please try again later.',
+    handler: jsonHandler,
 });
 
 /**
  * Create rate limiter
- * Prevent bulk creation of resources
  */
 const createResourceLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 50, // 50 creations per hour
+    max: 200, // Increased from 50
     message: 'Too many resource creation requests.',
+    handler: jsonHandler,
 });
 
 /**
- * Search rate limiter (generous)
- * 200 searches per 15 minutes
+ * Search rate limiter
  */
 const searchLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200,
+    max: 500, // Increased from 200
     message: 'Too many search requests.',
+    handler: jsonHandler,
 });
 
 module.exports = {
