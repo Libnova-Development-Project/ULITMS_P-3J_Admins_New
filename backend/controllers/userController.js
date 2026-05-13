@@ -26,7 +26,6 @@ exports.getUserProfile = async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Check permission
         if (req.user.role !== 'admin' && req.user.id !== parseInt(id)) {
             return res.status(403).json({ message: 'Access denied' });
         }
@@ -53,7 +52,6 @@ exports.updateUserProfile = async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Check permission
         if (req.user.role !== 'admin' && req.user.id !== parseInt(id)) {
             return res.status(403).json({ message: 'Access denied' });
         }
@@ -63,7 +61,6 @@ exports.updateUserProfile = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         
-        // Log activity
         await pool.query(
             `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
              VALUES ($1, $2, $3)`,
@@ -80,12 +77,46 @@ exports.updateUserProfile = async (req, res) => {
     }
 };
 
+exports.uploadAvatar = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        if (req.user.id !== parseInt(id)) {
+            return res.status(403).json({ message: 'Access denied' });
+        }
+        
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+        
+        const pictureUrl = `/uploads/avatars/${req.file.filename}`;
+        const result = await UserModel.updateProfilePicture(id, pictureUrl);
+        
+        if (!result) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        await pool.query(
+            `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
+             VALUES ($1, $2, $3)`,
+            [req.user.id, 'UPDATE_AVATAR', { picture_url: pictureUrl }]
+        );
+        
+        res.json({
+            message: 'Avatar uploaded successfully',
+            profile_picture: pictureUrl
+        });
+    } catch (error) {
+        console.error('Upload avatar error:', error);
+        res.status(500).json({ message: 'Failed to upload avatar', error: error.message });
+    }
+};
+
 exports.changePassword = async (req, res) => {
     try {
         const { id } = req.params;
         const { currentPassword, newPassword } = req.body;
         
-        // Check permission
         if (req.user.id !== parseInt(id)) {
             return res.status(403).json({ message: 'Access denied' });
         }
@@ -98,7 +129,6 @@ exports.changePassword = async (req, res) => {
             return res.status(400).json({ message: 'New password must be at least 6 characters' });
         }
         
-        // Verify current password
         const user = await UserModel.findById(id);
         const validPassword = await bcrypt.compare(currentPassword, user.password);
         
@@ -108,7 +138,6 @@ exports.changePassword = async (req, res) => {
         
         await UserModel.changePassword(id, newPassword);
         
-        // Log activity
         await pool.query(
             `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
              VALUES ($1, $2, $3)`,
@@ -130,7 +159,6 @@ exports.deleteUser = async (req, res) => {
         
         const { id } = req.params;
         
-        // Don't allow deleting yourself
         if (req.user.id === parseInt(id)) {
             return res.status(400).json({ message: 'Cannot delete your own account' });
         }
@@ -140,7 +168,6 @@ exports.deleteUser = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         
-        // Log activity
         await pool.query(
             `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
              VALUES ($1, $2, $3)`,

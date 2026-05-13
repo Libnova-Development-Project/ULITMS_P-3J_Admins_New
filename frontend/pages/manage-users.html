@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ULITMS — User Management</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../css/styles.css">
@@ -20,19 +20,11 @@
 <!-- Dynamic Sidebar Loading Script -->
     <aside id="sidebar">
     </aside>
-
     <script src="../js/sidebar-loader.js"></script>
     <script>
         // Load appropriate sidebar based on user role
         loadSidebar();
     </script>
-        <div class="avatar" id="sidebar-avatar">G</div>
-        <div>
-            <div class="user-name" id="sidebar-name">Guest</div>
-            <div class="user-role" id="sidebar-role">Administrator</div>
-        </div>
-    </div>
-</aside>
 
 <div id="main">
     <header id="topbar">
@@ -48,7 +40,7 @@
     </header>
     <div id="content">
         <div class="section-title">User Management</div>
-                <div class="card">
+        <div class="card">
             <div class="tbl-wrap">
                 <table class="table-users">
                     <thead>
@@ -86,19 +78,6 @@
 </div>
 
 <script>
-const API_URL = 'http://localhost:5000/api';
-
-function getToken() { return localStorage.getItem('ulitms_token'); }
-
-function updateUserInfo() {
-    const name = localStorage.getItem('ulitms_name') || 'Guest';
-    const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
-    document.getElementById('sidebar-avatar').textContent = initials;
-    document.getElementById('sidebar-name').textContent = name;
-    document.getElementById('header-avatar').textContent = initials;
-    document.getElementById('header-name').textContent = name;
-}
-
 function showModal(title, bodyHtml, onConfirm, confirmText = 'Confirm') {
     const modal = document.getElementById('modalOverlay');
     document.getElementById('modalTitle').textContent = title;

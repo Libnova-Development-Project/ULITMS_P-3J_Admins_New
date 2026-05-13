@@ -2,22 +2,157 @@
 function updateUserInfo() {
     const name = localStorage.getItem('ulitms_name') || 'Guest';
     const role = localStorage.getItem('ulitms_role') || 'visitor';
+    const avatarUrl = localStorage.getItem('ulitms_avatar');
     const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
     
-    const sidebarAvatar = document.getElementById('sidebar-avatar');
+    const updateAvatar = (el) => {
+        if (!el) return;
+        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+            el.style.backgroundImage = `url(${window.location.origin}${avatarUrl})`;
+            el.style.backgroundSize = 'cover';
+            el.style.backgroundPosition = 'center';
+            el.textContent = '';
+        } else {
+            el.style.backgroundImage = 'none';
+            el.textContent = initials;
+        }
+    };
+
+    // Sidebar elements
+    updateAvatar(document.getElementById('sidebar-avatar'));
     const sidebarName = document.getElementById('sidebar-name');
     const sidebarRole = document.getElementById('sidebar-role');
-    const headerAvatar = document.getElementById('header-avatar');
-    const headerName = document.getElementById('header-name');
-    const headerRole = document.getElementById('header-role');
-
-    if (sidebarAvatar) sidebarAvatar.textContent = initials;
     if (sidebarName) sidebarName.textContent = name;
     if (sidebarRole) sidebarRole.textContent = role === 'admin' ? 'Administrator' : 'Student';
-    if (headerAvatar) headerAvatar.textContent = initials;
+    
+    // Header elements (Top bar)
+    updateAvatar(document.getElementById('header-avatar'));
+    const headerName = document.getElementById('header-name');
+    const headerRole = document.getElementById('header-role');
     if (headerName) headerName.textContent = name;
     if (headerRole) headerRole.textContent = role === 'admin' ? 'Administrator' : 'Student';
 }
+
+async function loadNotifications() {
+    const notifBtn = document.querySelector('.notif-btn');
+    if (!notifBtn) return;
+
+    // Add badge if not exists
+    let badge = notifBtn.querySelector('.notification-badge');
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'notification-badge';
+        badge.style.display = 'none';
+        notifBtn.appendChild(badge);
+    }
+
+    try {
+        const response = await fetch(`${window.location.origin}/api/notifications`, {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('ulitms_token') }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            const count = data.unreadCount;
+            if (count > 0) {
+                badge.textContent = count > 9 ? '9+' : count;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+            
+            // Store notifications for dropdown
+            window.notifications = data.notifications;
+        }
+    } catch (error) {
+        console.error('Failed to load notifications:', error);
+    }
+}
+
+function toggleNotifications() {
+    let dropdown = document.getElementById('notification-dropdown');
+    if (!dropdown) {
+        dropdown = document.createElement('div');
+        dropdown.id = 'notification-dropdown';
+        dropdown.className = 'notification-dropdown'; // Class from styles.css
+        document.querySelector('.topbar-right').appendChild(dropdown);
+    }
+
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+        return;
+    }
+
+    const notifs = window.notifications || [];
+    dropdown.innerHTML = `
+        <div class="notification-header">
+            <span>Notifications</span>
+            <span class="mark-read-btn" onclick="markAllRead()">Mark all as read</span>
+        </div>
+        <div class="notification-list">
+            ${notifs.length === 0 ? '<div class="notification-item" style="text-align:center;padding:20px;color:var(--text-muted);">No new notifications</div>' : 
+                notifs.map(n => `
+                <div class="notification-item ${n.is_read ? '' : 'unread'}" onclick="markAsRead(${n.id})">
+                    <div class="notification-title">${n.title}</div>
+                    <div class="notification-message">${n.message}</div>
+                    <div class="notification-time">${new Date(n.created_at).toLocaleDateString()}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    dropdown.style.display = 'block';
+}
+
+async function markAsRead(id) {
+    try {
+        await fetch(`${window.location.origin}/api/notifications/${id}/mark-read`, {
+            method: 'PUT',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('ulitms_token') }
+        });
+        loadNotifications();
+        // Keep dropdown open but update
+        const dropdown = document.getElementById('notification-dropdown');
+        if (dropdown) dropdown.style.display = 'none';
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function markAllRead() {
+    try {
+        await fetch(`${window.location.origin}/api/notifications/mark-all-read`, {
+            method: 'PUT',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('ulitms_token') }
+        });
+        loadNotifications();
+        const dropdown = document.getElementById('notification-dropdown');
+        if (dropdown) dropdown.style.display = 'none';
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// Global click handler to close dropdown
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('notification-dropdown');
+    const notifBtn = document.querySelector('.notif-btn');
+    if (dropdown && !dropdown.contains(e.target) && !notifBtn.contains(e.target)) {
+        dropdown.style.display = 'none';
+    }
+});
+
+function initHeader() {
+    const notifBtn = document.querySelector('.notif-btn');
+    if (notifBtn) {
+        notifBtn.addEventListener('click', toggleNotifications);
+        loadNotifications();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateUserInfo();
+    initHeader();
+});
 
 function checkAuth() {
     if (!localStorage.getItem('ulitms_token')) {

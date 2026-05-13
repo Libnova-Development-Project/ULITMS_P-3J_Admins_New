@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
@@ -16,6 +16,7 @@ const userRoutes = require('./routes/users');
 const elibraryRoutes = require('./routes/elibrary');
 const peripheralRoutes = require('./routes/peripherals');
 const damageReportRoutes = require('./routes/damageReports');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 
@@ -55,8 +56,9 @@ app.use(logApiCall);
 const frontendPath = path.join(__dirname, '../frontend');
 app.use(express.static(frontendPath));
 
-// Also serve from current directory if frontend is in backend folder
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve uploads folder as static
+const uploadPath = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadPath));
 
 // Health check
 app.get('/api/health', async (req, res) => {
@@ -86,6 +88,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/elibrary', elibraryRoutes);
 app.use('/api/peripherals', peripheralRoutes);
 app.use('/api/damage-reports', damageReportRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // IMPORTANT: Serve index.html for all non-API routes (SPA support)
 app.get('*', (req, res, next) => {

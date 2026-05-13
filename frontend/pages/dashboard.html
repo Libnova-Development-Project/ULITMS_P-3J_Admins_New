@@ -46,7 +46,7 @@
 </div>
 
 <script>
-const API_URL = 'http://localhost:5000/api';
+const API_URL = window.location.origin + '/api';
 
 function getToken() { return localStorage.getItem('ulitms_token'); }
 function getUserId() { return localStorage.getItem('ulitms_user_id'); }
@@ -73,10 +73,12 @@ async function loadDashboard() {
             throw new Error(booksData.message || 'Failed to load books');
         }
         
-        const books = booksData.data.books || booksData.data || [];
-        const bookCount = booksData.data.total || books.length;
-        const availableCount = books.filter(b => b.available_copies > 0).length;
-        const borrowedCount = books.filter(b => b.available_copies === 0).length;
+        const data = booksData.data || {};
+        const books = Array.isArray(data.books) ? data.books : (Array.isArray(data) ? data : []);
+        const bookCount = data.total !== undefined ? data.total : books.length;
+        
+        const availableCount = books.filter(b => b && b.available_copies > 0).length;
+        const borrowedCount = books.filter(b => b && (b.available_copies === 0 || b.status === 'borrowed')).length;
 
         // Load user's borrowing statistics
         const userId = getUserId();
@@ -93,10 +95,11 @@ async function loadDashboard() {
                     const borrowingsData = await borrowingsResponse.json();
                     
                     if (borrowingsData.success) {
-                        const borrowings = borrowingsData.data.borrowings || borrowingsData.data || [];
-                        userBorrowingCount = borrowings.filter(b => b.status === 'borrowed').length;
+                        const bData = borrowingsData.data || {};
+                        const borrowings = Array.isArray(bData.borrowings) ? bData.borrowings : (Array.isArray(bData) ? bData : []);
+                        userBorrowingCount = borrowings.filter(b => b && b.status === 'borrowed').length;
                         userOverdueCount = borrowings.filter(b => {
-                            return b.status === 'borrowed' && new Date(b.due_date) < new Date();
+                            return b && b.status === 'borrowed' && b.due_date && new Date(b.due_date) < new Date();
                         }).length;
                     }
                 }
@@ -134,7 +137,13 @@ async function loadDashboard() {
     } catch (e) { 
         console.error('Dashboard loading error:', e);
         statsContainer.innerHTML = `
-            <div class="stat-card"><div class="label">❌ Error</div><div class="value">Failed to load</div></div>
+            <div class="stat-card" style="grid-column: 1/-1; border-color: #ef4444;">
+                <div class="label" style="color: #ef4444;">❌ Error Loading Dashboard</div>
+                <div class="value" style="font-size: 1.2rem; color: #fca5a5;">${e.message}</div>
+                <button class="btn btn-secondary btn-small" onclick="loadDashboard()" style="margin-top: 10px;">
+                    <i class="fas fa-sync-alt"></i> Try Again
+                </button>
+            </div>
         `;
     }
 }

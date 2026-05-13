@@ -55,10 +55,34 @@ class BookModel {
 
         const result = await pool.query(query, values);
         
-        // Get total count (only non-deleted)
-        const countResult = await pool.query(
-            `SELECT COUNT(*) FROM library_schema.books WHERE is_deleted = false`
-        );
+        // Get total count with SAME filters
+        let countQuery = `
+            SELECT COUNT(*) 
+            FROM library_schema.books b
+            WHERE b.is_deleted = false
+        `;
+        const countValues = [];
+        let countParamIndex = 1;
+
+        if (filters.category_id) {
+            countQuery += ` AND b.category_id = $${countParamIndex}`;
+            countValues.push(filters.category_id);
+            countParamIndex++;
+        }
+
+        if (filters.status) {
+            countQuery += ` AND b.status = $${countParamIndex}`;
+            countValues.push(filters.status);
+            countParamIndex++;
+        }
+
+        if (filters.search) {
+            countQuery += ` AND (b.title ILIKE $${countParamIndex} OR b.author ILIKE $${countParamIndex} OR b.isbn ILIKE $${countParamIndex})`;
+            countValues.push(`%${filters.search}%`);
+            countParamIndex++;
+        }
+
+        const countResult = await pool.query(countQuery, countValues);
         
         return {
             books: result.rows,

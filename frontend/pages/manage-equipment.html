@@ -179,15 +179,6 @@ const API_URL = 'http://localhost:5000/api';
 
 function getToken() { return localStorage.getItem('ulitms_token'); }
 
-function updateUserInfo() {
-    const name = localStorage.getItem('ulitms_name') || 'Guest';
-    const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
-    document.getElementById('sidebar-avatar').textContent = initials;
-    document.getElementById('sidebar-name').textContent = name;
-    document.getElementById('header-avatar').textContent = initials;
-    document.getElementById('header-name').textContent = name;
-}
-
 function showModal(title, bodyHtml, onConfirm, confirmText = 'Confirm') {
     const modal = document.getElementById('modalOverlay');
     document.getElementById('modalTitle').textContent = title;

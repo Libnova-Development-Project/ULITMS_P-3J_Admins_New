@@ -59,7 +59,7 @@ static async create(userData) {
         const result = await pool.query(
             `SELECT id, student_id, first_name, middle_name, last_name, 
                     email, role, course, year_level, contact_number, 
-                    is_active, created_at, updated_at
+                    is_active, profile_picture, created_at, updated_at
              FROM library_schema.users 
              WHERE id = $1 AND is_deleted = false`,
             [id]
@@ -72,7 +72,7 @@ static async create(userData) {
         const result = await pool.query(
             `SELECT id, student_id, first_name, middle_name, last_name, 
                     email, role, course, year_level, contact_number, 
-                    is_active, created_at
+                    is_active, profile_picture, created_at
              FROM library_schema.users 
              WHERE is_deleted = false
              ORDER BY created_at DESC
@@ -103,13 +103,25 @@ static async create(userData) {
         values.push(id);
         const query = `
             UPDATE library_schema.users 
-            SET ${setClauses.join(', ')}
+            SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP
             WHERE id = $${paramIndex} AND is_deleted = false
             RETURNING id, student_id, first_name, middle_name, last_name, 
-                      email, role, course, year_level, contact_number
+                      email, role, course, year_level, contact_number, profile_picture
         `;
         
         const result = await pool.query(query, values);
+        return result.rows[0];
+    }
+
+    // Update profile picture
+    static async updateProfilePicture(id, pictureUrl) {
+        const result = await pool.query(
+            `UPDATE library_schema.users 
+             SET profile_picture = $1, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $2 AND is_deleted = false
+             RETURNING id, profile_picture`,
+            [pictureUrl, id]
+        );
         return result.rows[0];
     }
 
@@ -141,7 +153,33 @@ static async create(userData) {
                 [id]
             );
             
-            // 2. Mark user as deleted
+            // 2. Handle borrowed books: Return them and update book availability
+            // First, get all active borrowings for this user
+            const activeBorrowings = await client.query(
+                `SELECT id, book_id FROM library_schema.borrow_transactions 
+                 WHERE user_id = $1 AND status = 'borrowed' AND is_deleted = false`,
+                [id]
+            );
+            
+            for (const borrowing of activeBorrowings.rows) {
+                // Update borrowing record
+                await client.query(
+                    `UPDATE library_schema.borrow_transactions 
+                     SET returned_at = CURRENT_TIMESTAMP, status = 'returned'
+                     WHERE id = $1`,
+                    [borrowing.id]
+                );
+                
+                // Update book availability
+                await client.query(
+                    `UPDATE library_schema.books 
+                     SET available_copies = available_copies + 1, status = 'available'
+                     WHERE id = $1`,
+                    [borrowing.book_id]
+                );
+            }
+            
+            // 3. Mark user as deleted
             const result = await client.query(
                 `UPDATE library_schema.users 
                  SET is_deleted = true, is_active = false

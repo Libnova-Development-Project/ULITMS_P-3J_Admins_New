@@ -206,7 +206,8 @@ exports.login = async (req, res) => {
                 role: user.role,
                 course: user.course,
                 year_level: user.year_level,
-                contact_number: user.contact_number
+                contact_number: user.contact_number,
+                profile_picture: user.profile_picture
             },
             timestamp: new Date().toISOString()
         });
