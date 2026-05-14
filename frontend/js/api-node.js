@@ -35,21 +35,21 @@ async function apiRequest(endpoint, options = {}) {
             ...options.headers
         }
     };
-    
+
     if (authToken) {
         config.headers.Authorization = `Bearer ${authToken}`;
     }
-    
+
     try {
         const response = await fetch(url, {
             ...config,
             ...options
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
         return data;
     } catch (error) {

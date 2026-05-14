@@ -238,6 +238,15 @@ static async create(userData) {
         );
         return result.rows[0] || { total_borrowed: 0, current_borrowed: 0, total_sessions: 0, total_fines: 0 };
     }
+    // Get all admins
+    static async getAdmins() {
+        const result = await pool.query(
+            `SELECT id, first_name, last_name, email 
+             FROM library_schema.users 
+             WHERE role = 'admin' AND is_deleted = false AND is_active = true`
+        );
+        return result.rows;
+    }
 }
 
 module.exports = UserModel;

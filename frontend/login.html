@@ -198,7 +198,7 @@
         </div>
 
         <button class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;" onclick="handleLogin()" id="login-btn">
-            <span>Login to System</span>
+            <span>Login</span>
         </button>
 
         <div class="footer-links">
@@ -356,12 +356,12 @@
             } else {
                 showMsg(data.message || 'Invalid credentials');
                 btn.disabled = false;
-                btn.innerHTML = '<span>Login to System</span>';
+                btn.innerHTML = '<span>Login</span>';
             }
         } catch (error) {
             showMsg('Connection error. Is the server running?');
             btn.disabled = false;
-            btn.innerHTML = '<span>Login to System</span>';
+            btn.innerHTML = '<span>Login</span>';
         }
     }
 

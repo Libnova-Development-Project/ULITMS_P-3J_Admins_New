@@ -1,5 +1,7 @@
 const BorrowingModel = require('../models/borrowingModel');
 const BookModel = require('../models/bookModel');
+const NotificationModel = require('../models/notificationModel');
+const UserModel = require('../models/userModel');
 const pool = require('../database/db');
 
 exports.getUserBorrowings = async (req, res) => {
@@ -106,20 +108,42 @@ exports.returnBook = async (req, res) => {
     try {
         const { id } = req.params;
         
-        const borrowing = await BorrowingModel.returnBook(id, req.user.id);
-        
-        if (!borrowing) {
+        // Find the borrowing record first to get book title
+        const borrowingDetails = await BorrowingModel.findById(id);
+        if (!borrowingDetails) {
             return res.status(404).json({ 
                 success: false,
                 message: 'Borrowing record not found',
                 timestamp: new Date().toISOString()
             });
         }
+
+        const borrowing = await BorrowingModel.returnBook(id, req.user.id);
+        
+        // Create notification for the user
+        await NotificationModel.create(
+            req.user.id,
+            'Return Request Submitted',
+            `Your return request for "${borrowingDetails.title}" has been received. Please bring the book to the library counter.`,
+            'info'
+        );
+
+        // Notify all admins
+        const admins = await UserModel.getAdmins();
+        const studentName = `${req.user.first_name || 'Student'} ${req.user.last_name || ''}`;
+        for (const admin of admins) {
+            await NotificationModel.create(
+                admin.id,
+                'Pending Return Confirmation',
+                `${studentName} has requested to return "${borrowingDetails.title}".`,
+                'warning'
+            );
+        }
         
         res.json({
             success: true,
-            message: 'Book returned successfully',
-            data: { borrowing, fine: borrowing.fine_amount },
+            message: 'Return request submitted. Please return the book to the library for confirmation.',
+            data: { borrowing },
             timestamp: new Date().toISOString()
         });
     } catch (error) {
@@ -127,6 +151,46 @@ exports.returnBook = async (req, res) => {
         res.status(500).json({ 
             success: false,
             message: error.message || 'Failed to return book',
+            timestamp: new Date().toISOString()
+        });
+    }
+};
+
+exports.confirmReturn = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Only admin can confirm return
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ 
+                success: false,
+                message: 'Admin access required to confirm return',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        const borrowingDetails = await BorrowingModel.findById(id);
+        const borrowing = await BorrowingModel.confirmReturn(id, req.user.id);
+        
+        // Notify the student
+        await NotificationModel.create(
+            borrowingDetails.user_id,
+            'Book Return Confirmed',
+            `Your return for "${borrowingDetails.title}" has been confirmed. Thank you!`,
+            'success'
+        );
+        
+        res.json({
+            success: true,
+            message: 'Book return confirmed successfully',
+            data: { borrowing, fine: borrowing.fine_amount },
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Confirm return error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message || 'Failed to confirm return',
             timestamp: new Date().toISOString()
         });
     }

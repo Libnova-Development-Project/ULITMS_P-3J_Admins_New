@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const borrowingController = require('../controllers/borrowingController');
 const { auth } = require('../middleware/auth');
@@ -8,5 +8,6 @@ router.get('/', auth, borrowingController.getAllBorrowings);
 router.get('/user/:userId', auth, borrowingController.getUserBorrowings);
 router.post('/', auth, borrowingController.borrowBook);
 router.put('/:id/return', auth, borrowingController.returnBook);
+router.put('/:id/confirm', auth, borrowingController.confirmReturn);
 
 module.exports = router;

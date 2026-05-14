@@ -64,8 +64,32 @@ class BorrowingModel {
         }
     }
 
-    // Return book
+    // Request return (Step 1: Student clicks return)
     static async returnBook(borrowingId, returnedBy = null) {
+        const result = await pool.query(
+            `UPDATE library_schema.borrow_transactions 
+             SET status = 'pending_return'
+             WHERE id = $1 AND status = 'borrowed' AND is_deleted = false
+             RETURNING *`,
+            [borrowingId]
+        );
+
+        if (result.rows.length === 0) {
+            throw new Error('Borrowing record not found or not in borrowed state');
+        }
+
+        // Log the return request
+        await pool.query(
+            `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
+             VALUES ($1, $2, $3)`,
+            [result.rows[0].user_id, 'RETURN_REQUESTED', JSON.stringify({ borrowing_id: borrowingId })]
+        );
+
+        return result.rows[0];
+    }
+
+    // Confirm return (Step 2: Admin confirms)
+    static async confirmReturn(borrowingId, processedBy = null) {
         const client = await pool.connect();
         
         try {
@@ -73,12 +97,12 @@ class BorrowingModel {
             
             const borrowing = await client.query(
                 `SELECT * FROM library_schema.borrow_transactions 
-                 WHERE id = $1 AND status = 'borrowed' AND is_deleted = false`,
+                 WHERE id = $1 AND status = 'pending_return' AND is_deleted = false`,
                 [borrowingId]
             );
             
             if (borrowing.rows.length === 0) {
-                throw new Error('Borrowing record not found or already returned');
+                throw new Error('Pending return record not found');
             }
             
             // Calculate fine if overdue
@@ -99,9 +123,10 @@ class BorrowingModel {
                      processed_by = $2
                  WHERE id = $3
                  RETURNING *`,
-                [fine, returnedBy, borrowingId]
+                [fine, processedBy, borrowingId]
             );
             
+            // Update book availability
             await client.query(
                 `UPDATE library_schema.books 
                  SET available_copies = available_copies + 1,
@@ -110,10 +135,11 @@ class BorrowingModel {
                 [borrowing.rows[0].book_id]
             );
             
+            // Log the confirmation
             await client.query(
                 `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
                  VALUES ($1, $2, $3)`,
-                [borrowing.rows[0].user_id, 'RETURN_BOOK', JSON.stringify({ borrowing_id: borrowingId, fine })]
+                [borrowing.rows[0].user_id, 'RETURN_CONFIRMED', JSON.stringify({ borrowing_id: borrowingId, fine })]
             );
             
             await client.query('COMMIT');

@@ -95,8 +95,27 @@ async function loadBorrowings() {
         
         tbody.innerHTML = borrowings.map(b => {
             const isOverdue = new Date(b.due_date) < new Date();
-            const statusText = b.status === 'returned' ? 'Returned' : (isOverdue ? 'Overdue' : 'Borrowed');
-            const statusClass = b.status === 'returned' ? 'badge-info' : (isOverdue ? 'badge-danger' : 'badge-warning');
+            let statusText = 'Borrowed';
+            let statusClass = 'badge-warning';
+            
+            if (b.status === 'returned') {
+                statusText = 'Returned';
+                statusClass = 'badge-info';
+            } else if (b.status === 'pending_return') {
+                statusText = 'Pending Confirmation';
+                statusClass = 'badge-secondary';
+            } else if (isOverdue) {
+                statusText = 'Overdue';
+                statusClass = 'badge-danger';
+            }
+            
+            let actionBtn = '-';
+            if (b.status === 'borrowed') {
+                actionBtn = `<button class="btn-small btn-secondary" onclick="returnBook(${b.id})">Return</button>`;
+            } else if (b.status === 'pending_return') {
+                actionBtn = `<span style="font-size: 0.75rem; color: var(--text-muted);">Awaiting Admin</span>`;
+            }
+
             return `
                 <tr>
                     <td><span style="color:#27c4cc;">#${b.id}</span></td>
@@ -104,7 +123,7 @@ async function loadBorrowings() {
                     <td>${b.borrowed_at ? new Date(b.borrowed_at).toLocaleDateString() : 'N/A'}</td>
                     <td>${b.due_date ? new Date(b.due_date).toLocaleDateString() : 'N/A'}</td>
                     <td><span class="badge ${statusClass}">${statusText}</span></td>
-                    <td>${b.status !== 'returned' ? `<button class="btn-small btn-secondary" onclick="returnBook(${b.id})">Return</button>` : '-'}</td>
+                    <td>${actionBtn}</td>
                 </tr>
             `;
         }).join('');
@@ -125,7 +144,7 @@ window.returnBook = async (id) => {
             
             if (response.ok) {
                 hideLoading();
-                showSuccess('Book returned successfully!');
+                showSuccess('Return request submitted! Please bring the book to the library counter for final confirmation.');
                 loadBorrowings();
             } else {
                 const data = await response.json();

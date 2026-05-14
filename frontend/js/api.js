@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // ULITMS API Service Layer - COMPLETE FIXED VERSION
 // ============================================================
 
@@ -174,6 +174,11 @@ window.borrowBook = async function(bookId, userId, dueDate) {
 
 window.returnBook = async function(borrowingId) {
     const result = await apiRequest(`/borrowings/${borrowingId}/return`, { method: 'PUT' });
+    return result;
+};
+
+window.confirmReturn = async function(borrowingId) {
+    const result = await apiRequest(`/borrowings/${borrowingId}/confirm`, { method: 'PUT' });
     return result;
 };
 

@@ -44,23 +44,23 @@ app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
-        
+
         const allowedOrigins = [
-            'http://localhost:5000', 
-            'http://localhost:5001', 
-            'http://localhost:3000', 
+            'http://localhost:5000',
+            'http://localhost:5001',
+            'http://localhost:3000',
             'http://127.0.0.1:5500'
         ];
-        
+
         // Add environment variable origin if exists
         if (process.env.CORS_ORIGIN) {
             allowedOrigins.push(...process.env.CORS_ORIGIN.split(',').map(o => o.trim()));
         }
 
         // Check if origin is allowed or if it's from the same host
-        const isAllowed = allowedOrigins.some(ao => ao === origin) || 
-                          origin.includes('localhost') || 
-                          origin.includes('127.0.0.1');
+        const isAllowed = allowedOrigins.some(ao => ao === origin) ||
+            origin.includes('localhost') ||
+            origin.includes('127.0.0.1');
 
         if (isAllowed) {
             callback(null, true);

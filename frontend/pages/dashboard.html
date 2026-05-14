@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="../css/styles.css">
     <script src="../js/api-node.js"></script>
+    <script src="../js/confirm-dialog.js"></script>
 </head>
 <body>
 
@@ -53,8 +54,8 @@
                     <div class="value" id="admin-val-borrowed">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="label"><i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>Pending Issues</div>
-                    <div class="value" id="admin-val-issues" style="color: var(--warning);">0</div>
+                    <div class="label"><i class="fas fa-bell" style="margin-right: 8px;"></i>Pending Tasks</div>
+                    <div class="value" id="admin-val-tasks" style="color: var(--warning);">0</div>
                 </div>
             </div>
 
@@ -85,6 +86,29 @@
                     <div style="height: 300px;">
                         <canvas id="sessionTrendsChart"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px; border: 1px solid rgba(39, 196, 204, 0.2);">
+                <div class="card-header" style="background: rgba(39, 196, 204, 0.05);">
+                    <div class="card-title"><i class="fas fa-clock-rotate-left" style="margin-right: 8px; color: var(--teal-primary);"></i>Pending Return Confirmations</div>
+                    <div class="badge badge-warning" id="pending-returns-count">0 Pending</div>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Book Title</th>
+                                <th>Borrow Date</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-returns-tbody">
+                            <tr><td colspan="5" style="text-align:center;">Checking for pending returns...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -120,14 +144,10 @@
             <div class="section-title" id="student-welcome">My Library Dashboard</div>
             <div class="section-sub">Personal borrowing and session history</div>
 
-            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
                 <div class="stat-card">
                     <div class="label"><i class="fas fa-bookmark" style="margin-right: 8px;"></i>My Borrowings</div>
                     <div class="value" id="user-val-borrowed">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="label"><i class="fas fa-history" style="margin-right: 8px;"></i>Total PC Sessions</div>
-                    <div class="value" id="user-val-sessions">0</div>
                 </div>
                 <div class="stat-card">
                     <div class="label"><i class="fas fa-wallet" style="margin-right: 8px;"></i>Pending Penalties</div>
@@ -238,10 +258,23 @@ async function loadAdminDashboardData(token) {
         const activeSessions = sessionsRes?.sessions || sessionsRes?.data?.sessions || [];
         const historicalSessions = sessionsResHistorical?.sessions || sessionsResHistorical?.data?.sessions || [];
 
+        const pendingReturns = borrowingsAll.filter(b => b.status === 'pending_return');
+        const tasksCount = issuesCount + pendingReturns.length;
+
         document.getElementById('admin-val-books').textContent = books.length;
         document.getElementById('admin-val-users').textContent = users.length;
         document.getElementById('admin-val-borrowed').textContent = activeBorrowings.length;
-        document.getElementById('admin-val-issues').textContent = issuesCount;
+        document.getElementById('admin-val-tasks').textContent = tasksCount;
+        
+        // Update sidebar badge if exists
+        const sidebarBadge = document.getElementById('return-badge');
+        if (sidebarBadge) {
+            sidebarBadge.textContent = pendingReturns.length;
+            sidebarBadge.style.display = pendingReturns.length > 0 ? 'inline-block' : 'none';
+        }
+
+        document.getElementById('pending-returns-count').textContent = `${pendingReturns.length} Pending`;
+        populatePendingReturns(pendingReturns);
 
         const units = rawUnits.map(unit => {
             const session = activeSessions.find(s => s.unit_id === unit.id);
@@ -253,6 +286,7 @@ async function loadAdminDashboardData(token) {
             };
         });
 
+
         if (typeof Chart !== 'undefined') {
             initBooksChart(books);
             initELibraryChart(units);
@@ -260,7 +294,7 @@ async function loadAdminDashboardData(token) {
             initSessionTrendsChart(historicalSessions);
         }
         populateELibraryMonitor(units);
-    } catch (e) { console.error(err); }
+    } catch (e) { console.error(e); }
 }
 
 async function loadStudentDashboardData(token, userId) {
@@ -279,11 +313,10 @@ async function loadStudentDashboardData(token, userId) {
         const borrowings = borrowingsRes?.data?.borrowings || borrowingsRes?.borrowings || [];
         const sessions = sessionsRes?.sessions || sessionsRes?.data?.sessions || [];
         
-        const activeBorrowings = borrowings.filter(b => b.status === 'borrowed');
+        const activeBorrowings = borrowings.filter(b => b.status === 'borrowed' || b.status === 'pending_return');
         const totalPenalties = borrowings.reduce((sum, b) => sum + (parseFloat(b.fine_amount) || 0), 0);
 
         document.getElementById('user-val-borrowed').textContent = activeBorrowings.length;
-        document.getElementById('user-val-sessions').textContent = sessions.length;
         document.getElementById('user-val-penalties').textContent = `₱${totalPenalties.toFixed(2)}`;
 
         // Populate Dues
@@ -294,6 +327,18 @@ async function loadStudentDashboardData(token, userId) {
             duesTbody.innerHTML = activeBorrowings.map(b => {
                 const dueDate = new Date(b.due_date);
                 const isOverdue = dueDate < new Date();
+                
+                let statusText = 'ACTIVE';
+                let statusClass = 'info';
+                
+                if (b.status === 'pending_return') {
+                    statusText = 'PENDING';
+                    statusClass = 'secondary';
+                } else if (isOverdue) {
+                    statusText = 'OVERDUE';
+                    statusClass = 'danger';
+                }
+
                 return `
                     <tr>
                         <td>${b.title}</td>
@@ -301,7 +346,7 @@ async function loadStudentDashboardData(token, userId) {
                         <td style="color: ${isOverdue ? 'var(--danger)' : 'var(--text-secondary)'};">
                             ${dueDate.toLocaleDateString()}
                         </td>
-                        <td><span class="badge badge-${isOverdue ? 'danger' : 'info'}">${isOverdue ? 'OVERDUE' : 'ACTIVE'}</span></td>
+                        <td><span class="badge badge-${statusClass}">${statusText}</span></td>
                     </tr>
                 `;
             }).join('');
@@ -455,6 +500,62 @@ function populateELibraryMonitor(units) {
                 </td>
             </tr>`;
     }).join('');
+}
+
+function populatePendingReturns(pending) {
+    const tbody = document.getElementById('pending-returns-tbody');
+    if (!tbody) return;
+    
+    if (pending.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">No return requests awaiting confirmation</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = pending.map(b => `
+        <tr>
+            <td>
+                <div style="font-weight: 600;">${b.first_name} ${b.last_name}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">${b.student_id || 'ID N/A'}</div>
+            </td>
+            <td><strong>${b.title}</strong></td>
+            <td>${new Date(b.borrowed_at).toLocaleDateString()}</td>
+            <td>${new Date(b.due_date).toLocaleDateString()}</td>
+            <td>
+                <button class="btn-small btn-primary" onclick="confirmReturn(${b.id})">
+                    <i class="fas fa-check-circle" style="margin-right: 4px;"></i> Confirm Return
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function confirmReturn(id) {
+    confirmAction('Confirm that this book has been physically returned?', async () => {
+        try {
+            showLoading('Confirming return...');
+            const res = await fetch(`${API_URL}/borrowings/${id}/confirm`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': 'Bearer ' + getToken(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await res.json();
+            hideLoading();
+            
+            if (data.success) {
+                showSuccess('Return confirmed successfully!');
+                loadAdminDashboardData(getToken());
+            } else {
+                showError('Error: ' + data.message);
+            }
+        } catch (e) {
+            console.error(e);
+            hideLoading();
+            showError('Failed to confirm return');
+        }
+    }, { title: 'Confirm Return', confirmText: 'Confirm', type: 'info' });
 }
 
 loadDashboard();

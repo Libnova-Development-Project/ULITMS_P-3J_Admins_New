@@ -212,7 +212,10 @@ function loadAdminSidebar(sidebar) {
             <div class="nav-label">Main Menu</div>
             <a href="dashboard.html" class="nav-item">
                 <span class="icon" style="color: #60a5fa;"><i class="fas fa-chart-line"></i></span>
-                <span>Admin Dashboard</span>
+                <div style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
+                    <span>Admin Dashboard</span>
+                    <span id="return-badge" class="badge badge-danger" style="display: none; font-size: 0.6rem; padding: 2px 6px;">0</span>
+                </div>
             </a>
             
             <!-- Admin Panel -->
