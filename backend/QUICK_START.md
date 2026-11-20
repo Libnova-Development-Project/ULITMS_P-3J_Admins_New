@@ -14,8 +14,8 @@ npm install
 cp .env.example .env
 
 # Update .env with your database credentials:
-DB_PASSWORD=123  # Your PostgreSQL password
-JWT_SECRET=your_secret_key_here
+DB_PASSWORD=your_postgres_password
+JWT_SECRET=your_long_random_secret
 ```
 
 ### Step 3: Start Server
@@ -29,6 +29,8 @@ You should see:
 ✅ PostgreSQL connected to ULITMS database
 ✅ Schema "library_schema" is accessible
 ```
+
+The backend refuses to start when `JWT_SECRET` is missing. Set a unique, random secret in `.env`; never use the example value in a deployed environment. Configure `CORS_ORIGIN` with the exact frontend origin(s), separated by commas.
 
 ---
 
@@ -307,15 +309,15 @@ curl http://localhost:5000/api/books
 ✨ `backend/constants/statusCodes.js` - HTTP status codes
 ✨ `backend/utils/validators.js` - Input validators
 ✨ `backend/utils/errorHandler.js` - Standardized error responses
-✨ `backend/middleware/rateLimiter.js` - Rate limiting
-✨ `backend/controllers/authControllerEnhanced.js` - Reference implementation
+✨ `src/middleware/rateLimiter.js` - Rate limiting
+✨ `src/controllers/authControllerEnhanced.js` - Reference implementation
 ✨ `backend/.env.example` - Environment template
 
 ### Updated Files (4)
 ✅ `backend/package.json` - Added dependencies
 ✅ `backend/server.js` - Added security middleware
-✅ `backend/routes/auth.js` - Added validation & rate limiting
-✅ `backend/routes/books.js` - Added validation & rate limiting
+✅ `src/routes/auth.js` - Added validation & rate limiting
+✅ `src/routes/books.js` - Added validation & rate limiting
 
 ### Documentation (2)
 📚 `backend/ENHANCEMENTS.md` - Complete enhancement guide

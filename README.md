@@ -72,29 +72,35 @@ cd frontend
 ```
 ULITMS_P-3J_Admins_New/
 ├── backend/                    (Node.js + PostgreSQL)
-│   ├── constants/              (HTTP codes, messages)
-│   ├── utils/                  (Validators, error handling)
-│   ├── middleware/             (Auth, rate limiting)
-│   ├── controllers/            (Business logic)
-│   ├── models/                 (Database queries)
-│   ├── routes/                 (API endpoints)
-│   ├── database/               (Connection, schema)
-│   ├── seed/                   (Initial data)
+│   ├── src/
+│   │   ├── app.js             (Express app configuration)
+│   │   ├── config/             (Database connection)
+│   │   ├── controllers/        (Request handling and business logic)
+│   │   ├── models/             (Database queries)
+│   │   ├── routes/             (API endpoints)
+│   │   ├── middleware/         (Auth, uploads, rate limiting)
+│   │   ├── database/           (Schema)
+│   │   ├── utils/              (Validation and error handling)
+│   │   └── constants/          (HTTP codes, messages)
+│   ├── scripts/                (Seed, maintenance, and dev utilities)
+│   ├── uploads/                (User uploaded files)
 │   ├── ENHANCEMENTS.md         (New!)
 │   ├── QUICK_START.md          (New!)
 │   ├── .env.example            (New!)
 │   ├── .env                    (Your config)
 │   ├── package.json
-│   ├── server.js
-│   └── SETUP.md
+│   └── server.js               (Application entry point)
 │
 └── frontend/                   (Vanilla JS + Tailwind)
     ├── css/                    (Styles)
     ├── js/                     (Client logic)
     ├── pages/                  (HTML pages)
+    ├── dev-tools/              (Standalone debug helpers)
     ├── index.html              (Main dashboard)
     └── README.md
 ```
+
+The backend follows MVC: routes map requests to controllers, controllers coordinate application behavior, and models handle database access. The HTML pages under `frontend/` are the view layer. Start the app with `cd backend && npm run dev`.
 
 ---
 
@@ -155,11 +161,14 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=Library_SYSTEM_DB
 DB_USER=postgres
-DB_PASSWORD=123
+DB_PASSWORD=your_postgres_password
 
 PORT=5000
-JWT_SECRET=your_secret_key_here
+JWT_SECRET=generate_a_unique_random_secret_at_least_32_characters
+CORS_ORIGIN=http://localhost:5000
 ```
+
+Copy `backend/.env.example` to `backend/.env`, then set real database credentials and a unique JWT secret before starting the server. `backend-node` is an older alternate implementation and is not used by the documented app.
 
 ---
 

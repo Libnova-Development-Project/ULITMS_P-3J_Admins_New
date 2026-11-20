@@ -17,15 +17,15 @@ npm install
 
 #### Create Database
 ```bash
-createdb ulitms_db
+createdb Library_SYSTEM_DB
 ```
 
 #### Create Tables
 ```bash
-psql -U postgres -d ulitms_db -f database/schema.sql
+psql -U postgres -d Library_SYSTEM_DB -f src/database/schema.sql
 ```
 
-Or manually run the SQL queries in `database/schema.sql` in your PostgreSQL client.
+Or manually run the SQL queries in `src/database/schema.sql` in your PostgreSQL client.
 
 ### 3. Configure Environment Variables
 

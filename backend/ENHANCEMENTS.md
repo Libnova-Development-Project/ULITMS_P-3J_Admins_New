@@ -88,7 +88,7 @@ asyncHandler()        // Wrap async controllers
 
 ---
 
-### **4. Rate Limiting** (`backend/middleware/rateLimiter.js`)
+### **4. Rate Limiting** (`src/middleware/rateLimiter.js`)
 
 Prevent brute force attacks and API abuse.
 
@@ -128,7 +128,7 @@ app.use('/api/', apiLimiter);
 
 ---
 
-### **6. Improved Auth Routes** (`backend/routes/auth.js`)
+### **6. Improved Auth Routes** (`src/routes/auth.js`)
 
 **Before:**
 ```javascript
@@ -149,7 +149,7 @@ router.post('/login', authLimiter, validateInput, authController.login);
 
 ---
 
-### **7. Enhanced Book Routes** (`backend/routes/books.js`)
+### **7. Enhanced Book Routes** (`src/routes/books.js`)
 
 **New Features:**
 - ✅ Pagination validation
@@ -160,7 +160,7 @@ router.post('/login', authLimiter, validateInput, authController.login);
 
 ---
 
-### **8. Enhanced Auth Controller** (`backend/controllers/authControllerEnhanced.js`)
+### **8. Enhanced Auth Controller** (`src/controllers/authControllerEnhanced.js`)
 
 **Improvements:**
 - ✅ Uses standardized error responses
