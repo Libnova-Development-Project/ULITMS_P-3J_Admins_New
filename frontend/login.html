@@ -265,7 +265,7 @@
         
         <div class="form-group">
             <label class="form-label">Student ID Number</label>
-            <input type="text" id="signup-studentid" class="form-input" placeholder="24-A-00XXX">
+            <input type="text" id="signup-studentid" class="form-input" placeholder="00-A-00000">
         </div>
         
         <div class="form-group">
@@ -295,6 +295,16 @@
 
 <script>
     const API_URL = window.location.origin + '/api';
+
+
+    // Automatically convert Student ID to uppercase while typing
+    const studentIdInput = document.getElementById('signup-studentid');
+
+    studentIdInput.addEventListener('input', function () {
+        const cursorPosition = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(cursorPosition, cursorPosition);
+    });
 
     function switchTab(tab) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
