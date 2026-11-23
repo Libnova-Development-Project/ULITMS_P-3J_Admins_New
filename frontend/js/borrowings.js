@@ -1,7 +1,7 @@
 // ULITMS Borrowings Functions - Clean Version
 
 // API Configuration
-const API_URL = window.location.origin + '/api';
+const API_URL = (window.ULITMS_API_URL || 'http://localhost:5000') + '/api';
 
 // Utility Functions
 function getToken() { return localStorage.getItem('ulitms_token'); }

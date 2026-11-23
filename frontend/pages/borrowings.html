@@ -38,6 +38,9 @@
     <div id="content">
         <div class="section-title">My Borrowings</div>
         <div class="section-sub">Track your personal borrow and return history</div>
+        <p style="margin: 0 0 16px; color: var(--text-muted);">
+            A return button submits a request only. Bring the physical book to the library counter; staff will confirm receipt before the book is marked returned.
+        </p>
         <div class="card">
             <div class="card-header">
                 <div class="card-title">📋 Transaction History</div>
@@ -67,7 +70,7 @@
 </div>
 
 <script>
-const API_URL = window.location.origin + '/api';
+const API_URL = (window.ULITMS_API_URL || 'http://localhost:5000') + '/api';
 
 function getToken() { return localStorage.getItem('ulitms_token'); }
 function getUserId() { return localStorage.getItem('ulitms_user_id'); }
@@ -111,9 +114,9 @@ async function loadBorrowings() {
             
             let actionBtn = '-';
             if (b.status === 'borrowed') {
-                actionBtn = `<button class="btn-small btn-secondary" onclick="returnBook(${b.id})">Return</button>`;
+                actionBtn = `<button class="btn-small btn-secondary" onclick="returnBook(${b.id})">Request Return</button>`;
             } else if (b.status === 'pending_return') {
-                actionBtn = `<span style="font-size: 0.75rem; color: var(--text-muted);">Awaiting Admin</span>`;
+                actionBtn = `<span style="font-size: 0.75rem; color: var(--text-muted);" title="Bring the physical book to the library counter. Staff must confirm receipt.">Awaiting library confirmation</span>`;
             }
 
             return `
@@ -134,28 +137,32 @@ async function loadBorrowings() {
 }
 
 window.returnBook = async (id) => {
-    confirmAction('Are you sure you want to return this book?', async () => {
-        try {
-            showLoading('Processing return...');
-            const response = await fetch(`${API_URL}/borrowings/${id}/return`, {
-                method: 'PUT',
-                headers: { 'Authorization': 'Bearer ' + getToken() }
-            });
-            
-            if (response.ok) {
+    confirmAction(
+        'Submit a return request? This does not complete the return. Bring the physical book to the library counter; staff must confirm receipt.',
+        async () => {
+            try {
+                showLoading('Submitting return request...');
+                const response = await fetch(`${API_URL}/borrowings/${id}/return`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+
+                if (response.ok) {
+                    hideLoading();
+                    showSuccess('Return request submitted. Bring the physical book to the library counter; your return will be completed after staff confirms receipt.');
+                    loadBorrowings();
+                } else {
+                    const data = await response.json();
+                    hideLoading();
+                    showError('Failed to request return: ' + (data.message || 'Unknown error'));
+                }
+            } catch(e) { 
                 hideLoading();
-                showSuccess('Return request submitted! Please bring the book to the library counter for final confirmation.');
-                loadBorrowings();
-            } else {
-                const data = await response.json();
-                hideLoading();
-                showError('Failed to return: ' + (data.message || 'Unknown error'));
+                showError('Failed to submit return request'); 
             }
-        } catch(e) { 
-            hideLoading();
-            showError('Failed to return book'); 
-        }
-    }, { title: 'Return Book', confirmText: 'Return', type: 'warning' });
+        },
+        { title: 'Request Book Return', confirmText: 'Submit Request', type: 'warning' }
+    );
 };
 
 checkAuth();

@@ -2,7 +2,7 @@
 // ULITMS API Service Layer - COMPLETE FIXED VERSION
 // ============================================================
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = (window.ULITMS_API_URL || 'http://localhost:5000') + '/api';
 
 // Get auth token
 function getAuthToken() {

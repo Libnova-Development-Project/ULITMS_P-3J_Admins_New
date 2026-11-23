@@ -1,5 +1,5 @@
 // ULITMS Catalog Functions
-const API_URL = window.location.origin + '/api';
+const API_URL = (window.ULITMS_API_URL || 'http://localhost:5000') + '/api';
 
 async function loadCatalog() {
     const tbody = document.getElementById('catalog-tbody');
@@ -29,7 +29,7 @@ async function loadCatalog() {
                     <td><strong>${book.title}</strong></td>
                     <td>${book.author}</td>
                     <td><code style="font-size:0.8rem;">${book.isbn || 'N/A'}</code></td>
-                    <td><span class="badge badge-info">${book.category || 'General'}</span></td>
+                    <td><span class="badge badge-info">${book.category_name || book.category || 'General'}</span></td>
                     <td>
                         <span class="badge ${isAvailable ? 'badge-success' : 'badge-danger'}">
                             ${isAvailable ? 'Available' : 'Borrowed'}

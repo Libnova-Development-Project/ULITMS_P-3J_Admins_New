@@ -175,7 +175,7 @@
 </div>
 
 <script>
-const API_URL = window.location.origin + '/api';
+const API_URL = (window.ULITMS_API_URL || 'http://localhost:5000') + '/api';
 
 function getToken() { return localStorage.getItem('ulitms_token'); }
 

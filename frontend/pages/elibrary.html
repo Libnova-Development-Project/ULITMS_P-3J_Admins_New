@@ -188,7 +188,7 @@
                     <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500;">Purpose (optional):</label>
                     <input type="text" id="session-purpose" class="form-input" placeholder="Study, Research, etc." style="width: 100%;">
                 </div>
-                <button class="btn btn-primary" onclick="startNewSession()">
+                <button class="btn btn-primary" id="start-session-btn" onclick="startNewSession()">
                     <i class="fas fa-play"></i> Start Session
                 </button>
             </div>
@@ -235,7 +235,7 @@
 
 <script>
 // API Base URL
-const API_URL = window.location.origin + '/api';
+const API_URL = (window.ULITMS_API_URL || 'http://localhost:5000') + '/api';
 
 // Utility Functions
 function getToken() {
@@ -244,6 +244,24 @@ function getToken() {
 
 function getUserId() {
     return localStorage.getItem('ulitms_user_id');
+}
+
+function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[character]);
+}
+
+async function getResponseData(response) {
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.message || `Request failed (${response.status})`);
+    }
+    return data;
 }
 
 
@@ -257,41 +275,46 @@ async function loadAvailablePCs() {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
         
-        if (!response.ok) throw new Error('Failed to load PCs');
-        
-        const data = await response.json();
+        const data = await getResponseData(response);
         const units = data.units || [];
         
         if (units.length === 0) {
             container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #94a3b8;">No active PC units found in the system.</div>';
+            document.getElementById('session-unit').innerHTML = '<option value="">No active PC units available</option>';
             return;
         }
         
         const activeSessions = await getActiveSessions();
-        const busyUnitIds = new Set(activeSessions.map(s => s.unit_id));
+        const busyUnitIds = new Set(activeSessions.map(session => Number(session.unit_id)));
         
         const unitSelect = document.getElementById('session-unit');
         unitSelect.innerHTML = '<option value="">Select PC Unit</option>';
         
         container.innerHTML = units.map(unit => {
-            const isAvailable = !busyUnitIds.has(unit.id);
+            const isBusy = busyUnitIds.has(Number(unit.id));
+            const needsMaintenance = unit.condition !== 'good';
+            const isAvailable = !isBusy && !needsMaintenance;
             const statusClass = isAvailable ? 'available' : 'busy';
-            const statusText = isAvailable ? 'Available' : 'Currently in Use';
+            const statusText = isBusy ? 'Currently in Use' : (needsMaintenance ? 'Under Maintenance' : 'Available');
             const statusIcon = isAvailable ? 'fa-check-circle' : 'fa-minus-circle';
+            const unitLabel = unit.label || `PC #${String(unit.unit_number).padStart(2, '0')}`;
             
-            unitSelect.innerHTML += `<option value="${unit.id}" ${isAvailable ? '' : 'disabled'}>PC Unit #${String(unit.unit_number).padStart(2, '0')}${isAvailable ? '' : ' (Busy)'}</option>`;
+            unitSelect.insertAdjacentHTML(
+                'beforeend',
+                `<option value="${Number(unit.id)}" ${isAvailable ? '' : 'disabled'}>${escapeHTML(unitLabel)}${isBusy ? ' (In Use)' : (needsMaintenance ? ' (Maintenance)' : '')}</option>`
+            );
             
             return `
-                <div class="pc-unit-card ${statusClass}" ${isAvailable ? `onclick="selectPC(${unit.id})"` : ''}>
+                <div class="pc-unit-card ${statusClass}" data-unit-id="${Number(unit.id)}" ${isAvailable ? `onclick="selectPC(${Number(unit.id)})"` : ''}>
                     <div class="busy-overlay"></div>
                     <div class="pc-icon-box">
                         <i class="fas fa-laptop"></i>
                     </div>
-                    <div class="pc-id">PC #${String(unit.unit_number).padStart(2, '0')}</div>
-                    <div class="pc-location">${unit.location || 'Main Section'}</div>
+                    <div class="pc-id">${escapeHTML(unitLabel)}</div>
+                    <div class="pc-location">${escapeHTML(unit.location || 'Main Section')}</div>
                     <div class="status-badge ${statusClass}">
                         <i class="fas ${statusIcon}"></i>
-                        <span>${statusText}</span>
+                        <span>${escapeHTML(statusText)}</span>
                     </div>
                 </div>
             `;
@@ -299,17 +322,15 @@ async function loadAvailablePCs() {
         
     } catch (error) {
         console.error('Error loading PCs:', error);
-        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #ef4444;"><i class="fas fa-exclamation-triangle fa-2x"></i><p style="margin-top:10px;">Failed to synchronize PC status.</p></div>';
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #ef4444;"><i class="fas fa-exclamation-triangle fa-2x"></i><p style="margin-top:10px;">${escapeHTML(error.message || 'Failed to synchronize PC status.')}</p><button class="btn btn-secondary btn-small" onclick="loadAvailablePCs()">Try again</button></div>`;
     }
 }
 
 function selectPC(id) {
     document.getElementById('session-unit').value = id;
-    // Scroll to the start session card
     document.getElementById('session-unit').closest('.card').scrollIntoView({ behavior: 'smooth' });
-    // Visual feedback
     document.querySelectorAll('.pc-unit-card').forEach(c => c.style.borderColor = 'rgba(39, 196, 204, 0.1)');
-    const selectedCard = Array.from(document.querySelectorAll('.pc-unit-card')).find(c => c.onclick && c.onclick.toString().includes(id));
+    const selectedCard = document.querySelector(`.pc-unit-card[data-unit-id="${Number(id)}"]`);
     if (selectedCard) selectedCard.style.borderColor = 'var(--teal-primary)';
 }
 
@@ -320,12 +341,11 @@ async function getActiveSessions() {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
         
-        if (!response.ok) return [];
-        const data = await response.json();
+        const data = await getResponseData(response);
         return data.sessions || [];
     } catch (error) {
         console.error('Error getting active sessions:', error);
-        return [];
+        throw error;
     }
 }
 
@@ -345,9 +365,7 @@ async function loadUserSessions() {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
         
-        if (!response.ok) throw new Error('Failed to load sessions');
-        
-        const data = await response.json();
+        const data = await getResponseData(response);
         const sessions = data.sessions || [];
         
         if (sessions.length === 0) {
@@ -364,7 +382,7 @@ async function loadUserSessions() {
             return `
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                     <td style="padding: 12px;">${formatDate(session.time_in)}</td>
-                    <td style="padding: 12px;">PC #${String(session.unit_id).padStart(2, '0')}</td>
+                    <td style="padding: 12px;">${escapeHTML(session.label || `PC #${String(session.unit_number || session.unit_id).padStart(2, '0')}`)}</td>
                     <td style="padding: 12px;">${formatTime(session.time_in)}</td>
                     <td style="padding: 12px;">${session.time_out ? formatTime(session.time_out) : '--:--'}</td>
                     <td style="padding: 12px;">${duration}</td>
@@ -384,12 +402,14 @@ async function loadUserSessions() {
 async function startNewSession() {
     const unitId = document.getElementById('session-unit').value;
     const purpose = document.getElementById('session-purpose').value;
+    const button = document.getElementById('start-session-btn');
     
     if (!unitId) {
         showWarning('Please select a PC unit');
         return;
     }
     
+    button.disabled = true;
     try {
         const response = await fetch(`${API_URL}/elibrary/sessions/start`, {
             method: 'POST',
@@ -403,22 +423,21 @@ async function startNewSession() {
             })
         });
         
-        if (!response.ok) throw new Error('Failed to start session');
-        
-        const data = await response.json();
-        showSuccess('E-Library session started successfully!');
+        const data = await getResponseData(response);
+        showSuccess(data.message || 'E-Library session started successfully!');
         
         // Clear form
         document.getElementById('session-unit').value = '';
         document.getElementById('session-purpose').value = '';
         
         // Reload data
-        loadUserSessions();
-        loadAvailablePCs();
+        await Promise.all([loadUserSessions(), loadAvailablePCs()]);
         
     } catch (error) {
         console.error('Error starting session:', error);
-        showError('Failed to start session. Please try again.');
+        showError(error.message || 'Failed to start session. Please try again.');
+    } finally {
+        button.disabled = false;
     }
 }
 
@@ -434,15 +453,14 @@ async function endSession(sessionId) {
                 }
             });
             
-            if (!response.ok) throw new Error('Failed to end session');
+            const data = await getResponseData(response);
             
-            showSuccess('Session ended successfully!');
-            loadUserSessions();
-            loadAvailablePCs();
-            
+            showSuccess(data.message || 'Session ended successfully!');
+            await Promise.all([loadUserSessions(), loadAvailablePCs()]);
+
         } catch (error) {
             console.error('Error ending session:', error);
-            showError('Failed to end session. Please try again.');
+            showError(error.message || 'Failed to end session. Please try again.');
         }
     }, { title: 'End Session', confirmText: 'End Session', type: 'danger' });
 }
