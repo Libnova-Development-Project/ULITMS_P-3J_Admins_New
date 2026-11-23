@@ -8,14 +8,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --admin-primary: #dc2626;
-            --admin-secondary: #7f1d1d;
-            --admin-accent: #f59e0b;
-            --bg-gradient: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --border-color: #374151;
-            --text-primary: #f9fafb;
-            --text-secondary: #d1d5db;
+            --admin-primary: #003366;
+            --admin-accent: #ffcc00;
+            --bg-gradient: #003366;
+            --card-bg: #ffffff;
+            --border-color: rgba(255, 204, 0, 0.7);
+            --text-primary: #003366;
+            --text-secondary: rgba(0, 51, 102, 0.72);
             --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             --border-radius: 16px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -49,8 +48,8 @@
             pointer-events: none;
             opacity: 0.03;
             background-image: 
-                repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(220, 38, 38, 0.03) 35px, rgba(220, 38, 38, 0.03) 70px),
-                repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(220, 38, 38, 0.03) 35px, rgba(220, 38, 38, 0.03) 70px);
+                repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255, 204, 0, 0.08) 35px, rgba(255, 204, 0, 0.08) 70px),
+                repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(255, 204, 0, 0.08) 35px, rgba(255, 204, 0, 0.08) 70px);
         }
 
         /* Login Container */
@@ -64,7 +63,7 @@
             overflow: hidden;
             position: relative;
             z-index: 10;
-            border: 1px solid rgba(220, 38, 38, 0.2);
+            border: 1px solid rgba(255, 204, 0, 0.55);
             transform: translateY(0);
             transition: var(--transition);
         }
@@ -76,8 +75,8 @@
 
         /* Admin Header */
         .admin-header {
-            background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
-            color: white;
+            background: var(--admin-primary);
+            color: #ffffff;
             padding: 32px;
             text-align: center;
             position: relative;
@@ -115,7 +114,7 @@
             font-size: 0.9rem;
             opacity: 0.9;
             font-weight: 400;
-            color: #e5e7eb;
+            color: #ffffff;
         }
 
         /* Form Container */
@@ -156,15 +155,15 @@
             font-size: 0.9rem;
             font-family: inherit;
             transition: var(--transition);
-            background: rgba(31, 41, 55, 0.8);
+            background: #ffffff;
             color: var(--text-primary);
         }
 
         .admin-form-input:focus, .admin-form-select:focus {
             outline: none;
             border-color: var(--admin-accent);
-            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
-            background: rgba(31, 41, 55, 1);
+            box-shadow: 0 0 0 4px rgba(255, 204, 0, 0.25);
+            background: #ffffff;
         }
 
         .admin-form-input::placeholder {
@@ -176,7 +175,7 @@
             width: 100%;
             padding: 14px 24px;
             background: var(--admin-primary);
-            color: white;
+            color: #ffffff;
             border: none;
             border-radius: 12px;
             font-size: 0.95rem;
@@ -205,9 +204,10 @@
         }
 
         .admin-btn:hover {
-            background: var(--admin-secondary);
+            background: var(--admin-accent);
+            color: var(--admin-primary);
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.3);
+            box-shadow: 0 10px 25px -5px rgba(0, 51, 102, 0.3);
         }
 
         .admin-btn:active {
@@ -237,15 +237,15 @@
         }
 
         .admin-message.error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
+            background: rgba(178, 34, 34, 0.08);
+            border: 1px solid rgba(178, 34, 34, 0.35);
+            color: #b22222;
         }
 
         .admin-message.success {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #34d399;
+            background: rgba(255, 204, 0, 0.16);
+            border: 1px solid rgba(255, 204, 0, 0.65);
+            color: var(--admin-primary);
         }
 
         @keyframes slideDown {
@@ -259,7 +259,7 @@
             top: 16px;
             right: 16px;
             background: var(--admin-accent);
-            color: white;
+            color: var(--admin-primary);
             padding: 4px 8px;
             border-radius: 20px;
             font-size: 0.7rem;
@@ -396,6 +396,10 @@
                 const data = await response.json();
                 
                 if (data.success) {
+                            // Make sure this is an admin account
+                        if (data.user?.role !== 'admin') {
+                            throw new Error('Access denied. Administrator account required.');
+                        }
                     localStorage.setItem('ulitms_token', data.token);
                     localStorage.setItem('ulitms_user_id', data.user.id);
                     localStorage.setItem('ulitms_name', `${data.user.first_name} ${data.user.last_name}`);
