@@ -1,55 +1,22 @@
-const pool = require('../config/database');
-
+const pool=require('../config/database');
 class NotificationModel {
-    static async getByUserId(userId) {
-        const result = await pool.query(
-            `SELECT * FROM library_schema.notifications 
-             WHERE user_id = $1 
-             ORDER BY created_at DESC LIMIT 50`,
-            [userId]
-        );
-        return result.rows;
-    }
-
-    static async getUnreadCount(userId) {
-        const result = await pool.query(
-            `SELECT COUNT(*) FROM library_schema.notifications 
-             WHERE user_id = $1 AND is_read = false`,
-            [userId]
-        );
-        return parseInt(result.rows[0].count);
-    }
-
-    static async markAsRead(id, userId) {
-        const result = await pool.query(
-            `UPDATE library_schema.notifications 
-             SET is_read = true 
-             WHERE id = $1 AND user_id = $2
-             RETURNING id`,
-            [id, userId]
-        );
-        return result.rows[0];
-    }
-
-    static async markAllAsRead(userId) {
-        const result = await pool.query(
-            `UPDATE library_schema.notifications 
-             SET is_read = true 
-             WHERE user_id = $1`,
-            [userId]
-        );
-        return result.rowCount;
-    }
-
-    static async create(userId, title, message, type = 'info') {
-        const result = await pool.query(
-            `INSERT INTO library_schema.notifications (user_id, title, message, type)
-             VALUES ($1, $2, $3, $4)
-             RETURNING *`,
-            [userId, title, message, type]
-        );
-        return result.rows[0];
-    }
+  static async list(userId){
+    const [items,count]=await Promise.all([
+      pool.query(`SELECT *,notification_id AS id FROM notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50`,[userId]),
+      pool.query(`SELECT COUNT(*)::int AS unread FROM notifications WHERE user_id=$1 AND is_read=FALSE`,[userId])
+    ]);
+    return {notifications:items.rows,unread_count:count.rows[0].unread};
+  }
+  static async markRead(id,userId){
+    const r=await pool.query(`UPDATE notifications SET is_read=TRUE WHERE notification_id=$1 AND user_id=$2 RETURNING notification_id`,[id,userId]);
+    return !!r.rowCount;
+  }
+  static async markAllRead(userId){
+    const r=await pool.query(`UPDATE notifications SET is_read=TRUE WHERE user_id=$1 AND is_read=FALSE`,[userId]);return r.rowCount;
+  }
+  static async create(userId,title,message,type='info',reference={}){
+    const r=await pool.query(`INSERT INTO notifications(user_id,type,title,message,reference)
+      VALUES($1,$2,$3,$4,$5::jsonb) RETURNING *,notification_id AS id`,[userId,type,title,message,JSON.stringify(reference)]);return r.rows[0];
+  }
 }
-
-module.exports = NotificationModel;
+module.exports=NotificationModel;

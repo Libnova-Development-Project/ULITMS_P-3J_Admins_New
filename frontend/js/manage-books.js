@@ -5,7 +5,7 @@ let categories = [];
 // Load books from API
 async function loadBooks() {
     try {
-        const response = await fetch('/api/books', {
+        const response = await fetch(`${API_BASE_URL}/books`, {
             headers: {
                 'Authorization': `Bearer ${getToken()}`
             }
@@ -13,7 +13,7 @@ async function loadBooks() {
         
         if (response.ok) {
             const data = await response.json();
-            books = data.data || [];
+            books = data.data?.books || data.data || [];
             displayBooks();
         } else {
             showNotification('Failed to load books', 'error');
@@ -27,7 +27,7 @@ async function loadBooks() {
 // Load categories for dropdown
 async function loadCategories() {
     try {
-        const response = await fetch('/api/book-categories', {
+        const response = await fetch(`${API_BASE_URL}/book-categories`, {
             headers: {
                 'Authorization': `Bearer ${getToken()}`
             }
@@ -35,7 +35,7 @@ async function loadCategories() {
         
         if (response.ok) {
             const data = await response.json();
-            categories = data.data || [];
+            categories = data.data?.categories || data.data || [];
             populateCategoryDropdowns();
         } else {
             showNotification('Failed to load categories', 'error');
@@ -79,9 +79,9 @@ function populateCategoryDropdowns() {
     const bookCategory = document.getElementById('book-category');
     const editBookCategory = document.getElementById('edit-book-category');
     
-    const options = '<option value="">All Categories</option>';
+    let options = '<option value="">All Categories</option>';
     categories.forEach(category => {
-        options += `<option value="${category.id}">${category.name}</option>`;
+        options += `<option value="${category.id}">${category.category_name || category.name}</option>`;
     });
     
     categoryFilter.innerHTML = options;
@@ -120,7 +120,7 @@ async function deleteBook(bookId) {
     if (!confirm('Are you sure you want to delete this book?')) return;
     
     try {
-        const response = await fetch(`/api/books/${bookId}`, {
+        const response = await fetch(`${API_BASE_URL}/books/${bookId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${getToken()}`
@@ -251,7 +251,7 @@ document.getElementById('add-book-form').addEventListener('submit', async functi
     };
     
     try {
-        const response = await fetch('/api/books', {
+        const response = await fetch(`${API_BASE_URL}/books`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -291,7 +291,7 @@ document.getElementById('edit-book-form').addEventListener('submit', async funct
     };
     
     try {
-        const response = await fetch(`/api/books/${bookId}`, {
+        const response = await fetch(`${API_BASE_URL}/books/${bookId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

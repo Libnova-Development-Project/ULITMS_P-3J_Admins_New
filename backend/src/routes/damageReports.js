@@ -1,12 +1,12 @@
-const express = require('express');
-const router = express.Router();
-const damageReportController = require('../controllers/damageReportController');
-const { auth, adminOnly } = require('../middleware/auth');
-
-router.get('/', auth, adminOnly, damageReportController.getAllReports);
-router.get('/stats', auth, adminOnly, damageReportController.getStats);
-router.get('/:id', auth, adminOnly, damageReportController.getReportById);
-router.post('/', auth, damageReportController.createReport);
-router.put('/:id/resolve', auth, damageReportController.resolveReport);
-
-module.exports = router;
+const router=require('express').Router();
+const c=require('../controllers/damageReportController');
+const {auth,adminOnly}=require('../middleware/auth');
+const {idParam,pagination}=require('../middleware/validate');
+router.get('/mine',auth,pagination,c.mine);
+router.get('/',auth,adminOnly,pagination,c.list);
+router.get('/stats',auth,adminOnly,c.stats);
+router.get('/:id',auth,idParam,c.get);
+router.post('/',auth,c.create);
+router.put('/:id/status',auth,adminOnly,idParam,c.updateStatus);
+router.put('/:id/resolve',auth,adminOnly,idParam,(req,res,next)=>{req.body.status='resolved';next();},c.updateStatus);
+module.exports=router;

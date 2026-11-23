@@ -5,7 +5,7 @@ let users = [];
 async function loadUsers() {
     try {
         const data = await usersAPI.getUsers();
-        users = data.users || [];
+        users = data.users || data || [];
         displayUsers();
     } catch (error) {
         console.error('Error loading users:', error);
@@ -82,8 +82,8 @@ async function toggleUserStatus(userId) {
     if (!confirm(`Are you sure you want to ${action} this user?`)) return;
     
     try {
-        const response = await fetch(`/api/users/${userId}/status`, {
-            method: 'PATCH',
+        const response = await fetch(`${API_BASE_URL}/users/${userId}/status`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${getToken()}`
@@ -108,7 +108,7 @@ async function deleteUser(userId) {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
     
     try {
-        const response = await fetch(`/api/users/${userId}`, {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${getToken()}`
@@ -245,7 +245,7 @@ document.getElementById('add-user-form').addEventListener('submit', async functi
     };
     
     try {
-        const response = await fetch('/api/users', {
+        const response = await fetch(`${API_BASE_URL}/users`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -286,7 +286,7 @@ document.getElementById('edit-user-form').addEventListener('submit', async funct
     };
     
     try {
-        const response = await fetch(`/api/users/${userId}`, {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

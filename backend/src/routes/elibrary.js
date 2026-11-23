@@ -1,18 +1,15 @@
-const express = require('express');
-const router = express.Router();
-const elibraryController = require('../controllers/elibraryController');
-const { auth } = require('../middleware/auth');
-
-router.get('/units', auth, elibraryController.getAllUnits);
-router.get('/units/:id', auth, elibraryController.getUnitById);
-router.post('/units', auth, elibraryController.createUnit);
-router.put('/units/:id', auth, elibraryController.updateUnit);
-router.delete('/units/:id', auth, elibraryController.deleteUnit);
-
-router.get('/sessions', auth, elibraryController.getAllSessions);
-router.get('/sessions/active', auth, elibraryController.getActiveSessions);
-router.get('/sessions/user/:userId', auth, elibraryController.getUserSessions);
-router.post('/sessions/start', auth, elibraryController.startSession);
-router.put('/sessions/:id/end', auth, elibraryController.endSession);
-
-module.exports = router;
+const router=require('express').Router();
+const c=require('../controllers/elibraryController');
+const {auth,adminOnly}=require('../middleware/auth');
+const {idParam,pagination}=require('../middleware/validate');
+router.get('/units',auth,c.units);
+router.get('/units/:id',auth,idParam,c.unit);
+router.post('/units',auth,adminOnly,c.createUnit);
+router.put('/units/:id',auth,adminOnly,idParam,c.updateUnit);
+router.delete('/units/:id',auth,adminOnly,idParam,c.deleteUnit);
+router.get('/sessions/active',auth,c.activeSessions);
+router.get('/sessions',auth,pagination,c.sessions);
+router.get('/sessions/user/:userId',auth,pagination,c.userSessions);
+router.post('/sessions/start',auth,c.startSession);
+router.put('/sessions/:id/end',auth,idParam,c.endSession);
+module.exports=router;

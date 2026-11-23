@@ -1,13 +1,18 @@
-const express = require('express');
-const router = express.Router();
-const borrowingController = require('../controllers/borrowingController');
-const { auth, adminOnly } = require('../middleware/auth');
-
-router.get('/overdue', auth, adminOnly, borrowingController.getOverdueBooks);
-router.get('/', auth, borrowingController.getAllBorrowings);
-router.get('/user/:userId', auth, borrowingController.getUserBorrowings);
-router.post('/', auth, borrowingController.borrowBook);
-router.put('/:id/return', auth, borrowingController.returnBook);
-router.put('/:id/confirm', auth, borrowingController.confirmReturn);
-
-module.exports = router;
+const router=require('express').Router();
+const c=require('../controllers/borrowingController');
+const {auth,adminOnly}=require('../middleware/auth');
+const {idParam,pagination}=require('../middleware/validate');
+router.get('/overdue',auth,adminOnly,c.overdue);
+router.get('/pending',auth,adminOnly,pagination,c.pending);
+router.post('/mark-overdue',auth,adminOnly,c.markOverdue);
+router.get('/',auth,pagination,c.list);
+router.get('/user/:userId',auth,pagination,c.userList);
+router.post('/',auth,c.request);
+router.put('/:id/decision',auth,adminOnly,idParam,c.decision);
+router.put('/:id/approve',auth,adminOnly,idParam,c.approve);
+router.put('/:id/reject',auth,adminOnly,idParam,c.reject);
+router.put('/:id/issue',auth,adminOnly,idParam,c.issue);
+router.put('/:id/return',auth,idParam,c.requestReturn);
+router.put('/:id/confirm',auth,adminOnly,idParam,c.confirmReturn);
+router.put('/:id/lost',auth,adminOnly,idParam,c.lost);
+module.exports=router;

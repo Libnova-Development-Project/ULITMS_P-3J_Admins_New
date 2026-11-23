@@ -1,156 +1,55 @@
-const pool = require('../config/database');
-
+const pool=require('../config/database');
+const withActorTransaction=require('../utils/withActorTransaction');
 class DamageReportModel {
-    // Create damage report
-    static async create(reportData) {
-        const {
-            reported_by, unit_id, peripheral_id, book_id, item_type = 'hardware', 
-            damage_type, description, severity = 'low', damage_metadata
-        } = reportData;
-        
-        const result = await pool.query(
-            `INSERT INTO library_schema.damage_reports 
-             (reported_by, unit_id, peripheral_id, book_id, item_type, damage_type, description, severity, damage_metadata)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-             RETURNING *`,
-            [reported_by, unit_id, peripheral_id, book_id, item_type, damage_type, description, severity, damage_metadata]
-        );
-        
-        // Update condition if severity is high
-        if (severity === 'high' || severity === 'critical') {
-            if (peripheral_id) {
-                await pool.query("UPDATE library_schema.peripherals SET condition = 'damaged' WHERE id = $1", [peripheral_id]);
-            } else if (unit_id) {
-                await pool.query("UPDATE library_schema.elibrary_units SET condition = 'repair_needed' WHERE id = $1", [unit_id]);
-            } else if (book_id) {
-                // If a book is critically damaged, maybe we mark it as unavailable
-                await pool.query("UPDATE library_schema.books SET status = 'damaged' WHERE id = $1", [book_id]);
-            }
-        }
-        
-        // Log activity
-        await pool.query(
-            `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
-             VALUES ($1, $2, $3)`,
-            [reported_by, 'REPORT_DAMAGE', JSON.stringify({ item_type, item_id: book_id || peripheral_id || unit_id, severity })]
-        );
-        
-        return result.rows[0];
-    }
-
-    // Get all damage reports
-    static async getAll(limit = 100, offset = 0, status = null, severity = null) {
-        let query = `
-            SELECT dr.*, 
-                   u.first_name || ' ' || u.last_name as reporter_name,
-                   eu.unit_number,
-                   p.name as peripheral_name,
-                   b.title as book_title
-            FROM library_schema.damage_reports dr
-            LEFT JOIN library_schema.users u ON dr.reported_by = u.id
-            LEFT JOIN library_schema.elibrary_units eu ON dr.unit_id = eu.id
-            LEFT JOIN library_schema.peripherals p ON dr.peripheral_id = p.id
-            LEFT JOIN library_schema.books b ON dr.book_id = b.id
-            WHERE dr.is_deleted = false
-        `;
-        const values = [];
-        let paramIndex = 1;
-        
-        if (status) {
-            query += ` AND dr.resolved_by IS ${status === 'resolved' ? 'NOT NULL' : 'NULL'}`;
-        }
-        
-        if (severity) {
-            query += ` AND dr.severity = $${paramIndex}`;
-            values.push(severity);
-            paramIndex++;
-        }
-        
-        query += ` ORDER BY dr.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-        values.push(limit, offset);
-        
-        const result = await pool.query(query, values);
-        
-        const countResult = await pool.query(
-            `SELECT COUNT(*) FROM library_schema.damage_reports WHERE is_deleted = false`
-        );
-        
-        return {
-            reports: result.rows,
-            total: parseInt(countResult.rows[0].count),
-            limit,
-            offset
-        };
-    }
-
-    // Get report by ID
-    static async findById(id) {
-        const result = await pool.query(
-            `SELECT dr.*, 
-                    u.first_name || ' ' || u.last_name as reporter_name,
-                    ru.first_name || ' ' || ru.last_name as resolver_name,
-                    eu.unit_number,
-                    p.name as peripheral_name,
-                    b.title as book_title
-             FROM library_schema.damage_reports dr
-             LEFT JOIN library_schema.users u ON dr.reported_by = u.id
-             LEFT JOIN library_schema.users ru ON dr.resolved_by = ru.id
-             LEFT JOIN library_schema.elibrary_units eu ON dr.unit_id = eu.id
-             LEFT JOIN library_schema.peripherals p ON dr.peripheral_id = p.id
-             LEFT JOIN library_schema.books b ON dr.book_id = b.id
-             WHERE dr.id = $1 AND dr.is_deleted = false`,
-            [id]
-        );
-        return result.rows[0];
-    }
-
-    // Resolve damage report
-    static async resolve(id, resolvedBy, resolutionNotes) {
-        const result = await pool.query(
-            `UPDATE library_schema.damage_reports 
-             SET resolved_by = $1, 
-                 resolved_at = CURRENT_TIMESTAMP, 
-                 resolution_notes = $2
-             WHERE id = $3 AND is_deleted = false AND resolved_by IS NULL
-             RETURNING *`,
-            [resolvedBy, resolutionNotes, id]
-        );
-        
-        if (result.rows[0]) {
-            const report = result.rows[0];
-            if (report.peripheral_id) {
-                await pool.query("UPDATE library_schema.peripherals SET condition = 'good' WHERE id = $1", [report.peripheral_id]);
-            } else if (report.unit_id) {
-                await pool.query("UPDATE library_schema.elibrary_units SET condition = 'good' WHERE id = $1", [report.unit_id]);
-            } else if (report.book_id) {
-                await pool.query("UPDATE library_schema.books SET status = 'available' WHERE id = $1", [report.book_id]);
-            }
-            
-            await pool.query(
-                `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
-                 VALUES ($1, $2, $3)`,
-                [resolvedBy, 'RESOLVE_DAMAGE', JSON.stringify({ report_id: id })]
-            );
-        }
-        
-        return result.rows[0];
-    }
-
-    // Get statistics
-    static async getStats() {
-        const result = await pool.query(
-            `SELECT 
-                COUNT(*) as total_reports,
-                COUNT(CASE WHEN resolved_by IS NULL THEN 1 END) as pending,
-                COUNT(CASE WHEN resolved_by IS NOT NULL THEN 1 END) as resolved,
-                COUNT(CASE WHEN severity = 'critical' THEN 1 END) as critical,
-                COUNT(CASE WHEN item_type = 'book' THEN 1 END) as book_reports,
-                COUNT(CASE WHEN item_type = 'hardware' THEN 1 END) as hardware_reports
-             FROM library_schema.damage_reports
-             WHERE is_deleted = false`
-        );
-        return result.rows[0];
-    }
+  static async create(d){
+    if(Boolean(d.unit_id)===Boolean(d.peripheral_id))
+      throw Object.assign(new Error('Provide exactly one damage target: unit_id or peripheral_id.'),{status:400});
+    return withActorTransaction(d.reported_by,async client=>{
+    const r=await client.query(`INSERT INTO damage_reports(reported_by,unit_id,peripheral_id,damage_type,description,severity,metadata)
+      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb) RETURNING *,report_id AS id`,
+      [d.reported_by,d.unit_id||null,d.peripheral_id||null,d.damage_type,d.description,d.severity||'minor',JSON.stringify(d.metadata||{})]);
+    return r.rows[0];
+    });
+  }
+  static async list({limit,offset,status,severity,reportedBy}){
+    const vals=[];const w=[];
+    if(reportedBy){vals.push(reportedBy);w.push(`dr.reported_by=$${vals.length}`);}
+    if(status){vals.push(status);w.push(`dr.status=$${vals.length}`);}
+    if(severity){vals.push(severity);w.push(`dr.severity=$${vals.length}`);}
+    const cl=w.length?`WHERE ${w.join(' AND ')}`:'';
+    const count=await pool.query(`SELECT COUNT(*) FROM damage_reports dr ${cl}`,vals);
+    vals.push(limit,offset);
+    const r=await pool.query(`SELECT dr.*,dr.report_id AS id,reporter.first_name||' '||reporter.last_name AS reporter_name,
+      resolver.first_name||' '||resolver.last_name AS resolver_name,u.unit_code,p.name AS peripheral_name
+      FROM damage_reports dr JOIN users reporter ON reporter.user_id=dr.reported_by
+      LEFT JOIN users resolver ON resolver.user_id=dr.resolved_by
+      LEFT JOIN elibrary_units u USING(unit_id) LEFT JOIN peripherals p USING(peripheral_id)
+      ${cl} ORDER BY dr.reported_at DESC LIMIT $${vals.length-1} OFFSET $${vals.length}`,vals);
+    return {reports:r.rows,total:Number(count.rows[0].count),limit,offset};
+  }
+  static async find(id){
+    const r=await pool.query(`SELECT dr.*,dr.report_id AS id,reporter.first_name||' '||reporter.last_name AS reporter_name,
+      resolver.first_name||' '||resolver.last_name AS resolver_name,u.unit_code,p.name AS peripheral_name
+      FROM damage_reports dr JOIN users reporter ON reporter.user_id=dr.reported_by
+      LEFT JOIN users resolver ON resolver.user_id=dr.resolved_by
+      LEFT JOIN elibrary_units u USING(unit_id) LEFT JOIN peripherals p USING(peripheral_id)
+      WHERE dr.report_id=$1`,[id]);return r.rows[0]||null;
+  }
+  static async updateStatus(id,adminId,status,notes){
+    return withActorTransaction(adminId,async client=>{
+    const r=await client.query(`UPDATE damage_reports SET status=$1,
+      resolved_by=CASE WHEN $1 IN ('resolved','closed') THEN $2 ELSE NULL END,
+      resolved_at=CASE WHEN $1 IN ('resolved','closed') THEN CURRENT_TIMESTAMP ELSE NULL END,
+      resolution_notes=$3,updated_at=CURRENT_TIMESTAMP WHERE report_id=$4 RETURNING *,report_id AS id`,
+      [status,adminId,notes||null,id]);return r.rows[0]||null;
+    });
+  }
+  static async stats(){
+    const r=await pool.query(`SELECT COUNT(*)::int AS total,
+      COUNT(*) FILTER(WHERE status IN ('open','under_review'))::int AS pending,
+      COUNT(*) FILTER(WHERE status IN ('resolved','closed'))::int AS resolved,
+      COUNT(*) FILTER(WHERE severity='severe')::int AS severe FROM damage_reports`);
+    return r.rows[0];
+  }
 }
-
-module.exports = DamageReportModel;
+module.exports=DamageReportModel;

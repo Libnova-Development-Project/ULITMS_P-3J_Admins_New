@@ -183,8 +183,8 @@
     <!-- Login Form -->
     <div id="login-form" class="form-section active">
         <div class="form-group">
-            <label class="form-label">Student ID or Email</label>
-            <input type="text" id="login-identifier" class="form-input" placeholder="Enter your ID or Email">
+            <label class="form-label">Email Address</label>
+            <input type="text" id="login-identifier" class="form-input" placeholder="Enter your registered email">
         </div>
         
         <div class="form-group">
@@ -210,7 +210,7 @@
     <!-- Forgot Password Form -->
     <div id="forgot-form" class="form-section">
         <div class="form-group">
-            <label class="form-label">Student ID or Email</label>
+            <label class="form-label">Email Address</label>
             <input type="text" id="forgot-identifier" class="form-input" placeholder="Enter your registered ID/Email">
             <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">A 6-digit recovery PIN will be generated for your account.</p>
         </div>
@@ -294,184 +294,79 @@
 </div>
 
 <script>
-    const API_URL = window.location.origin + '/api';
-
+    const API_URL = 'http://localhost:5000/api';
     function switchTab(tab) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         const btn = document.querySelector(`.tab-btn[onclick*="${tab}"]`);
         if (btn) btn.classList.add('active');
-        
         document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
-        document.getElementById(`${tab}-form`).classList.add('active');
-        
+        const section = document.getElementById(`${tab}-form`);
+        if (section) section.classList.add('active');
         document.getElementById('login-msg').classList.remove('show');
     }
-
     function togglePassword(inputId, el) {
-        const input = document.getElementById(inputId);
-        const icon = el.querySelector('i');
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.classList.replace('fa-eye', 'fa-eye-slash');
-        } else {
-            input.type = 'password';
-            icon.classList.replace('fa-eye-slash', 'fa-eye');
-        }
+        const input=document.getElementById(inputId), icon=el.querySelector('i');
+        input.type=input.type==='password'?'text':'password';
+        icon.classList.toggle('fa-eye',input.type==='password');
+        icon.classList.toggle('fa-eye-slash',input.type==='text');
     }
-
-    function showMsg(message, type = 'error') {
-        const msg = document.getElementById('login-msg');
-        msg.textContent = message;
-        msg.className = `msg show ${type}`;
+    function showMsg(message,type='error') {
+        const msg=document.getElementById('login-msg'); msg.textContent=message; msg.className=`msg show ${type}`;
     }
-
+    function saveLogin(payload) {
+        const auth=payload.data || payload, user=auth.user, token=auth.token;
+        if(!user || !token) throw new Error('The server response did not include a valid login token.');
+        localStorage.setItem('ulitms_token',token);
+        localStorage.setItem('ulitms_user',JSON.stringify(user));
+        localStorage.setItem('ulitms_user_id',user.user_id ?? user.id);
+        localStorage.setItem('ulitms_name',[user.first_name,user.last_name].filter(Boolean).join(' '));
+        localStorage.setItem('ulitms_role',user.role);
+        localStorage.setItem('ulitms_email',user.email || '');
+        localStorage.setItem('ulitms_studentid',user.student_number || user.student_id || '');
+        localStorage.setItem('ulitms_avatar',user.profile_picture || '');
+        return user;
+    }
     async function handleLogin() {
-        const identifier = document.getElementById('login-identifier').value.trim();
-        const password = document.getElementById('login-password').value;
-        
-        if (!identifier || !password) return showMsg('Please fill in all fields');
-        
-        const btn = document.getElementById('login-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
-
+        const email=document.getElementById('login-identifier').value.trim();
+        const password=document.getElementById('login-password').value;
+        if(!email || !password) return showMsg('Please enter your email address and password.');
+        const btn=document.getElementById('login-btn'); btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Authenticating...';
         try {
-            const response = await fetch(`${API_URL}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier, password })
-            });
-            const data = await response.json();
-            
-            if (data.success) {
-                localStorage.setItem('ulitms_token', data.token);
-                localStorage.setItem('ulitms_user_id', data.user.id);
-                localStorage.setItem('ulitms_name', `${data.user.first_name} ${data.user.last_name}`);
-                localStorage.setItem('ulitms_role', data.user.role);
-                localStorage.setItem('ulitms_email', data.user.email);
-                localStorage.setItem('ulitms_avatar', data.user.profile_picture || '');
-                
-                showMsg('Login successful! Entering system...', 'success');
-                setTimeout(() => window.location.href = 'pages/dashboard.html', 1000);
-            } else {
-                showMsg(data.message || 'Invalid credentials');
-                btn.disabled = false;
-                btn.innerHTML = '<span>Login</span>';
-            }
-        } catch (error) {
-            showMsg('Connection error. Is the server running?');
-            btn.disabled = false;
-            btn.innerHTML = '<span>Login</span>';
-        }
+            const response=await fetch(`${API_URL}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+            const payload=await response.json();
+            if(!response.ok || payload.success===false) throw new Error(payload.message || 'Login failed.');
+            const user=saveLogin(payload);
+            showMsg('Login successful! Opening your dashboard...','success');
+            setTimeout(()=>location.href=user.role==='admin'?'pages/dashboard.html':'pages/catalog.html',650);
+        } catch(error) { showMsg(error.message || 'Unable to connect to the server.'); btn.disabled=false; btn.innerHTML='<span>Login</span>'; }
     }
-
     async function handleSignup() {
-        const firstName = document.getElementById('signup-firstname').value.trim();
-        const lastName = document.getElementById('signup-lastname').value.trim();
-        const studentId = document.getElementById('signup-studentid').value.trim();
-        const email = document.getElementById('signup-email').value.trim();
-        const password = document.getElementById('signup-password').value;
-        
-        if (!firstName || !lastName || !studentId || !email || !password) {
-            return showMsg('Please fill in all required fields');
-        }
-
-        const btn = document.getElementById('signup-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
-
+        const first_name=document.getElementById('signup-firstname').value.trim();
+        const last_name=document.getElementById('signup-lastname').value.trim();
+        const student_number=document.getElementById('signup-studentid').value.trim();
+        const email=document.getElementById('signup-email').value.trim();
+        const password=document.getElementById('signup-password').value;
+        if(!first_name||!last_name||!student_number||!email||!password) return showMsg('Please complete all registration fields.');
+        const btn=document.getElementById('signup-btn'); btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Creating...';
         try {
-            const response = await fetch(`${API_URL}/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ first_name: firstName, last_name: lastName, student_id: studentId, email, password })
-            });
-            const data = await response.json();
-            
-            if (data.success) {
-                showMsg('Account created! Switching to login...', 'success');
-                setTimeout(() => switchTab('login'), 2000);
-            } else {
-                showMsg(data.message || 'Registration failed');
-                btn.disabled = false;
-                btn.innerHTML = '<span>Register Account</span>';
-            }
-        } catch (error) {
-            showMsg('Error connecting to server');
-            btn.disabled = false;
-            btn.innerHTML = '<span>Register Account</span>';
-        }
+            const response=await fetch(`${API_URL}/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({first_name,last_name,student_number,email,password})});
+            const payload=await response.json();
+            if(!response.ok || payload.success===false) throw new Error(payload.message || 'Registration failed.');
+            showMsg('Account created successfully. You can now log in.','success'); switchTab('login');
+            document.getElementById('login-identifier').value=email;
+        } catch(error) { showMsg(error.message || 'Registration failed.'); }
+        finally { btn.disabled=false; btn.innerHTML='<span>Register Account</span>'; }
     }
-
     async function handleForgotSubmit() {
-        const identifier = document.getElementById('forgot-identifier').value.trim();
-        if (!identifier) return showMsg('ID or Email required');
-
-        const btn = document.getElementById('forgot-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting...';
-
-        try {
-            const response = await fetch(`${API_URL}/auth/forgot-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier })
-            });
-            const data = await response.json();
-            
-            if (data.success) {
-                showMsg('Success! PIN is: ' + data.debug_pin, 'success');
-                setTimeout(() => switchTab('reset'), 2500);
-            } else {
-                showMsg(data.message);
-                btn.disabled = false;
-                btn.innerHTML = '<span>Generate Recovery PIN</span>';
-            }
-        } catch (e) {
-            showMsg('Connection error');
-            btn.disabled = false;
-            btn.innerHTML = '<span>Generate Recovery PIN</span>';
-        }
+        showMsg('Password recovery is not configured in the current backend. Please contact the library administrator.');
     }
-
     async function handleResetSubmit() {
-        const token = document.getElementById('reset-pin').value.trim();
-        const newPassword = document.getElementById('reset-new-password').value;
-        
-        if (!token || !newPassword) return showMsg('PIN and New Password required');
-
-        const btn = document.getElementById('reset-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
-
-        try {
-            const response = await fetch(`${API_URL}/auth/reset-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, newPassword })
-            });
-            const data = await response.json();
-            
-            if (data.success) {
-                showMsg('Password updated! Redirecting to login...', 'success');
-                setTimeout(() => switchTab('login'), 2000);
-            } else {
-                showMsg(data.message);
-                btn.disabled = false;
-                btn.innerHTML = '<span>Reset My Password</span>';
-            }
-        } catch (e) {
-            showMsg('Connection error');
-            btn.disabled = false;
-            btn.innerHTML = '<span>Reset My Password</span>';
-        }
+        showMsg('Password reset is not configured in the current backend. If you are signed in, use the Change Password page.');
     }
-
-    // Enter key support
-    document.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            if (document.getElementById('login-form').classList.contains('active')) handleLogin();
-            else handleSignup();
+    document.addEventListener('keydown',e=>{
+        if(e.key==='Enter'){
+            if(document.getElementById('login-form').classList.contains('active')) handleLogin();
+            else if(document.getElementById('signup-form').classList.contains('active')) handleSignup();
         }
     });
 </script>

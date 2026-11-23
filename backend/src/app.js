@@ -1,155 +1,57 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const path = require('path');
 require('dotenv').config();
+const express=require('express');
+const cors=require('cors');
+const helmet=require('helmet');
+const path=require('path');
+const fs=require('fs');
+const pool=require('./config/database');
+const {apiLimiter}=require('./middleware/rateLimiter');
+const {notFound,errorHandler}=require('./middleware/errorHandler');
 
-if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET must be set in the backend environment before starting the server.');
-}
-
-const pool = require('./config/database');
-const { apiLimiter } = require('./middleware/rateLimiter');
-const { logApiCall } = require('./utils/errorHandler');
-
-// Import routes
-const authRoutes = require('./routes/auth');
-const bookRoutes = require('./routes/books');
-const borrowingRoutes = require('./routes/borrowings');
-const userRoutes = require('./routes/users');
-const elibraryRoutes = require('./routes/elibrary');
-const peripheralRoutes = require('./routes/peripherals');
-const damageReportRoutes = require('./routes/damageReports');
-const notificationRoutes = require('./routes/notifications');
-const bookCategoryRoutes = require('./routes/bookcategories');
-
-const app = express();
-
-// Security Middleware
+const app=express();
+app.disable('x-powered-by');
 app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com", "https://cdn.tailwindcss.com", "https://cdn.jsdelivr.net"],
-            scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
-            imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "http://localhost:*", "https://localhost:*", "http://127.0.0.1:*", "http://*.local:*", "ws://localhost:*"]
-        }
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://cdn.tailwindcss.com', 'https://cdn.jsdelivr.net'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'http://localhost:*', 'http://127.0.0.1:*', 'ws://localhost:*']
     }
+  }
 }));
+const origins=(process.env.CORS_ORIGIN||'http://localhost:3000,http://localhost:5173').split(',').map(v=>v.trim()).filter(Boolean);
+app.use(cors({origin(origin,cb){if(!origin||origins.includes(origin))return cb(null,true);const error=new Error('Origin is not allowed by CORS.'); error.status=403; return cb(error);},credentials:true}));
+app.use(express.json({limit:'1mb'}));
+app.use(express.urlencoded({extended:false,limit:'1mb'}));
+app.use('/api',apiLimiter);
 
-// Body Parser Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// CORS Middleware
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true);
-
-        const allowedOrigins = (process.env.CORS_ORIGIN || '')
-            .split(',')
-            .map(origin => origin.trim())
-            .filter(Boolean);
-
-        const isLocalDevelopmentOrigin = process.env.NODE_ENV !== 'production' &&
-            /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-        const isAllowed = allowedOrigins.includes(origin) || isLocalDevelopmentOrigin;
-        return callback(null, isAllowed);
-    },
-    credentials: true
-}));
-
-// API Rate Limiting
-app.use('/api/', apiLimiter);
-
-// Request Logging Middleware
-app.use(logApiCall);
-
-// IMPORTANT: Serve static files from frontend directory
-// Adjust the path based on your folder structure
-const frontendPath = path.join(__dirname, '../../frontend');
-app.use(express.static(frontendPath));
-
-// Serve uploads folder as static
-const uploadPath = path.join(__dirname, '../uploads');
-app.use('/uploads', express.static(uploadPath));
-
-// Health check
-app.get('/api/health', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT NOW() as time, current_schema() as schema');
-        res.status(200).json({
-            status: 'healthy',
-            database: 'connected',
-            schema: 'library_schema',
-            timestamp: result.rows[0].time,
-            uptime: process.uptime()
-        });
-    } catch (error) {
-        res.status(500).json({
-            status: 'unhealthy',
-            database: 'disconnected',
-            error: error.message
-        });
-    }
+app.get('/api/health',async(req,res,next)=>{
+  try{
+    const r=await pool.query('SELECT CURRENT_TIMESTAMP AS time, current_schema() AS schema');
+    res.json({success:true,status:'healthy',database:'connected',schema:r.rows[0].schema,time:r.rows[0].time,uptime_seconds:Math.floor(process.uptime())});
+  }catch(e){next(e);}
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/books', bookRoutes);
-app.use('/api/book-categories', bookCategoryRoutes);
-app.use('/api/borrowings', borrowingRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/elibrary', elibraryRoutes);
-app.use('/api/peripherals', peripheralRoutes);
-app.use('/api/damage-reports', damageReportRoutes);
-app.use('/api/notifications', notificationRoutes);
+app.use('/api/auth',require('./routes/auth'));
+app.use('/api/books',require('./routes/books'));
+app.use('/api/book-categories',require('./routes/bookcategories'));
+app.use('/api/borrowings',require('./routes/borrowings'));
+app.use('/api/users',require('./routes/users'));
+app.use('/api/profile',require('./routes/profile'));
+app.use('/api/elibrary',require('./routes/elibrary'));
+app.use('/api/peripherals',require('./routes/peripherals'));
+app.use('/api/damage-reports',require('./routes/damageReports'));
+app.use('/api/notifications',require('./routes/notifications'));
 
-// IMPORTANT: Serve index.html for all non-API routes (SPA support)
-app.get('*', (req, res, next) => {
-    // Skip API routes
-    if (req.path.startsWith('/api/')) {
-        return next();
-    }
-    // Send index.html for all other routes
-    res.sendFile(path.join(frontendPath, 'index.html'));
-});
-
-// 404 Handler for API routes
-app.use('/api/*', (req, res) => {
-    return res.status(404).json({
-        success: false,
-        status: 404,
-        message: 'API route not found',
-        path: req.path,
-        timestamp: new Date().toISOString(),
-    });
-});
-
-// Global Error Handler
-app.use((err, req, res, next) => {
-    console.error('❌ Global Error Handler:', err);
-
-    if (err.status === 429) {
-        return res.status(429).json({
-            success: false,
-            status: 429,
-            message: err.message || 'Too many requests',
-            timestamp: new Date().toISOString(),
-        });
-    }
-
-    res.status(err.status || 500).json({
-        success: false,
-        status: err.status || 500,
-        message: err.message || 'Internal server error',
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-        timestamp: new Date().toISOString(),
-    });
-});
-
-module.exports = app;
+// Optional frontend hosting; backend remains independently deployable.
+const frontendPath=path.resolve(__dirname,'../../frontend');
+if(fs.existsSync(path.join(frontendPath,'index.html'))){
+  app.use(express.static(frontendPath));
+  app.get('*',(req,res,next)=>req.path.startsWith('/api/')?next():res.sendFile(path.join(frontendPath,'index.html')));
+}
+app.use('/api',notFound);
+app.use(errorHandler);
+module.exports=app;

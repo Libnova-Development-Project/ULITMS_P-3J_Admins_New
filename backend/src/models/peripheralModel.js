@@ -1,145 +1,54 @@
-const pool = require('../config/database');
-
+const pool=require('../config/database');
+const withActorTransaction=require('../utils/withActorTransaction');
 class PeripheralModel {
-    // Get all peripherals
-    static async getAll(unitId = null, limit = 100, offset = 0) {
-        let query = `
-            SELECT p.*, pc.name as category_name, eu.unit_number
-            FROM library_schema.peripherals p
-            LEFT JOIN library_schema.peripheral_categories pc ON p.category_id = pc.id
-            LEFT JOIN library_schema.elibrary_units eu ON p.unit_id = eu.id
-            WHERE p.is_deleted = false
-        `;
-        const values = [];
-        let paramIndex = 1;
-        
-        if (unitId) {
-            query += ` AND p.unit_id = $${paramIndex}`;
-            values.push(unitId);
-            paramIndex++;
-        }
-        
-        query += ` ORDER BY p.name ASC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-        values.push(limit, offset);
-        
-        const result = await pool.query(query, values);
-        
-        const countResult = await pool.query(
-            `SELECT COUNT(*) FROM library_schema.peripherals WHERE is_deleted = false`
-        );
-        
-        return {
-            peripherals: result.rows,
-            total: parseInt(countResult.rows[0].count),
-            limit,
-            offset
-        };
-    }
-
-    // Get peripheral by ID
-    static async findById(id) {
-        const result = await pool.query(
-            `SELECT p.*, pc.name as category_name, eu.unit_number
-             FROM library_schema.peripherals p
-             LEFT JOIN library_schema.peripheral_categories pc ON p.category_id = pc.id
-             LEFT JOIN library_schema.elibrary_units eu ON p.unit_id = eu.id
-             WHERE p.id = $1 AND p.is_deleted = false`,
-            [id]
-        );
-        return result.rows[0];
-    }
-
-    // Create peripheral
-    static async create(peripheralData) {
-        const {
-            unit_id, category_id, name, brand, model,
-            serial_number, specifications, condition = 'good'
-        } = peripheralData;
-        
-        const result = await pool.query(
-            `INSERT INTO library_schema.peripherals 
-             (unit_id, category_id, name, brand, model, serial_number, specifications, condition)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-             RETURNING *`,
-            [unit_id, category_id, name, brand, model, serial_number, specifications, condition]
-        );
-        return result.rows[0];
-    }
-
-    // Update peripheral
-    static async update(id, updates) {
-        const allowedFields = ['name', 'brand', 'model', 'serial_number', 
-                               'specifications', 'condition', 'is_active', 'category_id'];
-        const setClauses = [];
-        const values = [];
-        let paramIndex = 1;
-        
-        for (const field of allowedFields) {
-            if (updates[field] !== undefined) {
-                setClauses.push(`${field} = $${paramIndex}`);
-                values.push(updates[field]);
-                paramIndex++;
-            }
-        }
-        
-        if (setClauses.length === 0) return null;
-        
-        values.push(id);
-        const query = `
-            UPDATE library_schema.peripherals 
-            SET ${setClauses.join(', ')}
-            WHERE id = $${paramIndex} AND is_deleted = false
-            RETURNING *
-        `;
-        
-        const result = await pool.query(query, values);
-        return result.rows[0];
-    }
-
-    // Delete peripheral (soft delete)
-    static async delete(id) {
-        const result = await pool.query(
-            `UPDATE library_schema.peripherals 
-             SET is_deleted = true, is_active = false
-             WHERE id = $1 AND is_deleted = false
-             RETURNING id`,
-            [id]
-        );
-        return result.rows[0];
-    }
-
-    // Get categories
-    static async getCategories() {
-        const result = await pool.query(
-            `SELECT * FROM library_schema.peripheral_categories 
-             WHERE is_deleted = false 
-             ORDER BY name`
-        );
-        return result.rows;
-    }
-
-    // Create category
-    static async createCategory(name, description) {
-        const result = await pool.query(
-            `INSERT INTO library_schema.peripheral_categories (name, description)
-             VALUES ($1, $2)
-             RETURNING *`,
-            [name, description]
-        );
-        return result.rows[0];
-    }
-
-    // Update peripheral condition
-    static async updateCondition(id, condition) {
-        const result = await pool.query(
-            `UPDATE library_schema.peripherals 
-             SET condition = $1
-             WHERE id = $2 AND is_deleted = false
-             RETURNING *`,
-            [condition, id]
-        );
-        return result.rows[0];
-    }
+  static async list({limit,offset,unitId}){
+    const vals=[];let where='p.deleted_at IS NULL';
+    if(unitId){vals.push(unitId);where+=` AND p.unit_id=$${vals.length}`;}
+    const count=await pool.query(`SELECT COUNT(*) FROM peripherals p WHERE ${where}`,vals);
+    vals.push(limit,offset);
+    const r=await pool.query(`SELECT p.*,p.peripheral_id AS id,pc.category_name,u.unit_code,u.unit_code AS unit_number FROM peripherals p
+      JOIN peripheral_categories pc USING(category_id) LEFT JOIN elibrary_units u USING(unit_id)
+      WHERE ${where} ORDER BY p.name LIMIT $${vals.length-1} OFFSET $${vals.length}`,vals);
+    return {peripherals:r.rows,total:Number(count.rows[0].count),limit,offset};
+  }
+  static async find(id){
+    const r=await pool.query(`SELECT p.*,p.peripheral_id AS id,pc.category_name,u.unit_code,u.unit_code AS unit_number FROM peripherals p
+      JOIN peripheral_categories pc USING(category_id) LEFT JOIN elibrary_units u USING(unit_id)
+      WHERE p.peripheral_id=$1 AND p.deleted_at IS NULL`,[id]);return r.rows[0]||null;
+  }
+  static async create(d,actorId){
+    return withActorTransaction(actorId,async client=>{
+    const r=await client.query(`INSERT INTO peripherals(unit_id,category_id,name,brand,model,serial_number,specifications,condition,is_active)
+      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9) RETURNING *,peripheral_id AS id`,
+      [d.unit_id||null,d.category_id,d.name,d.brand||null,d.model||null,d.serial_number||null,
+      JSON.stringify(d.specifications||{}),d.condition||'good',d.is_active!==false]);return r.rows[0];
+    });
+  }
+  static async update(id,d,actorId){
+    return withActorTransaction(actorId,async client=>{
+    const allowed=['unit_id','category_id','name','brand','model','serial_number','condition','is_active'];
+    const sets=[],vals=[];
+    for(const k of allowed)if(d[k]!==undefined){vals.push(d[k]);sets.push(`${k}=$${vals.length}`);}
+    if(d.specifications!==undefined){vals.push(JSON.stringify(d.specifications));sets.push(`specifications=$${vals.length}::jsonb`);}
+    if(!sets.length)return null;
+    sets.push('updated_at=CURRENT_TIMESTAMP');vals.push(id);
+    const r=await client.query(`UPDATE peripherals SET ${sets.join(',')} WHERE peripheral_id=$${vals.length} AND deleted_at IS NULL RETURNING *,peripheral_id AS id`,vals);
+    return r.rows[0]||null;
+    });
+  }
+  static async softDelete(id,actorId){
+    return withActorTransaction(actorId,async client=>{
+    const r=await client.query(`UPDATE peripherals SET deleted_at=CURRENT_TIMESTAMP,is_active=FALSE,updated_at=CURRENT_TIMESTAMP
+      WHERE peripheral_id=$1 AND deleted_at IS NULL RETURNING peripheral_id`,[id]);return !!r.rowCount;
+    });
+  }
+  static async categories(){
+    const r=await pool.query(`SELECT * FROM peripheral_categories ORDER BY category_name`);return r.rows;
+  }
+  static async createCategory(name,description,actorId){
+    return withActorTransaction(actorId,async client=>{
+    const r=await client.query(`INSERT INTO peripheral_categories(category_name,description) VALUES($1,$2) RETURNING *,category_id AS id`,[name,description||null]);return r.rows[0];
+    });
+  }
 }
-
-module.exports = PeripheralModel;
+module.exports=PeripheralModel;

@@ -1,252 +1,116 @@
 const pool = require('../config/database');
-const bcrypt = require('bcryptjs');
-
+const withActorTransaction=require('../utils/withActorTransaction');
 class UserModel {
-    // Create user
-    // Create user
-static async create(userData) {
-    const {
-        student_id,
-        first_name,
-        middle_name,
-        last_name,
-        email,
-        password,
-        contact_number,
-        course,
-        year_level,
-        role = 'student'
-    } = userData;
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    const result = await pool.query(
-        `INSERT INTO library_schema.users 
-         (student_id, first_name, middle_name, last_name, email, password, 
-          contact_number, course, year_level, role, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         RETURNING id, student_id, first_name, middle_name, last_name, 
-                   email, role, course, year_level, contact_number, 
-                   is_active, created_at`,
-        [student_id, first_name, middle_name || null, last_name, email, hashedPassword,
-         contact_number || null, course || null, year_level || null, role, true]
-    );
-    
-    return result.rows[0];
+  static async loginRecord(email) {
+    const r=await pool.query(`SELECT * FROM fn_get_user_for_login($1)`,[email]);
+    return r.rows[0]||null;
+  }
+  static async stats(id) {
+    const r=await pool.query(`SELECT COUNT(*)::int AS total_borrowings,
+      COUNT(*) FILTER(WHERE status IN ('approved','borrowed','pending_return','overdue'))::int AS active_borrowings,
+      COUNT(*) FILTER(WHERE status='returned')::int AS returned,
+      COALESCE(SUM(fine_amount),0)::numeric AS fines
+      FROM borrow_transactions WHERE user_id=$1`,[id]);
+    return r.rows[0];
+  }
+  static async findByEmail(email) {
+    const r = await pool.query(`SELECT user_id,user_id AS id,student_number,student_number AS student_id,first_name,last_name,email,role,status,deleted_at FROM users WHERE LOWER(email)=LOWER($1) AND deleted_at IS NULL`, [email]);
+    return r.rows[0] || null;
+  }
+  static async findById(id) {
+    const r = await pool.query(
+      `SELECT user_id, user_id AS id, student_number, student_number AS student_id, first_name, last_name, email, role, contact_number,
+              course, year_level, status, preferences, created_at, updated_at
+       FROM users WHERE user_id=$1 AND deleted_at IS NULL`, [id]);
+    return r.rows[0] || null;
+  }
+  static async create(data,actorId=null) {
+    return withActorTransaction(actorId,async client=>{
+    const r = await client.query(
+      `INSERT INTO users (student_number, first_name, last_name, email, password_hash,
+                          contact_number, course, year_level, preferences)
+       VALUES ($1,$2,$3,LOWER($4),$5,$6,$7,$8,$9::jsonb)
+       RETURNING user_id, user_id AS id, student_number, student_number AS student_id, first_name, last_name, email, role, status`,
+      [String(data.student_number).trim(), data.first_name, data.last_name, data.email,
+       data.password_hash, data.contact_number || null, data.course || null,
+       data.year_level || null, JSON.stringify(data.preferences || {})]);
+    return r.rows[0];
+    });
+  }
+  static async list({limit, offset, search, role, status}) {
+    const vals=[]; const where=["deleted_at IS NULL"];
+    if (search) { vals.push(`%${search}%`); where.push(`(first_name ILIKE $${vals.length} OR last_name ILIKE $${vals.length} OR email ILIKE $${vals.length} OR student_number ILIKE $${vals.length})`); }
+    if (role) { vals.push(role); where.push(`role=$${vals.length}`); }
+    if (status) { vals.push(status); where.push(`status=$${vals.length}`); }
+    const count=await pool.query(`SELECT COUNT(*) FROM users WHERE ${where.join(' AND ')}`,vals);
+    vals.push(limit,offset);
+    const rows=await pool.query(
+      `SELECT user_id,user_id AS id,student_number,student_number AS student_id,first_name,last_name,email,role,contact_number,course,year_level,status,created_at
+       FROM users WHERE ${where.join(' AND ')} ORDER BY created_at DESC LIMIT $${vals.length-1} OFFSET $${vals.length}`, vals);
+    return {users:rows.rows,total:Number(count.rows[0].count),limit,offset};
+  }
+  static async update(id, data,actorId) {
+    return withActorTransaction(actorId,async client=>{
+    const fields={first_name:'first_name',last_name:'last_name',contact_number:'contact_number',course:'course',year_level:'year_level',preferences:'preferences'};
+    const sets=[],vals=[];
+    for (const [key,col] of Object.entries(fields)) if (data[key] !== undefined) {
+      vals.push(key==='preferences'?JSON.stringify(data[key]):data[key]);
+      sets.push(`${col}=$${vals.length}${key==='preferences'?'::jsonb':''}`);
+    }
+    if (!sets.length) return null;
+    sets.push('updated_at=CURRENT_TIMESTAMP'); vals.push(id);
+    const r=await client.query(`UPDATE users SET ${sets.join(',')} WHERE user_id=$${vals.length} AND deleted_at IS NULL
+      RETURNING user_id,user_id AS id,student_number,student_number AS student_id,first_name,last_name,email,role,contact_number,course,year_level,status,preferences`,vals);
+    return r.rows[0]||null;
+    });
+  }
+  static async setStatus(id,status,actorId=null) {
+    const client=await pool.connect();
+    try {
+      await client.query('BEGIN');
+      if(actorId) await client.query(`SELECT set_config('app.current_user_id',$1,true)`,[String(actorId)]);
+      await client.query(`SELECT user_id FROM users WHERE user_id=$1 AND deleted_at IS NULL FOR UPDATE`,[id]);
+      if(status!=='active') {
+        // Preserve session history but close active sessions for disabled accounts.
+        await client.query(`UPDATE elibrary_sessions SET time_out=CURRENT_TIMESTAMP
+          WHERE user_id=$1 AND time_out IS NULL`,[id]);
+      }
+      const r=await client.query(`UPDATE users SET status=$1,updated_at=CURRENT_TIMESTAMP WHERE user_id=$2 AND deleted_at IS NULL
+        RETURNING user_id,status`,[status,id]);
+      await client.query('COMMIT'); return r.rows[0]||null;
+    } catch(e) { await client.query('ROLLBACK'); throw e; }
+    finally { client.release(); }
+  }
+  static async softDelete(id,actorId=null) {
+    const client=await pool.connect();
+    try {
+      await client.query('BEGIN');
+      if(actorId) await client.query(`SELECT set_config('app.current_user_id',$1,true)`,[String(actorId)]);
+      await client.query(`SELECT user_id FROM users WHERE user_id=$1 AND deleted_at IS NULL FOR UPDATE`,[id]);
+      // Close active computer sessions, but never fabricate book returns.
+      await client.query(`UPDATE elibrary_sessions SET time_out=CURRENT_TIMESTAMP
+        WHERE user_id=$1 AND time_out IS NULL`,[id]);
+      const r=await client.query(`UPDATE users SET deleted_at=CURRENT_TIMESTAMP,status='inactive',updated_at=CURRENT_TIMESTAMP
+        WHERE user_id=$1 AND deleted_at IS NULL RETURNING user_id`,[id]);
+      await client.query('COMMIT'); return !!r.rowCount;
+    } catch(e) { await client.query('ROLLBACK'); throw e; }
+    finally { client.release(); }
+  }
+  static async updatePassword(id, hash,actorId) {
+    return withActorTransaction(actorId,async client=>{
+    const r=await client.query(`UPDATE users SET password_hash=$1,updated_at=CURRENT_TIMESTAMP
+      WHERE user_id=$2 AND deleted_at IS NULL RETURNING user_id`,[hash,id]);
+    return !!r.rowCount;
+    });
+  }
+  static async getPasswordHash(id) {
+    const r=await pool.query(`SELECT out_password_hash AS password_hash FROM fn_get_user_for_login((SELECT email FROM users WHERE user_id=$1 AND deleted_at IS NULL))`,[id]);
+    return r.rows[0]?.password_hash || null;
+  }
+  static async getAdmins() {
+    const r=await pool.query(`SELECT user_id,first_name,last_name,email FROM users
+      WHERE role='admin' AND status='active' AND deleted_at IS NULL`);
+    return r.rows;
+  }
 }
-    // Find by email
-    static async findByEmail(email) {
-        const result = await pool.query(
-            `SELECT * FROM library_schema.users 
-             WHERE email = $1 AND is_deleted = false`,
-            [email]
-        );
-        return result.rows[0];
-    }
-
-    // Find by student ID
-    static async findByStudentId(studentId) {
-        const result = await pool.query(
-            `SELECT * FROM library_schema.users 
-             WHERE student_id = $1 AND is_deleted = false`,
-            [studentId]
-        );
-        return result.rows[0];
-    }
-
-    // Find by ID
-    static async findById(id) {
-        const result = await pool.query(
-            `SELECT id, student_id, first_name, middle_name, last_name, 
-                    email, role, course, year_level, contact_number, 
-                    is_active, profile_picture, created_at, updated_at
-             FROM library_schema.users 
-             WHERE id = $1 AND is_deleted = false`,
-            [id]
-        );
-        return result.rows[0];
-    }
-
-    // Get all users (admin only)
-    static async getAll(limit = 100, offset = 0) {
-        const result = await pool.query(
-            `SELECT id, student_id, first_name, middle_name, last_name, 
-                    email, role, course, year_level, contact_number, 
-                    is_active, profile_picture, created_at
-             FROM library_schema.users 
-             WHERE is_deleted = false
-             ORDER BY created_at DESC
-             LIMIT $1 OFFSET $2`,
-            [limit, offset]
-        );
-        return result.rows;
-    }
-
-    // Update user
-    static async update(id, updates) {
-        const allowedFields = ['first_name', 'middle_name', 'last_name', 
-                               'course', 'year_level', 'contact_number'];
-        const setClauses = [];
-        const values = [];
-        let paramIndex = 1;
-        
-        for (const field of allowedFields) {
-            if (updates[field] !== undefined) {
-                setClauses.push(`${field} = $${paramIndex}`);
-                values.push(updates[field]);
-                paramIndex++;
-            }
-        }
-        
-        if (setClauses.length === 0) return null;
-        
-        values.push(id);
-        const query = `
-            UPDATE library_schema.users 
-            SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $${paramIndex} AND is_deleted = false
-            RETURNING id, student_id, first_name, middle_name, last_name, 
-                      email, role, course, year_level, contact_number, profile_picture
-        `;
-        
-        const result = await pool.query(query, values);
-        return result.rows[0];
-    }
-
-    // Update profile picture
-    static async updateProfilePicture(id, pictureUrl) {
-        const result = await pool.query(
-            `UPDATE library_schema.users 
-             SET profile_picture = $1, updated_at = CURRENT_TIMESTAMP
-             WHERE id = $2 AND is_deleted = false
-             RETURNING id, profile_picture`,
-            [pictureUrl, id]
-        );
-        return result.rows[0];
-    }
-
-    // Change password
-    static async changePassword(id, newPassword) {
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        const result = await pool.query(
-            `UPDATE library_schema.users 
-             SET password = $1, reset_token = NULL, reset_token_expiry = NULL
-             WHERE id = $2 AND is_deleted = false
-             RETURNING id`,
-            [hashedPassword, id]
-        );
-        return result.rows[0];
-    }
-
-    // Set reset token
-    static async setResetToken(id, token, expiryMinutes = 30) {
-        const expiry = new Date(Date.now() + expiryMinutes * 60000);
-        const result = await pool.query(
-            `UPDATE library_schema.users 
-             SET reset_token = $1, reset_token_expiry = $2
-             WHERE id = $3 AND is_deleted = false
-             RETURNING id`,
-            [token, expiry, id]
-        );
-        return result.rows[0];
-    }
-
-    // Find by reset token
-    static async findByResetToken(token) {
-        const result = await pool.query(
-            `SELECT * FROM library_schema.users 
-             WHERE reset_token = $1 AND reset_token_expiry > CURRENT_TIMESTAMP AND is_deleted = false`,
-            [token]
-        );
-        return result.rows[0];
-    }
-
-    // Delete user (soft delete)
-    static async delete(id) {
-        // Start a transaction
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
-            
-            // 1. End any active e-library sessions
-            await client.query(
-                `UPDATE library_schema.elibrary_sessions 
-                 SET time_out = CURRENT_TIMESTAMP 
-                 WHERE user_id = $1 AND time_out IS NULL`,
-                [id]
-            );
-            
-            // 2. Handle borrowed books: Return them and update book availability
-            // First, get all active borrowings for this user
-            const activeBorrowings = await client.query(
-                `SELECT id, book_id FROM library_schema.borrow_transactions 
-                 WHERE user_id = $1 AND status = 'borrowed' AND is_deleted = false`,
-                [id]
-            );
-            
-            for (const borrowing of activeBorrowings.rows) {
-                // Update borrowing record
-                await client.query(
-                    `UPDATE library_schema.borrow_transactions 
-                     SET returned_at = CURRENT_TIMESTAMP, status = 'returned'
-                     WHERE id = $1`,
-                    [borrowing.id]
-                );
-                
-                // Update book availability
-                await client.query(
-                    `UPDATE library_schema.books 
-                     SET available_copies = available_copies + 1, status = 'available'
-                     WHERE id = $1`,
-                    [borrowing.book_id]
-                );
-            }
-            
-            // 3. Mark user as deleted
-            const result = await client.query(
-                `UPDATE library_schema.users 
-                 SET is_deleted = true, is_active = false
-                 WHERE id = $1 AND is_deleted = false
-                 RETURNING id`,
-                [id]
-            );
-            
-            await client.query('COMMIT');
-            return result.rowCount > 0;
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
-    }
-
-    // Get user statistics
-    static async getUserStats(id) {
-        const result = await pool.query(
-            `SELECT 
-                COUNT(DISTINCT bt.id) as total_borrowed,
-                COUNT(DISTINCT CASE WHEN bt.status = 'borrowed' THEN bt.id END) as current_borrowed,
-                COUNT(DISTINCT es.id) as total_sessions,
-                COALESCE(SUM(bt.fine_amount), 0) as total_fines
-             FROM library_schema.users u
-             LEFT JOIN library_schema.borrow_transactions bt ON u.id = bt.user_id AND bt.is_deleted = false
-             LEFT JOIN library_schema.elibrary_sessions es ON u.id = es.user_id
-             WHERE u.id = $1 AND u.is_deleted = false
-             GROUP BY u.id`,
-            [id]
-        );
-        return result.rows[0] || { total_borrowed: 0, current_borrowed: 0, total_sessions: 0, total_fines: 0 };
-    }
-    // Get all admins
-    static async getAdmins() {
-        const result = await pool.query(
-            `SELECT id, first_name, last_name, email 
-             FROM library_schema.users 
-             WHERE role = 'admin' AND is_deleted = false AND is_active = true`
-        );
-        return result.rows;
-    }
-}
-
-module.exports = UserModel;
+module.exports=UserModel;

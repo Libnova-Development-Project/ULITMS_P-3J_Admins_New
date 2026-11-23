@@ -235,7 +235,7 @@
 
 <script>
 // API Base URL
-const API_URL = window.location.origin + '/api';
+const API_URL = 'http://localhost:5000/api';
 
 // Utility Functions
 function getToken() {
@@ -260,7 +260,7 @@ async function loadAvailablePCs() {
         if (!response.ok) throw new Error('Failed to load PCs');
         
         const data = await response.json();
-        const units = data.units || [];
+        const units = data.data?.units || data.units || [];
         
         if (units.length === 0) {
             container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #94a3b8;">No active PC units found in the system.</div>';
@@ -322,7 +322,7 @@ async function getActiveSessions() {
         
         if (!response.ok) return [];
         const data = await response.json();
-        return data.sessions || [];
+        return data.data?.sessions || data.sessions || [];
     } catch (error) {
         console.error('Error getting active sessions:', error);
         return [];
@@ -348,7 +348,7 @@ async function loadUserSessions() {
         if (!response.ok) throw new Error('Failed to load sessions');
         
         const data = await response.json();
-        const sessions = data.sessions || [];
+        const sessions = data.data?.sessions || data.sessions || [];
         
         if (sessions.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8;">No session records found</td></tr>';
@@ -463,7 +463,7 @@ async function showSessionStats() {
         if (!response.ok) throw new Error('Failed to load sessions');
         
         const data = await response.json();
-        const sessions = data.sessions || [];
+        const sessions = data.data?.sessions || data.sessions || [];
         
         // Calculate statistics
         const totalSessions = sessions.length;

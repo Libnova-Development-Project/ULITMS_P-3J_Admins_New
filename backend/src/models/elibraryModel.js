@@ -1,247 +1,91 @@
-const pool = require('../config/database');
-
+const pool=require('../config/database');
+const withActorTransaction=require('../utils/withActorTransaction');
 class ElibraryModel {
-    // Get all E-Library units
-    static async getAllUnits(activeOnly = true) {
-        let query = `
-            SELECT eu.*, 
-                   COUNT(p.id) as peripherals_count,
-                   COUNT(CASE WHEN p.condition != 'good' THEN 1 END) as damaged_peripherals
-            FROM library_schema.elibrary_units eu
-            LEFT JOIN library_schema.peripherals p ON eu.id = p.unit_id AND p.is_deleted = false
-            WHERE eu.is_deleted = false
-        `;
-        
-        if (activeOnly) {
-            query += ` AND eu.is_active = true`;
-        }
-        
-        query += ` GROUP BY eu.id ORDER BY eu.unit_number`;
-        
-        const result = await pool.query(query);
-        return result.rows;
-    }
-
-    // Get unit by ID
-    static async getUnitById(id) {
-        const result = await pool.query(
-            `SELECT eu.*, 
-                    COUNT(p.id) as peripherals_count
-             FROM library_schema.elibrary_units eu
-             LEFT JOIN library_schema.peripherals p ON eu.id = p.unit_id AND p.is_deleted = false
-             WHERE eu.id = $1 AND eu.is_deleted = false
-             GROUP BY eu.id`,
-            [id]
-        );
-        return result.rows[0];
-    }
-
-    // Create E-Library unit
-    static async createUnit(unitData) {
-        const { unit_number, label, location, specs, condition = 'good' } = unitData;
-        
-        const result = await pool.query(
-            `INSERT INTO library_schema.elibrary_units 
-             (unit_number, label, location, specs, condition)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING *`,
-            [unit_number, label, location, specs, condition]
-        );
-        return result.rows[0];
-    }
-
-    // Update unit
-    static async updateUnit(id, updates) {
-        const allowedFields = ['label', 'location', 'specs', 'condition', 'is_active'];
-        const setClauses = [];
-        const values = [];
-        let paramIndex = 1;
-        
-        for (const field of allowedFields) {
-            if (updates[field] !== undefined) {
-                setClauses.push(`${field} = $${paramIndex}`);
-                values.push(updates[field]);
-                paramIndex++;
-            }
-        }
-        
-        if (setClauses.length === 0) return null;
-        
-        values.push(id);
-        const query = `
-            UPDATE library_schema.elibrary_units 
-            SET ${setClauses.join(', ')}
-            WHERE id = $${paramIndex} AND is_deleted = false
-            RETURNING *
-        `;
-        
-        const result = await pool.query(query, values);
-        return result.rows[0];
-    }
-
-    // Delete unit (soft delete)
-    static async deleteUnit(id) {
-        const result = await pool.query(
-            `UPDATE library_schema.elibrary_units 
-             SET is_deleted = true, is_active = false
-             WHERE id = $1 AND is_deleted = false
-             RETURNING id`,
-            [id]
-        );
-        return result.rows[0];
-    }
-
-    // Start session
-    static async startSession(userId, unitId, purpose = null, monitoredBy = null) {
-        // 1. Check if user already has an active session on ANY unit
-        const userActiveSession = await pool.query(
-            `SELECT id FROM library_schema.elibrary_sessions 
-             WHERE user_id = $1 AND time_out IS NULL`,
-            [userId]
-        );
-        
-        if (userActiveSession.rows.length > 0) {
-            throw new Error('You already have an active session. Please end your current session before starting a new one.');
-        }
-
-        // 2. Check if unit is available (more accurate check)
-        const activeSession = await pool.query(
-            `SELECT es.* FROM library_schema.elibrary_sessions es
-             JOIN library_schema.users u ON es.user_id = u.id
-             WHERE es.unit_id = $1 AND es.time_out IS NULL AND u.is_deleted = false
-             ORDER BY es.time_in DESC
-             LIMIT 1`,
-            [unitId]
-        );
-        
-        // Check if there's a recent active session (within last 5 minutes)
-        if (activeSession.rows.length > 0) {
-            const sessionTime = new Date(activeSession.rows[0].time_in);
-            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-            
-            // Allow new session if current session is older than 5 minutes
-            if (sessionTime > fiveMinutesAgo) {
-                throw new Error('This PC unit is currently in use by another user.');
-            }
-        }
-        
-        const result = await pool.query(
-            `INSERT INTO library_schema.elibrary_sessions 
-             (user_id, unit_id, purpose, monitored_by, time_in)
-             VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-             RETURNING *`,
-            [userId, unitId, purpose, monitoredBy]
-        );
-        
-        // Log activity
-        await pool.query(
-            `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
-             VALUES ($1, $2, $3)`,
-            [userId, 'START_SESSION', { unit_id: unitId }]
-        );
-        
-        return result.rows[0];
-    }
-
-    // End session
-    static async endSession(sessionId, userId, isAdmin = false) {
-        const result = await pool.query(
-            `UPDATE library_schema.elibrary_sessions 
-             SET time_out = CURRENT_TIMESTAMP
-             WHERE id = $1 AND time_out IS NULL AND ($2::boolean OR user_id = $3)
-             RETURNING *`,
-            [sessionId, isAdmin, userId]
-        );
-        
-        if (result.rows[0]) {
-            // Log activity
-            await pool.query(
-                `INSERT INTO library_schema.activity_logs (user_id, action, log_data)
-                 VALUES ($1, $2, $3)`,
-                [result.rows[0].user_id, 'END_SESSION', { session_id: sessionId }]
-            );
-        }
-        
-        return result.rows[0];
-    }
-
-    // Get user's sessions
-    static async getUserSessions(userId, limit = 50) {
-        const result = await pool.query(
-            `SELECT es.*, eu.unit_number, eu.label
-             FROM library_schema.elibrary_sessions es
-             JOIN library_schema.elibrary_units eu ON es.unit_id = eu.id
-             WHERE es.user_id = $1
-             ORDER BY es.time_in DESC
-             LIMIT $2`,
-            [userId, limit]
-        );
-        return result.rows;
-    }
-
-    // Get all sessions (admin)
-    static async getAllSessions(limit = 100, offset = 0, activeOnly = false) {
-        let query = `
-            SELECT es.*, 
-                   u.first_name, u.last_name, u.student_id,
-                   eu.unit_number, eu.label
-            FROM library_schema.elibrary_sessions es
-            JOIN library_schema.users u ON es.user_id = u.id
-            JOIN library_schema.elibrary_units eu ON es.unit_id = eu.id
-            WHERE 1=1
-        `;
-        const values = [];
-        let paramIndex = 1;
-        
-        if (activeOnly) {
-            query += ` AND es.time_out IS NULL`;
-        }
-        
-        query += ` ORDER BY es.time_in DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-        values.push(limit, offset);
-        
-        const result = await pool.query(query, values);
-        
-        const countResult = await pool.query(
-            `SELECT COUNT(*) FROM library_schema.elibrary_sessions`
-        );
-        
-        return {
-            sessions: result.rows,
-            total: parseInt(countResult.rows[0].count),
-            limit,
-            offset
-        };
-    }
-
-    // Get currently active sessions
-    static async getActiveSessions() {
-        const result = await pool.query(
-            `SELECT es.*, 
-                    u.first_name, u.last_name, u.student_id,
-                    eu.unit_number, eu.label
-             FROM library_schema.elibrary_sessions es
-             JOIN library_schema.users u ON es.user_id = u.id
-             JOIN library_schema.elibrary_units eu ON es.unit_id = eu.id
-             WHERE es.time_out IS NULL AND u.is_deleted = false
-             ORDER BY es.time_in ASC`
-        );
-        return result.rows;
-    }
-
-    // Get user statistics
-    static async getUserStats(userId) {
-        const result = await pool.query(
-            `SELECT 
-                COUNT(*) as total_sessions,
-                COUNT(CASE WHEN time_out IS NULL THEN 1 END) as active_sessions,
-                SUM(EXTRACT(EPOCH FROM (COALESCE(time_out, CURRENT_TIMESTAMP) - time_in))/3600) as total_hours
-             FROM library_schema.elibrary_sessions
-             WHERE user_id = $1`,
-            [userId]
-        );
-        return result.rows[0];
-    }
+  static async units(){
+    const r=await pool.query(`SELECT u.*,u.unit_id AS id,u.unit_code AS unit_number,u.unit_code AS label,u.specifications AS specs,COUNT(p.peripheral_id)::int AS peripherals_count,
+      COUNT(p.peripheral_id) FILTER(WHERE p.condition<>'good')::int AS damaged_peripherals
+      FROM elibrary_units u LEFT JOIN peripherals p ON p.unit_id=u.unit_id AND p.deleted_at IS NULL AND p.is_active
+      WHERE u.deleted_at IS NULL GROUP BY u.unit_id ORDER BY u.unit_code`);
+    return r.rows;
+  }
+  static async unit(id){
+    const r=await pool.query(`SELECT *,unit_id AS id,unit_code AS unit_number,unit_code AS label,specifications AS specs FROM elibrary_units WHERE unit_id=$1 AND deleted_at IS NULL`,[id]);return r.rows[0]||null;
+  }
+  static async createUnit(d,actorId){
+    if(d.status && !['available','maintenance','offline'].includes(d.status)) throw Object.assign(new Error('New units must start as available, maintenance, or offline.'),{status:400});
+    return withActorTransaction(actorId,async client=>{
+    const r=await client.query(`INSERT INTO elibrary_units(unit_code,location,specifications,status)
+      VALUES($1,$2,$3::jsonb,COALESCE($4,'available')) RETURNING *,unit_id AS id,unit_code AS unit_number,unit_code AS label,specifications AS specs`,
+      [d.unit_code,d.location||null,JSON.stringify(d.specifications||{}),d.status||null]);return r.rows[0];
+    });
+  }
+  static async updateUnit(id,d,actorId){
+    return withActorTransaction(actorId,async client=>{
+      const current=await client.query(`SELECT unit_id,status FROM elibrary_units WHERE unit_id=$1 AND deleted_at IS NULL FOR UPDATE`,[id]);
+      if(!current.rowCount)return null;
+      if(d.status!==undefined){
+        if(!['available','maintenance','offline','in_use'].includes(d.status))
+          throw Object.assign(new Error('Invalid unit status.'),{status:400});
+        const active=await client.query(`SELECT 1 FROM elibrary_sessions WHERE unit_id=$1 AND time_out IS NULL`,[id]);
+        if(active.rowCount && d.status!=='in_use')
+          throw Object.assign(new Error('End the active session before changing this unit status.'),{status:409});
+        if(!active.rowCount && d.status==='in_use')
+          throw Object.assign(new Error('Unit status in_use is managed by active sessions.'),{status:400});
+      }
+      const fields=['unit_code','location','status'];const sets=[],vals=[];
+      for(const f of fields)if(d[f]!==undefined){vals.push(d[f]);sets.push(`${f}=$${vals.length}`);}
+      if(d.specifications!==undefined){vals.push(JSON.stringify(d.specifications));sets.push(`specifications=$${vals.length}::jsonb`);}
+      if(!sets.length)return current.rows[0];
+      sets.push('updated_at=CURRENT_TIMESTAMP');vals.push(id);
+      const r=await client.query(`UPDATE elibrary_units SET ${sets.join(',')} WHERE unit_id=$${vals.length} AND deleted_at IS NULL RETURNING *,unit_id AS id,unit_code AS unit_number,unit_code AS label,specifications AS specs`,vals);
+      return r.rows[0]||null;
+    });
+  }
+  static async deleteUnit(id,actorId){
+    return withActorTransaction(actorId,async client=>{
+      const unit=await client.query(`SELECT unit_id FROM elibrary_units WHERE unit_id=$1 AND deleted_at IS NULL FOR UPDATE`,[id]);
+      if(!unit.rowCount)return false;
+      const active=await client.query(`SELECT 1 FROM elibrary_sessions WHERE unit_id=$1 AND time_out IS NULL`,[id]);
+      if(active.rowCount)throw Object.assign(new Error('End the active session before deactivating this unit.'),{status:409});
+      const r=await client.query(`UPDATE elibrary_units SET deleted_at=CURRENT_TIMESTAMP,status='offline',updated_at=CURRENT_TIMESTAMP
+        WHERE unit_id=$1 AND deleted_at IS NULL RETURNING unit_id`,[id]);
+      return !!r.rowCount;
+    });
+  }
+  static async startSession(userId,unitId,purpose){
+    const c=await pool.connect();
+    try{
+      await c.query('BEGIN');
+      await c.query(`SELECT set_config('app.current_user_id',$1,true)`,[String(userId)]);
+      const u=await c.query(`SELECT user_id FROM users WHERE user_id=$1 AND status='active' AND deleted_at IS NULL FOR SHARE`,[userId]);
+      if(!u.rowCount)throw Object.assign(new Error('Active user not found.'),{status:404});
+      const unit=await c.query(`SELECT unit_id,status FROM elibrary_units WHERE unit_id=$1 AND deleted_at IS NULL FOR UPDATE`,[unitId]);
+      if(!unit.rowCount||unit.rows[0].status!=='available')throw Object.assign(new Error('Unit is not available.'),{status:409});
+      const s=await c.query(`INSERT INTO elibrary_sessions(user_id,unit_id,purpose) VALUES($1,$2,$3) RETURNING *,session_id AS id`,[userId,unitId,purpose||null]);
+      await c.query('COMMIT');return s.rows[0];
+    }catch(e){await c.query('ROLLBACK');if(e.code==='23505')throw Object.assign(new Error('User or unit already has an active session.'),{status:409});throw e;}finally{c.release();}
+  }
+  static async endSession(sessionId,userId,isAdmin){
+    const c=await pool.connect();
+    try{
+      await c.query('BEGIN');
+      await c.query(`SELECT set_config('app.current_user_id',$1,true)`,[String(userId)]);
+      const s=await c.query(`UPDATE elibrary_sessions SET time_out=CURRENT_TIMESTAMP
+        WHERE session_id=$1 AND time_out IS NULL AND ($3::boolean OR user_id=$2) RETURNING *,session_id AS id`,[sessionId,userId,isAdmin]);
+      if(!s.rowCount){await c.query('ROLLBACK');return null;}
+      await c.query('COMMIT');return s.rows[0];
+    }catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}
+  }
+  static async sessions({userId,limit,offset,activeOnly=false}){
+    const vals=[];const w=[];
+    if(userId){vals.push(userId);w.push(`s.user_id=$${vals.length}`);}
+    if(activeOnly)w.push('s.time_out IS NULL');
+    const clause=w.length?`WHERE ${w.join(' AND ')}`:'';
+    vals.push(limit,offset);
+    const r=await pool.query(`SELECT s.*,s.session_id AS id,u.first_name,u.last_name,u.student_number,unit.unit_code,unit.location
+      FROM elibrary_sessions s JOIN users u USING(user_id) JOIN elibrary_units unit USING(unit_id)
+      ${clause} ORDER BY s.time_in DESC LIMIT $${vals.length-1} OFFSET $${vals.length}`,vals);
+    return r.rows;
+  }
 }
-
-module.exports = ElibraryModel;
+module.exports=ElibraryModel;

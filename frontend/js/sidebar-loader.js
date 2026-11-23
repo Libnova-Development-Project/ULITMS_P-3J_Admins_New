@@ -50,13 +50,14 @@ async function loadNotifications() {
     }
 
     try {
-        const response = await fetch(`${window.location.origin}/api/notifications`, {
+        const response = await fetch(`${window.API_BASE_URL || 'http://localhost:5000/api'}/notifications`, {
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('ulitms_token') }
         });
         const data = await response.json();
         
         if (data.success) {
-            const count = data.unreadCount;
+            const result = data.data || data;
+            const count = result.unread_count || 0;
             if (count > 0) {
                 badge.textContent = count > 9 ? '9+' : count;
                 badge.style.display = 'block';
@@ -65,7 +66,7 @@ async function loadNotifications() {
             }
             
             // Store notifications for dropdown
-            window.notifications = data.notifications;
+            window.notifications = result.notifications || [];
         }
     } catch (error) {
         console.error('Failed to load notifications:', error);
@@ -115,7 +116,7 @@ function toggleNotifications() {
 
 async function markAsRead(id) {
     try {
-        await fetch(`${window.location.origin}/api/notifications/${id}/mark-read`, {
+        await fetch(`${window.API_BASE_URL || 'http://localhost:5000/api'}/notifications/${id}/mark-read`, {
             method: 'PUT',
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('ulitms_token') }
         });
@@ -130,7 +131,7 @@ async function markAsRead(id) {
 
 async function markAllRead() {
     try {
-        await fetch(`${window.location.origin}/api/notifications/mark-all-read`, {
+        await fetch(`${window.API_BASE_URL || 'http://localhost:5000/api'}/notifications/mark-all-read`, {
             method: 'PUT',
             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('ulitms_token') }
         });
@@ -178,6 +179,9 @@ function logout() {
     localStorage.removeItem('ulitms_name');
     localStorage.removeItem('ulitms_role');
     localStorage.removeItem('ulitms_email');
+    localStorage.removeItem('ulitms_user');
+    localStorage.removeItem('ulitms_studentid');
+    localStorage.removeItem('ulitms_avatar');
     window.location.href = '../login.html';
 }
 

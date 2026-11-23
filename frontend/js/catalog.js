@@ -1,5 +1,5 @@
 // ULITMS Catalog Functions
-const API_URL = window.location.origin + '/api';
+const API_URL = window.API_BASE_URL || 'http://localhost:5000/api';
 
 async function loadCatalog() {
     const tbody = document.getElementById('catalog-tbody');
@@ -15,7 +15,7 @@ async function loadCatalog() {
         const data = await response.json();
         if (!data.success) throw new Error(data.message);
         
-        const books = data.data.books || data.data || [];
+        const books = data.data?.books || data.data || [];
         
         if (books.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No books found in catalog</td></tr>';
@@ -29,7 +29,7 @@ async function loadCatalog() {
                     <td><strong>${book.title}</strong></td>
                     <td>${book.author}</td>
                     <td><code style="font-size:0.8rem;">${book.isbn || 'N/A'}</code></td>
-                    <td><span class="badge badge-info">${book.category || 'General'}</span></td>
+                    <td><span class="badge badge-info">${book.category_name || book.category || 'General'}</span></td>
                     <td>
                         <span class="badge ${isAvailable ? 'badge-success' : 'badge-danger'}">
                             ${isAvailable ? 'Available' : 'Borrowed'}
@@ -54,41 +54,28 @@ async function loadCatalog() {
 }
 
 window.borrowBook = async (bookId, title) => {
-    confirmAction(`Are you sure you want to borrow "${title}"?`, async () => {
-        const userId = localStorage.getItem('ulitms_user_id');
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 7); // Default 7 days
-        
+    confirmAction(`Submit a borrowing request for "${title}"?`, async () => {
         try {
-            showLoading('Processing borrowing request...');
+            showLoading('Submitting borrowing request...');
             const response = await fetch(`${API_URL}/borrowings`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Authorization': 'Bearer ' + localStorage.getItem('ulitms_token'),
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    user_id: userId,
-                    book_id: bookId,
-                    due_date: dueDate.toISOString()
-                })
+                body: JSON.stringify({ book_id: Number(bookId) })
             });
-            
             const data = await response.json();
             hideLoading();
-            
-            if (data.success) {
-                showSuccess('Book borrowed successfully! Check "My Borrowings" for details.');
-                loadCatalog(); // Refresh catalog
-            } else {
-                showError('Failed to borrow: ' + data.message);
-            }
+            if (!response.ok || data.success === false) throw new Error(data.message || 'Request failed.');
+            showSuccess('Borrowing request submitted. It is pending administrator approval.');
+            loadCatalog();
         } catch (error) {
             hideLoading();
-            console.error('Borrow error:', error);
-            showError('An error occurred while borrowing the book.');
+            console.error('Borrow request error:', error);
+            showError(error.message || 'Unable to submit borrowing request.');
         }
-    }, { title: 'Borrow Book', confirmText: 'Borrow' });
+    }, { title: 'Request Book', confirmText: 'Submit Request' });
 };
 
 // Search functionality

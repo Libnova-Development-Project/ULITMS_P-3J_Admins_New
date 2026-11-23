@@ -1,204 +1,83 @@
-const pool = require('../config/database');
-
+const pool=require('../config/database');
+const withActorTransaction=require('../utils/withActorTransaction');
+const normalizeIsbn=value=>value?String(value).replace(/[\s-]/g,'').toUpperCase():null;
 class BookModel {
-    // Create book
-    static async create(bookData) {
-        const {
-            isbn, title, author, publisher, publication_year,
-            category_id, total_copies, description, cover_image_url, metadata
-        } = bookData;
-
-        const result = await pool.query(
-            `INSERT INTO library_schema.books 
-             (isbn, title, author, publisher, publication_year, category_id,
-              total_copies, available_copies, description, cover_image_url, metadata)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-             RETURNING *`,
-            [isbn, title, author, publisher, publication_year, category_id,
-             total_copies, total_copies, description, cover_image_url, metadata]
-        );
-        
-        return result.rows[0];
+  static async list({limit,offset,search,category_id}) {
+    const vals=[]; const where=["b.deleted_at IS NULL","b.status='active'"];
+    if(search){ vals.push(`%${search}%`); where.push(`(b.title ILIKE $${vals.length} OR b.author ILIKE $${vals.length} OR COALESCE(b.isbn,'') ILIKE $${vals.length})`); }
+    if(category_id){ vals.push(category_id); where.push(`b.category_id=$${vals.length}`); }
+    const count=await pool.query(`SELECT COUNT(*) FROM books b WHERE ${where.join(' AND ')}`,vals);
+    vals.push(limit,offset);
+    const rows=await pool.query(`SELECT b.*,b.book_id AS id,b.cover_image AS cover_image_url,c.category_name FROM books b LEFT JOIN book_categories c USING(category_id)
+      WHERE ${where.join(' AND ')} ORDER BY b.title LIMIT $${vals.length-1} OFFSET $${vals.length}`,vals);
+    return {books:rows.rows,total:Number(count.rows[0].count),limit,offset};
+  }
+  static async findById(id){
+    const r=await pool.query(`SELECT b.*,b.book_id AS id,b.cover_image AS cover_image_url,c.category_name FROM books b LEFT JOIN book_categories c USING(category_id)
+      WHERE b.book_id=$1 AND b.deleted_at IS NULL`,[id]); return r.rows[0]||null;
+  }
+  static async create(d,actorId){
+    return withActorTransaction(actorId,async client=>{
+    if(d.category_id){
+      const cat=await client.query(`SELECT status FROM book_categories WHERE category_id=$1 FOR SHARE`,[d.category_id]);
+      if(!cat.rowCount || cat.rows[0].status!=='active') throw Object.assign(new Error('Selected book category is inactive or does not exist.'),{status:400});
     }
-
-    // Get all books (only non-deleted)
-    static async getAll(filters = {}, limit = 100, offset = 0) {
-        let query = `
-            SELECT b.*, bc.name as category_name
-            FROM library_schema.books b
-            LEFT JOIN library_schema.book_categories bc ON b.category_id = bc.id
-            WHERE b.is_deleted = false
-        `;
-        const values = [];
-        let paramIndex = 1;
-
-        if (filters.category_id) {
-            query += ` AND b.category_id = $${paramIndex}`;
-            values.push(filters.category_id);
-            paramIndex++;
-        }
-
-        if (filters.status) {
-            query += ` AND b.status = $${paramIndex}`;
-            values.push(filters.status);
-            paramIndex++;
-        }
-
-        if (filters.search) {
-            query += ` AND (b.title ILIKE $${paramIndex} OR b.author ILIKE $${paramIndex} OR b.isbn ILIKE $${paramIndex})`;
-            values.push(`%${filters.search}%`);
-            paramIndex++;
-        }
-
-        query += ` ORDER BY b.id DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-        values.push(limit, offset);
-
-        const result = await pool.query(query, values);
-        
-        // Get total count with SAME filters
-        let countQuery = `
-            SELECT COUNT(*) 
-            FROM library_schema.books b
-            WHERE b.is_deleted = false
-        `;
-        const countValues = [];
-        let countParamIndex = 1;
-
-        if (filters.category_id) {
-            countQuery += ` AND b.category_id = $${countParamIndex}`;
-            countValues.push(filters.category_id);
-            countParamIndex++;
-        }
-
-        if (filters.status) {
-            countQuery += ` AND b.status = $${countParamIndex}`;
-            countValues.push(filters.status);
-            countParamIndex++;
-        }
-
-        if (filters.search) {
-            countQuery += ` AND (b.title ILIKE $${countParamIndex} OR b.author ILIKE $${countParamIndex} OR b.isbn ILIKE $${countParamIndex})`;
-            countValues.push(`%${filters.search}%`);
-            countParamIndex++;
-        }
-
-        const countResult = await pool.query(countQuery, countValues);
-        
-        return {
-            books: result.rows,
-            total: parseInt(countResult.rows[0].count),
-            limit,
-            offset
-        };
+    const r=await client.query(`INSERT INTO books(isbn,title,author,publisher,publication_year,category_id,total_copies,available_copies,cover_image,description,metadata)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$7,$8,$9,$10::jsonb)
+      RETURNING *,book_id AS id,cover_image AS cover_image_url`,[normalizeIsbn(d.isbn),d.title,d.author,d.publisher||null,d.publication_year||null,d.category_id||null,
+      d.total_copies??1,d.cover_image||null,d.description||null,JSON.stringify(d.metadata||{})]);
+    return r.rows[0];
+    });
+  }
+  static async update(id,d,actorId){
+    return withActorTransaction(actorId,async client=>{
+    if(d.category_id!==undefined && d.category_id!==null){
+      const current=await client.query(`SELECT category_id FROM books WHERE book_id=$1 AND deleted_at IS NULL`,[id]);
+      if(!current.rowCount)return null;
+      if(current.rows[0].category_id!==Number(d.category_id)){
+        const cat=await client.query(`SELECT status FROM book_categories WHERE category_id=$1 FOR SHARE`,[d.category_id]);
+        if(!cat.rowCount || cat.rows[0].status!=='active') throw Object.assign(new Error('Selected book category is inactive or does not exist.'),{status:400});
+      }
     }
-
-    // Get book by ID (only non-deleted)
-    static async findById(id) {
-        const result = await pool.query(
-            `SELECT b.*, bc.name as category_name
-             FROM library_schema.books b
-             LEFT JOIN library_schema.book_categories bc ON b.category_id = bc.id
-             WHERE b.id = $1 AND b.is_deleted = false`,
-            [id]
-        );
-        return result.rows[0];
+    const allowed=['isbn','title','author','publisher','publication_year','category_id','cover_image','description','metadata','status'];
+    const sets=[],vals=[];
+    for(const k of allowed) if(d[k]!==undefined){
+      vals.push(k==='metadata'?JSON.stringify(d[k]):(k==='isbn'?normalizeIsbn(d[k]):d[k]));
+      sets.push(`${k}=$${vals.length}${k==='metadata'?'::jsonb':''}`);
     }
-
-    // Get book by ISBN (only non-deleted)
-    static async findByIsbn(isbn) {
-        const result = await pool.query(
-            `SELECT * FROM library_schema.books 
-             WHERE isbn = $1 AND is_deleted = false`,
-            [isbn]
-        );
-        return result.rows[0];
+    if(d.total_copies!==undefined){
+      if(!Number.isInteger(Number(d.total_copies))||Number(d.total_copies)<0)
+        throw Object.assign(new Error('total_copies must be a non-negative integer.'),{status:400});
+      vals.push(Number(d.total_copies));
+      sets.push(`available_copies=available_copies+($${vals.length}-total_copies),total_copies=$${vals.length}`);
     }
-
-    // Update book
-    static async update(id, updates) {
-        const allowedFields = ['title', 'author', 'isbn', 'publisher', 
-                               'publication_year', 'category_id', 'description',
-                               'cover_image_url', 'metadata', 'status'];
-        const setClauses = [];
-        const values = [];
-        let paramIndex = 1;
-        
-        for (const field of allowedFields) {
-            if (updates[field] !== undefined) {
-                setClauses.push(`${field} = $${paramIndex}`);
-                values.push(updates[field]);
-                paramIndex++;
-            }
-        }
-        
-        if (updates.total_copies !== undefined) {
-            setClauses.push(`total_copies = $${paramIndex}, available_copies = available_copies + $${paramIndex + 1}`);
-            values.push(updates.total_copies, updates.total_copies - (updates.current_total || updates.total_copies));
-            paramIndex += 2;
-        }
-        
-        if (setClauses.length === 0) return null;
-        
-        values.push(id);
-        const query = `
-            UPDATE library_schema.books 
-            SET ${setClauses.join(', ')}
-            WHERE id = $${paramIndex} AND is_deleted = false
-            RETURNING *
-        `;
-        
-        const result = await pool.query(query, values);
-        return result.rows[0];
-    }
-
-    // Delete book (soft delete - only mark as deleted)
-    static async delete(id) {
-        const result = await pool.query(
-            `UPDATE library_schema.books 
-             SET is_deleted = true
-             WHERE id = $1 AND is_deleted = false
-             RETURNING id`,
-            [id]
-        );
-        return result.rows[0];
-    }
-
-    // Update available copies (when borrowed/returned)
-    static async updateAvailability(id, change) {
-        const result = await pool.query(
-            `UPDATE library_schema.books 
-             SET available_copies = available_copies + $1,
-                 status = CASE 
-                     WHEN available_copies + $1 <= 0 THEN 'borrowed'
-                     ELSE 'available'
-                 END
-             WHERE id = $2 AND is_deleted = false
-             RETURNING *`,
-            [change, id]
-        );
-        return result.rows[0];
-    }
-
-    // Get book categories (only non-deleted)
-    static async getCategories() {
-        const result = await pool.query(
-            `SELECT * FROM library_schema.book_categories 
-             WHERE is_deleted = false 
-             ORDER BY name`
-        );
-        return result.rows;
-    }
-
-    // Create category
-    static async createCategory(name, description) {
-        const result = await pool.query(
-            `INSERT INTO library_schema.book_categories (name, description)
-             VALUES ($1, $2)
-             RETURNING *`,
-            [name, description]
-        );
-        return result.rows[0];
-    }
+    if(!sets.length)return null;
+    sets.push('updated_at=CURRENT_TIMESTAMP'); vals.push(id);
+    const r=await client.query(`UPDATE books SET ${sets.join(',')} WHERE book_id=$${vals.length} AND deleted_at IS NULL RETURNING *,book_id AS id,cover_image AS cover_image_url`,vals);
+    return r.rows[0]||null;
+    });
+  }
+  static async softDelete(id,actorId){
+    return withActorTransaction(actorId,async client=>{
+    const r=await client.query(`UPDATE books SET deleted_at=CURRENT_TIMESTAMP,status='inactive',updated_at=CURRENT_TIMESTAMP
+      WHERE book_id=$1 AND deleted_at IS NULL AND available_copies=total_copies RETURNING book_id`,[id]);
+    return !!r.rowCount;
+    });
+  }
+  static async categories(includeInactive=false){
+    const r=await pool.query(`SELECT category_id,category_name,description,status,created_at,updated_at
+      FROM book_categories ${includeInactive?'':'WHERE status=\'active\''} ORDER BY category_name`); return r.rows;
+  }
+  static async setCategoryStatus(id,status,actorId){
+    return withActorTransaction(actorId,async client=>{
+    const r=await client.query(`UPDATE book_categories SET status=$1,updated_at=CURRENT_TIMESTAMP WHERE category_id=$2 RETURNING *`,[status,id]);
+    return r.rows[0]||null;
+    });
+  }
+  static async createCategory(name,description,actorId){
+    return withActorTransaction(actorId,async client=>{
+    const r=await client.query(`INSERT INTO book_categories(category_name,description) VALUES($1,$2) RETURNING *,category_id AS id`,[name,description||null]); return r.rows[0];
+    });
+  }
 }
-
-module.exports = BookModel;
+module.exports=BookModel;

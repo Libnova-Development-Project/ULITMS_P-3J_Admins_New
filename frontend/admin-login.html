@@ -305,7 +305,7 @@
             <div class="admin-form-group">
                 <label class="admin-form-label">Administrator Credentials</label>
                 <input type="text" id="admin-identifier" class="admin-form-input" 
-                       placeholder="Admin ID or Email" 
+                       placeholder="Administrator Email" 
                        autocomplete="username">
             </div>
             
@@ -336,114 +336,35 @@
     </div>
 
     <script>
-        const API_URL = window.location.origin + '/api';
-
-        function showMessage(elementId, message, type = 'error') {
-            const element = document.getElementById(elementId);
-            element.textContent = message;
-            element.className = `admin-message ${type} show`;
-            
-            // Auto hide after 5 seconds for success messages
-            if (type === 'success') {
-                setTimeout(() => {
-                    element.classList.remove('show');
-                }, 5000);
-            }
+        const API_URL='http://localhost:5000/api';
+        function showMessage(id,message,type='error'){const el=document.getElementById(id);el.textContent=message;el.className=`admin-message ${type} show`;}
+        function hideMessage(id){document.getElementById(id).classList.remove('show');}
+        function setLoading(id,label){document.getElementById(id).disabled=true;document.getElementById('admin-login-text').textContent=label;}
+        function setReady(id,label){document.getElementById(id).disabled=false;document.getElementById('admin-login-text').textContent=label;}
+        async function handleAdminLogin(){
+            const email=document.getElementById('admin-identifier').value.trim();
+            const password=document.getElementById('admin-password').value;
+            const remember=document.getElementById('admin-remember').checked;
+            if(!email||!password)return showMessage('admin-error','Please enter your administrator email and password.');
+            setLoading('admin-login-btn','Authenticating...');
+            try{
+                const response=await fetch(`${API_URL}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+                const payload=await response.json();
+                if(!response.ok||payload.success===false)throw new Error(payload.message||'Login failed.');
+                const auth=payload.data||payload,user=auth.user,token=auth.token;
+                if(!user||!token)throw new Error('The server did not return a valid authentication token.');
+                if(user.role!=='admin')throw new Error('This account does not have administrator access.');
+                localStorage.setItem('ulitms_token',token);localStorage.setItem('ulitms_user',JSON.stringify(user));
+                localStorage.setItem('ulitms_user_id',user.user_id??user.id);localStorage.setItem('ulitms_name',[user.first_name,user.last_name].filter(Boolean).join(' '));
+                localStorage.setItem('ulitms_role',user.role);localStorage.setItem('ulitms_email',user.email||'');
+                localStorage.setItem('ulitms_avatar',user.profile_picture||'');
+                if(remember)localStorage.setItem('ulitms_remember','true');else localStorage.removeItem('ulitms_remember');
+                showMessage('admin-error','Administrator authentication successful. Redirecting...','success');
+                setTimeout(()=>location.href='pages/dashboard.html',700);
+            }catch(error){showMessage('admin-error',error.message||'Unable to connect to the server.');setReady('admin-login-btn','Access Admin Panel');}
         }
-
-        function hideMessage(elementId) {
-            const element = document.getElementById(elementId);
-            element.classList.remove('show');
-        }
-
-        function setLoading(buttonId, text) {
-            const btn = document.getElementById(buttonId);
-            btn.disabled = true;
-            document.getElementById(`${buttonId.replace('-btn', '-text')}`).textContent = text;
-        }
-
-        function setReady(buttonId, text) {
-            const btn = document.getElementById(buttonId);
-            btn.disabled = false;
-            document.getElementById(`${buttonId.replace('-btn', '-text')}`).textContent = text;
-        }
-
-        async function handleAdminLogin() {
-            const identifier = document.getElementById('admin-identifier').value.trim();
-            const password = document.getElementById('admin-password').value;
-            const remember = document.getElementById('admin-remember').checked;
-            
-            if (!identifier || !password) {
-                showMessage('admin-error', 'Please enter admin credentials');
-                return;
-            }
-            
-            setLoading('admin-login-btn', 'Authenticating...');
-            
-            try {
-                const response = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        identifier, 
-                        password, 
-                        role: 'admin' 
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    localStorage.setItem('ulitms_token', data.token);
-                    localStorage.setItem('ulitms_user_id', data.user.id);
-                    localStorage.setItem('ulitms_name', `${data.user.first_name} ${data.user.last_name}`);
-                    localStorage.setItem('ulitms_role', data.user.role);
-                    localStorage.setItem('ulitms_email', data.user.email);
-                    localStorage.setItem('ulitms_avatar', data.user.profile_picture || '');
-                    
-                    if (remember) {
-                        localStorage.setItem('ulitms_remember', 'true');
-                    }
-                    
-                    showMessage('admin-error', 'Admin authentication successful! Redirecting...', 'success');
-                    
-                    setTimeout(() => {
-                        window.location.href = 'pages/dashboard.html';
-                    }, 1500);
-                } else {
-                    throw new Error(data.message || 'Admin login failed');
-                }
-            } catch (error) {
-                showMessage('admin-error', error.message);
-                setReady('admin-login-btn', 'Access Admin Panel');
-            }
-        }
-
-        // Check for remembered session on load
-        window.addEventListener('load', () => {
-            const remembered = localStorage.getItem('ulitms_remember');
-            if (remembered === 'true') {
-                // Auto-redirect if remembered session exists and token is valid
-                const token = localStorage.getItem('ulitms_token');
-                if (token) {
-                    window.location.href = 'pages/dashboard.html';
-                }
-            }
-        });
-
-        // Handle Enter key for admin login
-        document.getElementById('admin-password').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleAdminLogin();
-            }
-        });
-
-        // Auto-focus on load
-        window.addEventListener('load', () => {
-            document.getElementById('admin-identifier').focus();
-        });
+        document.getElementById('admin-password').addEventListener('keydown',e=>{if(e.key==='Enter')handleAdminLogin();});
+        window.addEventListener('load',()=>document.getElementById('admin-identifier').focus());
     </script>
 </body>
 </html>

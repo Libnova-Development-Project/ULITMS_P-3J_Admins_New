@@ -1,7 +1,7 @@
 // ULITMS Borrowings Functions - Clean Version
 
 // API Configuration
-const API_URL = window.location.origin + '/api';
+const API_URL = window.API_BASE_URL || 'http://localhost:5000/api';
 
 // Utility Functions
 function getToken() { return localStorage.getItem('ulitms_token'); }
@@ -77,7 +77,7 @@ async function loadBorrowings() {
             throw new Error(data.message || 'Failed to load borrowings');
         }
         
-        const borrowings = data.data.borrowings || data.data || [];
+        const borrowings = data.data?.borrowings || data.data || [];
         
         if (borrowings.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No borrowing records found</td></tr>';
@@ -85,7 +85,7 @@ async function loadBorrowings() {
         }
         
         tbody.innerHTML = borrowings.map(borrowing => {
-            const isOverdue = new Date(borrowing.due_date) < new Date();
+            const isOverdue = borrowing.status === 'overdue' || (borrowing.due_date && new Date(borrowing.due_date) < new Date() && !['returned','lost','rejected'].includes(borrowing.status));
             const statusClass = borrowing.status === 'returned' ? 'badge-info' : (isOverdue ? 'badge-danger' : 'badge-warning');
             const statusText = formatStatus(borrowing.status);
             
@@ -96,7 +96,7 @@ async function loadBorrowings() {
                     <td>${borrowing.borrowed_at ? formatDate(borrowing.borrowed_at) : 'N/A'}</td>
                     <td>${borrowing.due_date ? formatDate(borrowing.due_date) : 'N/A'}</td>
                     <td><span class="badge ${statusClass}">${statusText}</span></td>
-                    <td>${borrowing.status !== 'returned' ? `<button class="btn-small btn-secondary" onclick="returnBook(${borrowing.id})">Return</button>` : '-'}</td>
+                    <td>${borrowing.status === 'borrowed' || borrowing.status === 'overdue' ? `<button class="btn-small btn-secondary" onclick="returnBook(${borrowing.id})">Request Return</button>` : (borrowing.status === 'pending_return' ? 'Awaiting librarian confirmation' : '-')}</td>
                 </tr>
             `;
         }).join('');
@@ -123,10 +123,10 @@ async function returnBook(id) {
             hideLoading();
             
             if (data.success || response.ok) {
-                showSuccess('Book returned successfully!');
+                showSuccess('Return request submitted. The librarian must confirm the physical return.');
                 loadBorrowings();
             } else {
-                showError('Failed to return book: ' + (data.message || 'Unknown error'));
+                showError('Failed to submit return request: ' + (data.message || 'Unknown error'));
             }
         } catch (error) {
             hideLoading();

@@ -1,15 +1,13 @@
-const express = require('express');
-const router = express.Router();
-const peripheralController = require('../controllers/peripheralController');
-const { auth } = require('../middleware/auth');
-
-router.get('/', peripheralController.getAllPeripherals);
-router.get('/categories', peripheralController.getCategories);
-router.get('/:id', peripheralController.getPeripheralById);
-router.post('/', auth, peripheralController.createPeripheral);
-router.post('/categories', auth, peripheralController.createCategory);
-router.put('/:id', auth, peripheralController.updatePeripheral);
-router.put('/:id/condition', auth, peripheralController.updateCondition);
-router.delete('/:id', auth, peripheralController.deletePeripheral);
-
-module.exports = router;
+const router=require('express').Router();
+const c=require('../controllers/peripheralController');
+const {auth,adminOnly}=require('../middleware/auth');
+const {idParam,pagination}=require('../middleware/validate');
+router.get('/categories',auth,c.categories);
+router.post('/categories',auth,adminOnly,c.createCategory);
+router.get('/',auth,pagination,c.list);
+router.get('/:id',auth,idParam,c.get);
+router.post('/',auth,adminOnly,c.create);
+router.put('/:id/condition',auth,adminOnly,idParam,c.updateCondition);
+router.put('/:id',auth,adminOnly,idParam,c.update);
+router.delete('/:id',auth,adminOnly,idParam,c.remove);
+module.exports=router;
