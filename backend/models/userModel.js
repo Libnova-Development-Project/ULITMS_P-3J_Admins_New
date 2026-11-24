@@ -1,0 +1,252 @@
+const pool = require('../database/db');
+const bcrypt = require('bcryptjs');
+
+class UserModel {
+    // Create user
+    // Create user
+static async create(userData) {
+    const {
+        student_id,
+        first_name,
+        middle_name,
+        last_name,
+        email,
+        password,
+        contact_number,
+        course,
+        year_level,
+        role = 'student'
+    } = userData;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const result = await pool.query(
+        `INSERT INTO library_schema.users 
+         (student_id, first_name, middle_name, last_name, email, password, 
+          contact_number, course, year_level, role, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         RETURNING id, student_id, first_name, middle_name, last_name, 
+                   email, role, course, year_level, contact_number, 
+                   is_active, created_at`,
+        [student_id, first_name, middle_name || null, last_name, email, hashedPassword,
+         contact_number || null, course || null, year_level || null, role, true]
+    );
+    
+    return result.rows[0];
+}
+    // Find by email
+    static async findByEmail(email) {
+        const result = await pool.query(
+            `SELECT * FROM library_schema.users 
+             WHERE email = $1 AND is_deleted = false`,
+            [email]
+        );
+        return result.rows[0];
+    }
+
+    // Find by student ID
+    static async findByStudentId(studentId) {
+        const result = await pool.query(
+            `SELECT * FROM library_schema.users 
+             WHERE student_id = $1 AND is_deleted = false`,
+            [studentId]
+        );
+        return result.rows[0];
+    }
+
+    // Find by ID
+    static async findById(id) {
+        const result = await pool.query(
+            `SELECT id, student_id, first_name, middle_name, last_name, 
+                    email, role, course, year_level, contact_number, 
+                    is_active, profile_picture, created_at, updated_at
+             FROM library_schema.users 
+             WHERE id = $1 AND is_deleted = false`,
+            [id]
+        );
+        return result.rows[0];
+    }
+
+    // Get all users (admin only)
+    static async getAll(limit = 100, offset = 0) {
+        const result = await pool.query(
+            `SELECT id, student_id, first_name, middle_name, last_name, 
+                    email, role, course, year_level, contact_number, 
+                    is_active, profile_picture, created_at
+             FROM library_schema.users 
+             WHERE is_deleted = false
+             ORDER BY created_at DESC
+             LIMIT $1 OFFSET $2`,
+            [limit, offset]
+        );
+        return result.rows;
+    }
+
+    // Update user
+    static async update(id, updates) {
+        const allowedFields = ['first_name', 'middle_name', 'last_name', 
+                               'course', 'year_level', 'contact_number'];
+        const setClauses = [];
+        const values = [];
+        let paramIndex = 1;
+        
+        for (const field of allowedFields) {
+            if (updates[field] !== undefined) {
+                setClauses.push(`${field} = $${paramIndex}`);
+                values.push(updates[field]);
+                paramIndex++;
+            }
+        }
+        
+        if (setClauses.length === 0) return null;
+        
+        values.push(id);
+        const query = `
+            UPDATE library_schema.users 
+            SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $${paramIndex} AND is_deleted = false
+            RETURNING id, student_id, first_name, middle_name, last_name, 
+                      email, role, course, year_level, contact_number, profile_picture
+        `;
+        
+        const result = await pool.query(query, values);
+        return result.rows[0];
+    }
+
+    // Update profile picture
+    static async updateProfilePicture(id, pictureUrl) {
+        const result = await pool.query(
+            `UPDATE library_schema.users 
+             SET profile_picture = $1, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $2 AND is_deleted = false
+             RETURNING id, profile_picture`,
+            [pictureUrl, id]
+        );
+        return result.rows[0];
+    }
+
+    // Change password
+    static async changePassword(id, newPassword) {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const result = await pool.query(
+            `UPDATE library_schema.users 
+             SET password = $1, reset_token = NULL, reset_token_expiry = NULL
+             WHERE id = $2 AND is_deleted = false
+             RETURNING id`,
+            [hashedPassword, id]
+        );
+        return result.rows[0];
+    }
+
+    // Set reset token
+    static async setResetToken(id, token, expiryMinutes = 30) {
+        const expiry = new Date(Date.now() + expiryMinutes * 60000);
+        const result = await pool.query(
+            `UPDATE library_schema.users 
+             SET reset_token = $1, reset_token_expiry = $2
+             WHERE id = $3 AND is_deleted = false
+             RETURNING id`,
+            [token, expiry, id]
+        );
+        return result.rows[0];
+    }
+
+    // Find by reset token
+    static async findByResetToken(token) {
+        const result = await pool.query(
+            `SELECT * FROM library_schema.users 
+             WHERE reset_token = $1 AND reset_token_expiry > CURRENT_TIMESTAMP AND is_deleted = false`,
+            [token]
+        );
+        return result.rows[0];
+    }
+
+    // Delete user (soft delete)
+    static async delete(id) {
+        // Start a transaction
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // 1. End any active e-library sessions
+            await client.query(
+                `UPDATE library_schema.elibrary_sessions 
+                 SET time_out = CURRENT_TIMESTAMP 
+                 WHERE user_id = $1 AND time_out IS NULL`,
+                [id]
+            );
+            
+            // 2. Handle borrowed books: Return them and update book availability
+            // First, get all active borrowings for this user
+            const activeBorrowings = await client.query(
+                `SELECT id, book_id FROM library_schema.borrow_transactions 
+                 WHERE user_id = $1 AND status = 'borrowed' AND is_deleted = false`,
+                [id]
+            );
+            
+            for (const borrowing of activeBorrowings.rows) {
+                // Update borrowing record
+                await client.query(
+                    `UPDATE library_schema.borrow_transactions 
+                     SET returned_at = CURRENT_TIMESTAMP, status = 'returned'
+                     WHERE id = $1`,
+                    [borrowing.id]
+                );
+                
+                // Update book availability
+                await client.query(
+                    `UPDATE library_schema.books 
+                     SET available_copies = available_copies + 1, status = 'available'
+                     WHERE id = $1`,
+                    [borrowing.book_id]
+                );
+            }
+            
+            // 3. Mark user as deleted
+            const result = await client.query(
+                `UPDATE library_schema.users 
+                 SET is_deleted = true, is_active = false
+                 WHERE id = $1 AND is_deleted = false
+                 RETURNING id`,
+                [id]
+            );
+            
+            await client.query('COMMIT');
+            return result.rowCount > 0;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    // Get user statistics
+    static async getUserStats(id) {
+        const result = await pool.query(
+            `SELECT 
+                COUNT(DISTINCT bt.id) as total_borrowed,
+                COUNT(DISTINCT CASE WHEN bt.status = 'borrowed' THEN bt.id END) as current_borrowed,
+                COUNT(DISTINCT es.id) as total_sessions,
+                COALESCE(SUM(bt.fine_amount), 0) as total_fines
+             FROM library_schema.users u
+             LEFT JOIN library_schema.borrow_transactions bt ON u.id = bt.user_id AND bt.is_deleted = false
+             LEFT JOIN library_schema.elibrary_sessions es ON u.id = es.user_id
+             WHERE u.id = $1 AND u.is_deleted = false
+             GROUP BY u.id`,
+            [id]
+        );
+        return result.rows[0] || { total_borrowed: 0, current_borrowed: 0, total_sessions: 0, total_fines: 0 };
+    }
+    // Get all admins
+    static async getAdmins() {
+        const result = await pool.query(
+            `SELECT id, first_name, last_name, email 
+             FROM library_schema.users 
+             WHERE role = 'admin' AND is_deleted = false AND is_active = true`
+        );
+        return result.rows;
+    }
+}
+
+module.exports = UserModel;

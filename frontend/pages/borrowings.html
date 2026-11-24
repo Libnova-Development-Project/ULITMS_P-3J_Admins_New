@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — My Borrowings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<!-- Dynamic Sidebar Loading Script -->
+    <aside id="sidebar">
+    </aside>
+
+    <script src="../js/sidebar-loader.js"></script>
+    <script>loadSidebar();</script>
+    <script src="../js/confirm-dialog.js"></script>
+
+<div id="main">
+    <header id="topbar">
+        <div class="page-title">My Borrowings</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Visitor</div>
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <div class="section-title">My Borrowings</div>
+        <div class="section-sub">Track your personal borrow and return history</div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📋 Transaction History</div>
+                <button class="btn btn-secondary btn-small" onclick="loadBorrowings()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Book Title</th>
+                            <th>Borrow Date</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="borrow-tbody">
+                        <tr><td colspan="6" style="text-align:center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = window.location.origin + '/api';
+
+function getToken() { return localStorage.getItem('ulitms_token'); }
+function getUserId() { return localStorage.getItem('ulitms_user_id'); }
+
+
+
+async function loadBorrowings() {
+    const tbody = document.getElementById('borrow-tbody');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>';
+    
+    try {
+        const userId = getUserId();
+        if (!userId) { tbody.innerHTML = '<tr><td colspan="6">Please login</td></tr>'; return; }
+        
+        const response = await fetch(`${API_URL}/borrowings/user/${userId}`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await response.json();
+        const borrowings = data.data?.borrowings || data.borrowings || [];
+        
+        if (borrowings.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">No borrowing records found</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = borrowings.map(b => {
+            const isOverdue = new Date(b.due_date) < new Date();
+            let statusText = 'Borrowed';
+            let statusClass = 'badge-warning';
+            
+            if (b.status === 'returned') {
+                statusText = 'Returned';
+                statusClass = 'badge-info';
+            } else if (b.status === 'pending_return') {
+                statusText = 'Pending Confirmation';
+                statusClass = 'badge-secondary';
+            } else if (isOverdue) {
+                statusText = 'Overdue';
+                statusClass = 'badge-danger';
+            }
+            
+            let actionBtn = '-';
+            if (b.status === 'borrowed') {
+                actionBtn = `<button class="btn-small btn-secondary" onclick="returnBook(${b.id})">Return</button>`;
+            } else if (b.status === 'pending_return') {
+                actionBtn = `<span style="font-size: 0.75rem; color: var(--text-muted);">Awaiting Admin</span>`;
+            }
+
+            return `
+                <tr>
+                    <td><span style="color:#27c4cc;">#${b.id}</span></td>
+                    <td><strong>${b.title || b.book_title}</strong></td>
+                    <td>${b.borrowed_at ? new Date(b.borrowed_at).toLocaleDateString() : 'N/A'}</td>
+                    <td>${b.due_date ? new Date(b.due_date).toLocaleDateString() : 'N/A'}</td>
+                    <td><span class="badge ${statusClass}">${statusText}</span></td>
+                    <td>${actionBtn}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch(e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="6">Failed to load</td></tr>';
+    }
+}
+
+window.returnBook = async (id) => {
+    confirmAction('Are you sure you want to return this book?', async () => {
+        try {
+            showLoading('Processing return...');
+            const response = await fetch(`${API_URL}/borrowings/${id}/return`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            
+            if (response.ok) {
+                hideLoading();
+                showSuccess('Return request submitted! Please bring the book to the library counter for final confirmation.');
+                loadBorrowings();
+            } else {
+                const data = await response.json();
+                hideLoading();
+                showError('Failed to return: ' + (data.message || 'Unknown error'));
+            }
+        } catch(e) { 
+            hideLoading();
+            showError('Failed to return book'); 
+        }
+    }, { title: 'Return Book', confirmText: 'Return', type: 'warning' });
+};
+
+checkAuth();
+loadBorrowings();
+</script>
+</body>
+</html>

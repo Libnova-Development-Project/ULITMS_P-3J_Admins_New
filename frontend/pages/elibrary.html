@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — E-Library</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+    <style>
+        .pc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .pc-unit-card {
+            background: rgba(13, 27, 42, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(39, 196, 204, 0.1);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .pc-unit-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: transparent;
+            transition: background 0.3s;
+        }
+
+        .pc-unit-card:hover {
+            transform: translateY(-8px);
+            background: rgba(13, 27, 42, 0.8);
+            border-color: rgba(39, 196, 204, 0.4);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(39, 196, 204, 0.1);
+        }
+
+        .pc-unit-card.available:hover::before {
+            background: var(--success);
+        }
+
+        .pc-unit-card.busy:hover::before {
+            background: var(--danger);
+        }
+
+        .pc-icon-box {
+            width: 70px;
+            height: 70px;
+            background: rgba(39, 196, 204, 0.1);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 2rem;
+            color: var(--teal-primary);
+            transition: all 0.4s;
+            position: relative;
+        }
+
+        .pc-unit-card:hover .pc-icon-box {
+            transform: scale(1.1) rotate(5deg);
+            background: rgba(39, 196, 204, 0.2);
+            box-shadow: 0 0 25px rgba(39, 196, 204, 0.2);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+
+        .status-badge.available {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-badge.busy {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .pc-id {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-light);
+            margin-bottom: 2px;
+        }
+
+        .pc-location {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .busy-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 17, 32, 0.4);
+            display: none;
+            z-index: 1;
+        }
+
+        .pc-unit-card.busy .busy-overlay {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<!-- Dynamic Sidebar Loading -->
+<aside id="sidebar"></aside>
+<script src="../js/sidebar-loader.js"></script>
+<script>loadSidebar();</script>
+<script src="../js/confirm-dialog.js"></script>
+
+<div id="main">
+    <header id="topbar">
+        <div class="page-title">E-Library</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Visitor</div>
+            </div>
+        </div>
+    </header>
+    
+    <div id="content">
+        <div class="section-title">E-Library</div>
+        <div class="section-sub">Manage your PC sessions and view availability</div>
+        
+        <!-- PC Availability Section -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">💻 Available PC Units</div>
+                <button class="btn btn-secondary btn-small" onclick="loadAvailablePCs()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div id="available-pcs" class="pc-grid">
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top: 15px;">Scanning for available units...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Start Session Section -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">🖥️ Start New Session</div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500;">Select PC Unit:</label>
+                    <select id="session-unit" class="form-select" style="width: 100%;">
+                        <option value="">Loading units...</option>
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500;">Purpose (optional):</label>
+                    <input type="text" id="session-purpose" class="form-input" placeholder="Study, Research, etc." style="width: 100%;">
+                </div>
+                <button class="btn btn-primary" onclick="startNewSession()">
+                    <i class="fas fa-play"></i> Start Session
+                </button>
+            </div>
+        </div>
+
+        <!-- Session History Section -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">📊 Your Session History</div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary btn-small" onclick="loadUserSessions()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-primary btn-small" onclick="showSessionStats()">
+                        <i class="fas fa-chart-bar"></i> View Stats
+                    </button>
+                </div>
+            </div>
+            <div class="tbl-wrap" style="overflow-x: auto;">
+                <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: rgba(39, 196, 204, 0.1); border-bottom: 2px solid #27c4cc;">
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Date</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Unit</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Time In</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Time Out</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Duration</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Status</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessions-tbody">
+                        <tr>
+                            <td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading sessions...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// API Base URL
+const API_URL = window.location.origin + '/api';
+
+// Utility Functions
+function getToken() {
+    return localStorage.getItem('ulitms_token');
+}
+
+function getUserId() {
+    return localStorage.getItem('ulitms_user_id');
+}
+
+
+// Load Available PCs
+async function loadAvailablePCs() {
+    const container = document.getElementById('available-pcs');
+    container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+    
+    try {
+        const response = await fetch(`${API_URL}/elibrary/units?activeOnly=true`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load PCs');
+        
+        const data = await response.json();
+        const units = data.units || [];
+        
+        if (units.length === 0) {
+            container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #94a3b8;">No active PC units found in the system.</div>';
+            return;
+        }
+        
+        const activeSessions = await getActiveSessions();
+        const busyUnitIds = new Set(activeSessions.map(s => s.unit_id));
+        
+        const unitSelect = document.getElementById('session-unit');
+        unitSelect.innerHTML = '<option value="">Select PC Unit</option>';
+        
+        container.innerHTML = units.map(unit => {
+            const isAvailable = !busyUnitIds.has(unit.id);
+            const statusClass = isAvailable ? 'available' : 'busy';
+            const statusText = isAvailable ? 'Available' : 'Currently in Use';
+            const statusIcon = isAvailable ? 'fa-check-circle' : 'fa-minus-circle';
+            
+            unitSelect.innerHTML += `<option value="${unit.id}" ${isAvailable ? '' : 'disabled'}>PC Unit #${String(unit.unit_number).padStart(2, '0')}${isAvailable ? '' : ' (Busy)'}</option>`;
+            
+            return `
+                <div class="pc-unit-card ${statusClass}" ${isAvailable ? `onclick="selectPC(${unit.id})"` : ''}>
+                    <div class="busy-overlay"></div>
+                    <div class="pc-icon-box">
+                        <i class="fas fa-laptop"></i>
+                    </div>
+                    <div class="pc-id">PC #${String(unit.unit_number).padStart(2, '0')}</div>
+                    <div class="pc-location">${unit.location || 'Main Section'}</div>
+                    <div class="status-badge ${statusClass}">
+                        <i class="fas ${statusIcon}"></i>
+                        <span>${statusText}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Error loading PCs:', error);
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #ef4444;"><i class="fas fa-exclamation-triangle fa-2x"></i><p style="margin-top:10px;">Failed to synchronize PC status.</p></div>';
+    }
+}
+
+function selectPC(id) {
+    document.getElementById('session-unit').value = id;
+    // Scroll to the start session card
+    document.getElementById('session-unit').closest('.card').scrollIntoView({ behavior: 'smooth' });
+    // Visual feedback
+    document.querySelectorAll('.pc-unit-card').forEach(c => c.style.borderColor = 'rgba(39, 196, 204, 0.1)');
+    const selectedCard = Array.from(document.querySelectorAll('.pc-unit-card')).find(c => c.onclick && c.onclick.toString().includes(id));
+    if (selectedCard) selectedCard.style.borderColor = 'var(--teal-primary)';
+}
+
+// Get Active Sessions
+async function getActiveSessions() {
+    try {
+        const response = await fetch(`${API_URL}/elibrary/sessions/active`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.sessions || [];
+    } catch (error) {
+        console.error('Error getting active sessions:', error);
+        return [];
+    }
+}
+
+// Load User Sessions
+async function loadUserSessions() {
+    const tbody = document.getElementById('sessions-tbody');
+    tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading sessions...</td></tr>';
+    
+    try {
+        const userId = getUserId();
+        if (!userId) {
+            tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center;">Please log in to view sessions</td></tr>';
+            return;
+        }
+        
+        const response = await fetch(`${API_URL}/elibrary/sessions/user/${userId}`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load sessions');
+        
+        const data = await response.json();
+        const sessions = data.sessions || [];
+        
+        if (sessions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8;">No session records found</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = sessions.map(session => {
+            const duration = session.time_out ? calculateDuration(session.time_in, session.time_out) : '<span style="color:#94a3b8;font-style:italic;">Ongoing</span>';
+            const isActive = !session.time_out;
+            const statusBadgeColor = isActive ? '#10b981' : '#6b7280';
+            const statusText = isActive ? '🔵 Active' : '✓ Completed';
+            
+            return `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 12px;">${formatDate(session.time_in)}</td>
+                    <td style="padding: 12px;">PC #${String(session.unit_id).padStart(2, '0')}</td>
+                    <td style="padding: 12px;">${formatTime(session.time_in)}</td>
+                    <td style="padding: 12px;">${session.time_out ? formatTime(session.time_out) : '--:--'}</td>
+                    <td style="padding: 12px;">${duration}</td>
+                    <td style="padding: 12px;"><span style="color: ${statusBadgeColor}; display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; background: rgba(${isActive ? '16, 185, 129' : '107, 114, 128'}, 0.1);">${statusText}</span></td>
+                    <td style="padding: 12px;">${isActive ? `<button class="btn btn-small btn-secondary" onclick="endSession(${session.id})"><i class="fas fa-stop"></i> End</button>` : '-'}</td>
+                </tr>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Error loading sessions:', error);
+        tbody.innerHTML = '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #ef4444;"><i class="fas fa-exclamation-circle"></i> Failed to load sessions</td></tr>';
+    }
+}
+
+// Start New Session
+async function startNewSession() {
+    const unitId = document.getElementById('session-unit').value;
+    const purpose = document.getElementById('session-purpose').value;
+    
+    if (!unitId) {
+        showWarning('Please select a PC unit');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/elibrary/sessions/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({
+                unit_id: parseInt(unitId),
+                purpose: purpose || null
+            })
+        });
+        
+        if (!response.ok) throw new Error('Failed to start session');
+        
+        const data = await response.json();
+        showSuccess('E-Library session started successfully!');
+        
+        // Clear form
+        document.getElementById('session-unit').value = '';
+        document.getElementById('session-purpose').value = '';
+        
+        // Reload data
+        loadUserSessions();
+        loadAvailablePCs();
+        
+    } catch (error) {
+        console.error('Error starting session:', error);
+        showError('Failed to start session. Please try again.');
+    }
+}
+
+// End Session
+async function endSession(sessionId) {
+    confirmAction('Are you sure you want to end this session?', async () => {
+        try {
+            const response = await fetch(`${API_URL}/elibrary/sessions/${sessionId}/end`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to end session');
+            
+            showSuccess('Session ended successfully!');
+            loadUserSessions();
+            loadAvailablePCs();
+            
+        } catch (error) {
+            console.error('Error ending session:', error);
+            showError('Failed to end session. Please try again.');
+        }
+    }, { title: 'End Session', confirmText: 'End Session', type: 'danger' });
+}
+
+// Show Session Statistics
+async function showSessionStats() {
+    try {
+        const userId = getUserId();
+        if (!userId) {
+            alert('Please log in to view statistics');
+            return;
+        }
+        
+        const response = await fetch(`${API_URL}/elibrary/sessions/user/${userId}`, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load sessions');
+        
+        const data = await response.json();
+        const sessions = data.sessions || [];
+        
+        // Calculate statistics
+        const totalSessions = sessions.length;
+        const completedSessions = sessions.filter(s => s.time_out).length;
+        const activeSessions = sessions.filter(s => !s.time_out).length;
+        
+        let totalMinutes = 0;
+        sessions.forEach(session => {
+            if (session.time_out) {
+                const duration = calculateDurationInMinutes(session.time_in, session.time_out);
+                totalMinutes += duration;
+            }
+        });
+        
+        const totalHours = (totalMinutes / 60).toFixed(1);
+        const avgDuration = completedSessions > 0 ? ((totalMinutes / completedSessions) / 60).toFixed(2) : 0;
+        
+        // Create modal
+        const modal = document.createElement('div');
+        modal.id = 'stats-modal-overlay';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+        modal.innerHTML = `
+            <div style="background: rgba(15, 23, 42, 0.95); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 25px 50px rgba(0,0,0,0.3); border: 1px solid rgba(39, 196, 204, 0.2);">
+                <h3 style="color: #27c4cc; margin-bottom: 20px; font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-chart-bar"></i> Session Statistics
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                    <div style="background: rgba(39, 196, 204, 0.1); padding: 16px; border-radius: 8px; border-left: 3px solid #27c4cc;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #27c4cc;">${totalSessions}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Total Sessions</div>
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.1); padding: 16px; border-radius: 8px; border-left: 3px solid #10b981;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #10b981;">${completedSessions}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Completed</div>
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.1); padding: 16px; border-radius: 8px; border-left: 3px solid #f59e0b;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #f59e0b;">${totalHours}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Total Hours</div>
+                    </div>
+                    <div style="background: rgba(168, 85, 247, 0.1); padding: 16px; border-radius: 8px; border-left: 3px solid #a855f7;">
+                        <div style="font-size: 2rem; font-weight: bold; color: #a855f7;">${avgDuration}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Avg Duration (hrs)</div>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <button class="btn btn-secondary" onclick="document.getElementById('stats-modal-overlay').remove()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+        
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+        alert('Failed to load session statistics');
+    }
+}
+
+// Helper Functions
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+function formatTime(dateString) {
+    return new Date(dateString).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+function calculateDuration(timeIn, timeOut) {
+    const minutes = calculateDurationInMinutes(timeIn, timeOut);
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+}
+
+function calculateDurationInMinutes(timeIn, timeOut) {
+    try {
+        const inDate = new Date(timeIn);
+        const outDate = new Date(timeOut);
+        return Math.floor((outDate - inDate) / 60000);
+    } catch {
+        return 0;
+    }
+}
+
+// Authentication Check
+function checkAuth() {
+    if (!getToken()) {
+        window.location.href = '../login.html';
+    }
+}
+
+// Initialize on page load
+window.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    updateUserInfo();
+    loadAvailablePCs();
+    loadUserSessions();
+});
+
+// Show admin navigation if user is admin
+const role = localStorage.getItem('ulitms_role');
+if (role === 'admin') {
+    const navSection = document.querySelector('.nav-section');
+    if (navSection) {
+        const adminItems = navSection.querySelectorAll('[href*="manage"], [href*="reports"], [href*="settings"], [href*="equipment"], [href*="damage"]');
+        adminItems.forEach(item => item.style.display = 'block');
+    }
+}
+</script>
+
+</body>
+</html>

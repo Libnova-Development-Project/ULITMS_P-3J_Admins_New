@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — My Profile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+    <style>
+        .profile-avatar-container {
+            position: relative;
+            cursor: pointer;
+        }
+        .profile-avatar-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            color: white;
+            font-size: 1.2rem;
+        }
+        .profile-avatar-container:hover .profile-avatar-overlay {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<!-- Dynamic Sidebar Loading -->
+<aside id="sidebar"></aside>
+<script src="../js/sidebar-loader.js"></script>
+<script>loadSidebar();</script>
+<script src="../js/confirm-dialog.js"></script>
+
+<div id="main">
+    <header id="topbar">
+        <div class="page-title">My Profile</div>
+        <div class="topbar-right">
+            <div class="notif-btn">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Visitor</div>
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <div class="section-title">My Profile</div>
+        <div class="section-sub">Your personal account information</div>
+        <div id="profile-content"></div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div id="edit-modal" class="modal-overlay">
+    <div class="modal-container" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3>Edit Profile Information</h3>
+            <button class="modal-close" onclick="closeEditModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="edit-profile-form">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label class="form-label">First Name</label>
+                        <input type="text" id="edit-first-name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" id="edit-last-name" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" id="edit-email" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contact Number</label>
+                    <input type="text" id="edit-contact" class="form-input">
+                </div>
+                <div style="display:grid; grid-template-columns: 1.4fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label class="form-label">Course</label>
+                        <input type="text" id="edit-course" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Year Level</label>
+                        <select id="edit-year" class="form-select">
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                            <option value="5">5th Year</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Profile Picture</label>
+                    <input type="file" id="edit-avatar" class="form-input" accept="image/*">
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">Leave empty to keep current picture.</p>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = window.location.origin + '/api';
+let currentUserData = {};
+
+function getToken() { return localStorage.getItem('ulitms_token'); }
+function getUserId() { return localStorage.getItem('ulitms_user_id'); }
+
+async function loadProfile() {
+    const profileContent = document.getElementById('profile-content');
+    
+    try {
+        const response = await fetch(`${API_URL}/users/${getUserId()}`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const json = await response.json();
+        
+        if (!json.success) throw new Error(json.message);
+        
+        const user = json.data?.user || {};
+        const stats = json.data?.stats || {};
+        currentUserData = user; // Store for editing
+        
+        // Construct full name
+        const storedName = localStorage.getItem('ulitms_name');
+        const fullName = user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : (storedName && storedName !== 'User' ? storedName : 'User');
+        const initials = fullName.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+        
+        // Avatar logic
+        const avatarStyle = user.profile_picture ? 
+            `background-image: url(${window.location.origin}${user.profile_picture}); background-size: cover; background-position: center;` : '';
+        
+        profileContent.innerHTML = `
+            <div class="profile-header">
+                <div class="profile-avatar-container" onclick="editProfile()">
+                    <div class="profile-avatar" style="${avatarStyle}">${user.profile_picture ? '' : initials}</div>
+                    <div class="profile-avatar-overlay"><i class="fas fa-camera"></i></div>
+                </div>
+                <div>
+                    <div class="profile-name">${fullName}</div>
+                    <div class="profile-meta">${user.student_id || 'N/A'} · ${user.role === 'admin' ? 'Administrator' : 'Student'} · Joined ${user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Unknown'}</div>
+                    <div style="display:flex;gap:8px;margin-top:8px;">
+                        <span class="badge badge-success">Active</span>
+                        <span class="badge badge-${user.role === 'admin' ? 'danger' : 'info'}">${user.role === 'admin' ? 'Admin' : 'Student'}</span>
+                    </div>
+                </div>
+                <button class="edit-btn" onclick="editProfile()">
+                    <i class="fas fa-pen" style="margin-right:6px;font-size:.75rem;"></i>Edit Info
+                </button>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-id-card" style="color:#27c4cc;margin-right:8px;"></i>Personal Details</div>
+                    <div class="detail-row"><span class="detail-key">ID Number</span><span class="detail-val">${user.student_id || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Full Name</span><span class="detail-val">${fullName}</span></div>
+                    <div class="detail-row"><span class="detail-key">Role</span><span class="detail-val">${user.role === 'admin' ? 'Administrator' : 'Student'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Course</span><span class="detail-val">${user.course || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Year Level</span><span class="detail-val">${user.year_level || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Email</span><span class="detail-val">${user.email || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Contact</span><span class="detail-val">${user.contact_number || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-key">Join Date</span><span class="detail-val">${user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'N/A'}</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-chart-bar" style="color:#27c4cc;margin-right:8px;"></i>Library Summary</div>
+                    <div class="detail-row"><span class="detail-key">Borrowed Books</span><span class="detail-val">${stats.total_borrowed || 0} total</span></div>
+                    <div class="detail-row"><span class="detail-key">Active Borrowing</span><span class="detail-val">${stats.current_borrowed || 0} books</span></div>
+                    <div class="detail-row"><span class="detail-key">Total Fines</span><span class="detail-val" style="color:#ef4444;">₱${parseFloat(stats.total_fines || 0).toFixed(2)}</span></div>
+                    <div class="detail-row"><span class="detail-key">E-Library Visits</span><span class="detail-val">${stats.total_sessions || 0} sessions</span></div>
+                    <div class="detail-row"><span class="detail-key">Account Status</span><span class="detail-val"><span class="badge badge-success">Active</span></span></div>
+                    <div style="margin-top:20px; padding:15px; background:rgba(39, 196, 204, 0.05); border-radius:10px; border:1px solid rgba(39, 196, 204, 0.1);">
+                        <div style="font-size:0.75rem; color:var(--teal-primary); margin-bottom:5px; font-weight:600;">ACTIVITY QUOTA</div>
+                        <div style="height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden;">
+                            <div style="width:65%; height:100%; background:linear-gradient(to right, var(--teal-dark), var(--teal-primary));"></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:0.65rem; color:var(--text-muted);">
+                            <span>Good Standing</span>
+                            <span>65% Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Update local storage in case it changed
+        localStorage.setItem('ulitms_name', fullName);
+        localStorage.setItem('ulitms_avatar', user.profile_picture || '');
+        if (typeof updateUserInfo === 'function') updateUserInfo();
+        
+    } catch(e) {
+        console.error(e);
+        profileContent.innerHTML = '<div class="card"><p>Failed to load profile information</p></div>';
+    }
+}
+
+function editProfile() {
+    document.getElementById('edit-first-name').value = currentUserData.first_name || '';
+    document.getElementById('edit-last-name').value = currentUserData.last_name || '';
+    document.getElementById('edit-email').value = currentUserData.email || '';
+    document.getElementById('edit-contact').value = currentUserData.contact_number || '';
+    document.getElementById('edit-course').value = currentUserData.course || '';
+    document.getElementById('edit-year').value = currentUserData.year_level || '1';
+    
+    document.getElementById('edit-modal').classList.add('active');
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').classList.remove('active');
+}
+
+async function saveProfile() {
+    const userId = getUserId();
+    const token = getToken();
+    
+    const updates = {
+        first_name: document.getElementById('edit-first-name').value,
+        last_name: document.getElementById('edit-last-name').value,
+        email: document.getElementById('edit-email').value,
+        contact_number: document.getElementById('edit-contact').value,
+        course: document.getElementById('edit-course').value,
+        year_level: document.getElementById('edit-year').value
+    };
+    
+    try {
+        // 1. Update Profile Info
+        const infoRes = await fetch(`${API_URL}/users/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(updates)
+        });
+        
+        // 2. Update Avatar if file selected
+        const avatarFile = document.getElementById('edit-avatar').files[0];
+        if (avatarFile) {
+            const formData = new FormData();
+            formData.append('avatar', avatarFile);
+            
+            await fetch(`${API_URL}/users/${userId}/avatar`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData
+            });
+        }
+        
+        if (infoRes.ok) {
+            showSuccess('Profile updated successfully!');
+            closeEditModal();
+            loadProfile();
+        } else {
+            const data = await infoRes.json();
+            showError(data.message || 'Failed to update profile');
+        }
+    } catch (error) {
+        console.error(error);
+        showError('An error occurred while saving profile');
+    }
+}
+
+function checkAuth() {
+    if (!getToken()) window.location.href = '../login.html';
+}
+
+checkAuth();
+loadProfile();
+</script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — Damage Reports</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<!-- Dynamic Sidebar Loading Script -->
+    <aside id="sidebar">
+    </aside>
+    <script src="../js/sidebar-loader.js"></script>
+    <script>
+        // Load appropriate sidebar based on user role
+        loadSidebar();
+    </script>
+
+<div id="main">
+    <header id="topbar">
+        <div class="page-title">Damage Reports</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">Administrator</div>
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <div class="section-title" style="margin-bottom: 0;">Damage Reports</div>
+            <button class="btn btn-primary" onclick="showReportModal()">
+                <i class="fas fa-plus" style="margin-right: 8px;"></i> Report New Damage
+            </button>
+        </div>
+        
+        <div class="stats-grid" id="damage-stats" style="margin-bottom: 30px;"></div>
+        
+        <div class="card">
+            <div class="tbl-wrap">
+                <table class="table-damage">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Reporter</th>
+                            <th>Item Name</th>
+                            <th>Type</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="damage-tbody">
+                        <tr><td colspan="7" style="text-align:center; padding: 40px;">Loading reports...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 id="modalTitle">Modal Title</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = window.location.origin + '/api';
+
+function getToken() { return localStorage.getItem('ulitms_token'); }
+
+function showModal(title, bodyHtml, onConfirm, confirmText = 'Confirm') {
+    const modal = document.getElementById('modalOverlay');
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').innerHTML = bodyHtml;
+    document.getElementById('modalConfirmBtn').textContent = confirmText;
+    modal.classList.add('active');
+    
+    const newBtn = document.getElementById('modalConfirmBtn').cloneNode(true);
+    document.getElementById('modalConfirmBtn').parentNode.replaceChild(newBtn, document.getElementById('modalConfirmBtn'));
+    newBtn.addEventListener('click', () => {
+        if (onConfirm) onConfirm();
+        closeModal();
+    });
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+}
+
+async function loadDamageReports() {
+    const tbody = document.getElementById('damage-tbody');
+    const statsContainer = document.getElementById('damage-stats');
+    
+    try {
+        const response = await fetch(`${API_URL}/damage-reports`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const resData = await response.json();
+        const reports = resData.data?.reports || resData.reports || [];
+        
+        // Fetch stats
+        const statsRes = await fetch(`${API_URL}/damage-reports/stats`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const statsData = await statsRes.json();
+        const stats = statsData.data?.stats || statsData.stats || {};
+        
+        statsContainer.innerHTML = `
+            <div class="stat-card">
+                <div class="label">Total Reports</div>
+                <div class="value">${stats.total_reports || 0}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Pending</div>
+                <div class="value" style="color:#f59e0b;">${stats.pending || 0}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Book Damage</div>
+                <div class="value" style="color:#27c4cc;">${stats.book_reports || 0}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Critical</div>
+                <div class="value" style="color:#ef4444;">${stats.critical || 0}</div>
+            </div>
+        `;
+        
+        if (reports.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--text-muted);">No damage reports found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = reports.map(report => {
+            const itemName = report.item_type === 'book' ? report.book_title : (report.peripheral_name || `PC Unit #${report.unit_number}`);
+            return `
+                <tr>
+                    <td><span style="color:#27c4cc;">#${report.id}</span></td>
+                    <td>${report.reporter_name || 'System'}</td>
+                    <td>
+                        <div style="font-weight: 600;">${itemName}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">${report.item_type}</div>
+                    </td>
+                    <td>${report.damage_type || 'General'}</td>
+                    <td><span class="badge badge-${report.severity === 'critical' ? 'danger' : report.severity === 'medium' ? 'warning' : 'info'}">${report.severity.toUpperCase()}</span></td>
+                    <td><span class="badge badge-${report.resolved_at ? 'success' : 'danger'}">${report.resolved_at ? 'RESOLVED' : 'PENDING'}</span></td>
+                    <td>
+                        <div style="display: flex; justify-content: center; align-items: center;">
+                        ${!report.resolved_at ? `
+                            <button class="btn btn-small btn-secondary" onclick="resolveDamage(${report.id})">Resolve</button>
+                        ` : '<span style="color: var(--success); font-weight: 600; font-size: 0.8rem;">CLEARED</span>'}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch(e) {
+        console.error('Load reports error:', e);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: #ef4444;">Failed to load reports.</td></tr>';
+    }
+}
+
+window.showReportModal = async (preType = 'hardware', preId = null) => {
+    // Show form to report damage
+    showModal('Report New Damage', `
+        <div class="form-group">
+            <label class="form-label">Item Category</label>
+            <select id="report-type" class="form-select" onchange="updateItemDropdown()">
+                <option value="hardware" ${preType === 'hardware' ? 'selected' : ''}>Hardware / Device</option>
+                <option value="book" ${preType === 'book' ? 'selected' : ''}>Library Book</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Select Item</label>
+            <select id="report-item-id" class="form-select">
+                <option value="">Loading items...</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Issue Type</label>
+            <input type="text" id="report-damage-type" class="form-input" placeholder="e.g. Torn pages, Broken keys">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Severity</label>
+            <select id="report-severity" class="form-select">
+                <option value="low">Low (Minor issue)</option>
+                <option value="medium">Medium (Needs attention)</option>
+                <option value="high">High (Damaged but usable)</option>
+                <option value="critical">Critical (Unusable)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="report-description" class="form-input" style="height: 100px; padding: 10px;"></textarea>
+        </div>
+    `, async () => {
+        const payload = {
+            item_type: document.getElementById('report-type').value,
+            damage_type: document.getElementById('report-damage-type').value,
+            severity: document.getElementById('report-severity').value,
+            description: document.getElementById('report-description').value
+        };
+        
+        const itemId = document.getElementById('report-item-id').value;
+        if (payload.item_type === 'book') payload.book_id = itemId;
+        else payload.peripheral_id = itemId; // For now default to peripheral
+        
+        if (!itemId || !payload.damage_type) {
+            alert('Please select an item and specify the issue.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/damage-reports`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken()
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (response.ok) {
+                loadDamageReports();
+            }
+        } catch(e) { console.error(e); }
+    }, 'Submit Report');
+    
+    updateItemDropdown();
+};
+
+window.updateItemDropdown = async (preId = null) => {
+    const type = document.getElementById('report-type').value;
+    const dropdown = document.getElementById('report-item-id');
+    dropdown.innerHTML = '<option value="">Loading...</option>';
+    
+    try {
+        let items = [];
+        if (type === 'book') {
+            const res = await fetch(`${API_URL}/books`);
+            const data = await res.json();
+            items = (data.data?.books || data.books || []).map(b => ({ id: b.id, name: b.title }));
+        } else {
+            const res = await fetch(`${API_URL}/peripherals`);
+            const data = await res.json();
+            items = (data.data?.peripherals || data.peripherals || data.data || []).map(p => ({ id: p.id, name: p.name }));
+        }
+        
+        dropdown.innerHTML = items.map(i => `<option value="${i.id}" ${parseInt(preId) === i.id ? 'selected' : ''}>${i.name}</option>`).join('') || '<option value="">No items found</option>';
+    } catch(e) {
+        dropdown.innerHTML = '<option value="">Error loading items</option>';
+    }
+};
+
+window.resolveDamage = async (id) => {
+    const notes = prompt('Enter resolution notes:');
+    if (notes === null) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/damage-reports/${id}/resolve`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getToken()
+            },
+            body: JSON.stringify({ resolution_notes: notes })
+        });
+        
+        if (response.ok) {
+            loadDamageReports();
+        }
+    } catch(e) { console.error(e); }
+};
+
+loadDamageReports();
+
+// Check for URL parameters to auto-open modal
+window.addEventListener('load', () => {
+    const params = new URLSearchParams(window.location.search);
+    const bookId = params.get('bookId');
+    if (bookId) {
+        showReportModal('book', bookId);
+    }
+});
+</script>
+</body>
+</html>

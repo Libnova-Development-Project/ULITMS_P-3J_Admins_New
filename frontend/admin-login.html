@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS - Admin Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --admin-primary: #003366;
+            --admin-accent: #ffcc00;
+            --bg-gradient: #003366;
+            --card-bg: #ffffff;
+            --border-color: rgba(255, 204, 0, 0.7);
+            --text-primary: #003366;
+            --text-secondary: rgba(0, 51, 102, 0.72);
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            --border-radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Admin Theme Background */
+        .admin-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: 
+                repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255, 204, 0, 0.08) 35px, rgba(255, 204, 0, 0.08) 70px),
+                repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(255, 204, 0, 0.08) 35px, rgba(255, 204, 0, 0.08) 70px);
+        }
+
+        /* Login Container */
+        .admin-login-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+            border: 1px solid rgba(255, 204, 0, 0.55);
+            transform: translateY(0);
+            transition: var(--transition);
+        }
+
+        .admin-login-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Admin Header */
+        .admin-header {
+            background: var(--admin-primary);
+            color: #ffffff;
+            padding: 32px;
+            text-align: center;
+            position: relative;
+        }
+
+        .admin-logo-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .admin-shield {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .admin-logo-text {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        .admin-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            font-weight: 400;
+            color: #ffffff;
+        }
+
+        /* Form Container */
+        .admin-form-container {
+            padding: 32px;
+            position: relative;
+        }
+
+        /* Form Elements */
+        .admin-form-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .admin-form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .admin-form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .admin-form-input, .admin-form-select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: var(--transition);
+            background: #ffffff;
+            color: var(--text-primary);
+        }
+
+        .admin-form-input:focus, .admin-form-select:focus {
+            outline: none;
+            border-color: var(--admin-accent);
+            box-shadow: 0 0 0 4px rgba(255, 204, 0, 0.25);
+            background: #ffffff;
+        }
+
+        .admin-form-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* Admin Button */
+        .admin-btn {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--admin-primary);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .admin-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .admin-btn:hover::before {
+            left: 100%;
+        }
+
+        .admin-btn:hover {
+            background: var(--admin-accent);
+            color: var(--admin-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 51, 102, 0.3);
+        }
+
+        .admin-btn:active {
+            transform: translateY(0);
+        }
+
+        .admin-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Messages */
+        .admin-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .admin-message.show {
+            display: flex;
+        }
+
+        .admin-message.error {
+            background: rgba(178, 34, 34, 0.08);
+            border: 1px solid rgba(178, 34, 34, 0.35);
+            color: #b22222;
+        }
+
+        .admin-message.success {
+            background: rgba(255, 204, 0, 0.16);
+            border: 1px solid rgba(255, 204, 0, 0.65);
+            color: var(--admin-primary);
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Security Badge */
+        .security-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: var(--admin-accent);
+            color: var(--admin-primary);
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 640px) {
+            body { padding: 12px; }
+            .admin-login-container { max-width: 100%; }
+            .admin-form-container { padding: 24px; }
+            .admin-logo-text { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Pattern Background -->
+    <div class="admin-pattern"></div>
+
+    <!-- Admin Login Container -->
+    <div class="admin-login-container">
+        <!-- Admin Header -->
+        <div class="admin-header">
+            <div class="admin-logo-section">
+                <div class="admin-shield">🛡️</div>
+                <div class="admin-logo-text">ADMIN</div>
+            </div>
+            <div class="admin-subtitle">Library Management System</div>
+            <div class="security-badge">
+                <i class="fas fa-lock"></i>
+                Secure Access
+            </div>
+        </div>
+
+        <!-- Form Container -->
+        <div class="admin-form-container">
+            <h2 class="admin-form-title">Administrator Login</h2>
+            <div id="admin-error" class="admin-message error"></div>
+            
+            <div class="admin-form-group">
+                <label class="admin-form-label">Administrator Credentials</label>
+                <input type="text" id="admin-identifier" class="admin-form-input" 
+                       placeholder="Admin ID or Email" 
+                       autocomplete="username">
+            </div>
+            
+            <div class="admin-form-group">
+                <label class="admin-form-label">Security Password</label>
+                <input type="password" id="admin-password" class="admin-form-input" 
+                       placeholder="Enter admin password" 
+                       autocomplete="current-password">
+            </div>
+            
+            <div class="admin-form-group">
+                <label class="admin-form-label">
+                    <input type="checkbox" id="admin-remember" style="margin-right: 8px;">
+                    Remember this session
+                </label>
+            </div>
+            
+            <button class="admin-btn" onclick="handleAdminLogin()" id="admin-login-btn">
+                <span id="admin-login-text">Access Admin Panel</span>
+            </button>
+            
+            <div style="text-align: center; margin-top: 24px;">
+                <a href="../login.html" style="color: var(--text-secondary); text-decoration: none; font-size: 0.85rem;">
+                    <i class="fas fa-arrow-left"></i> Back to User Login
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+
+        function showMessage(elementId, message, type = 'error') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `admin-message ${type} show`;
+            
+            // Auto hide after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    element.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        function hideMessage(elementId) {
+            const element = document.getElementById(elementId);
+            element.classList.remove('show');
+        }
+
+        function setLoading(buttonId, text) {
+            const btn = document.getElementById(buttonId);
+            btn.disabled = true;
+            document.getElementById(`${buttonId.replace('-btn', '-text')}`).textContent = text;
+        }
+
+        function setReady(buttonId, text) {
+            const btn = document.getElementById(buttonId);
+            btn.disabled = false;
+            document.getElementById(`${buttonId.replace('-btn', '-text')}`).textContent = text;
+        }
+
+        async function handleAdminLogin() {
+            const identifier = document.getElementById('admin-identifier').value.trim();
+            const password = document.getElementById('admin-password').value;
+            const remember = document.getElementById('admin-remember').checked;
+            
+            if (!identifier || !password) {
+                showMessage('admin-error', 'Please enter admin credentials');
+                return;
+            }
+            
+            setLoading('admin-login-btn', 'Authenticating...');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        identifier, 
+                        password, 
+                        role: 'admin' 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                            // Make sure this is an admin account
+                        if (data.user?.role !== 'admin') {
+                            throw new Error('Access denied. Administrator account required.');
+                        }
+                    localStorage.setItem('ulitms_token', data.token);
+                    localStorage.setItem('ulitms_user_id', data.user.id);
+                    localStorage.setItem('ulitms_name', `${data.user.first_name} ${data.user.last_name}`);
+                    localStorage.setItem('ulitms_role', data.user.role);
+                    localStorage.setItem('ulitms_email', data.user.email);
+                    localStorage.setItem('ulitms_avatar', data.user.profile_picture || '');
+                    
+                    if (remember) {
+                        localStorage.setItem('ulitms_remember', 'true');
+                    }
+                    
+                    showMessage('admin-error', 'Admin authentication successful! Redirecting...', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'pages/dashboard.html';
+                    }, 1500);
+                } else {
+                    throw new Error(data.message || 'Admin login failed');
+                }
+            } catch (error) {
+                showMessage('admin-error', error.message);
+                setReady('admin-login-btn', 'Access Admin Panel');
+            }
+        }
+
+        // Check for remembered session on load
+        window.addEventListener('load', () => {
+            const remembered = localStorage.getItem('ulitms_remember');
+            if (remembered === 'true') {
+                // Auto-redirect if remembered session exists and token is valid
+                const token = localStorage.getItem('ulitms_token');
+                if (token) {
+                    window.location.href = 'pages/dashboard.html';
+                }
+            }
+        });
+
+        // Handle Enter key for admin login
+        document.getElementById('admin-password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleAdminLogin();
+            }
+        });
+
+        // Auto-focus on load
+        window.addEventListener('load', () => {
+            document.getElementById('admin-identifier').focus();
+        });
+    </script>
+</body>
+</html>

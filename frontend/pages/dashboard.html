@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULITMS — Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+    <script src="../js/confirm-dialog.js"></script>
+</head>
+<body>
+
+<div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+
+<!-- Dynamic Sidebar Loading Script -->
+<aside id="sidebar"></aside>
+
+<script src="../js/sidebar-loader.js"></script>
+<script>loadSidebar();</script>
+
+<div id="main">
+    <header id="topbar">
+        <div class="page-title" id="dashboard-title">Dashboard</div>
+        <div class="topbar-right">
+            <div class="notif-btn"><i class="fas fa-bell"></i></div>
+            <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+            <div>
+                <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                <div class="user-role" id="header-role" style="font-size:0.7rem;">User</div>
+            </div>
+        </div>
+    </header>
+    <div id="content">
+        <!-- ROLE: ADMIN VIEW -->
+        <div id="admin-view" style="display: none;">
+            <div class="section-title" id="admin-welcome">Administrator Overview</div>
+            <div class="section-sub">Statistical insights and system monitoring</div>
+            
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-card">
+                    <div class="label"><i class="fas fa-book" style="margin-right: 8px;"></i>Total Books</div>
+                    <div class="value" id="admin-val-books">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label"><i class="fas fa-users" style="margin-right: 8px;"></i>Active Users</div>
+                    <div class="value" id="admin-val-users">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label"><i class="fas fa-exchange-alt" style="margin-right: 8px;"></i>Active Borrowings</div>
+                    <div class="value" id="admin-val-borrowed">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label"><i class="fas fa-bell" style="margin-right: 8px;"></i>Pending Tasks</div>
+                    <div class="value" id="admin-val-tasks" style="color: var(--warning);">0</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px;">
+                <div class="card" style="padding: 24px;">
+                    <div class="card-title">Library Inventory Status</div>
+                    <div style="height: 300px; display: flex; align-items: center; justify-content: center;">
+                        <canvas id="booksChart"></canvas>
+                    </div>
+                </div>
+                <div class="card" style="padding: 24px;">
+                    <div class="card-title">E-Library Unit Utilization</div>
+                    <div style="height: 300px; display: flex; align-items: center; justify-content: center;">
+                        <canvas id="elibraryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+                <div class="card" style="padding: 24px;">
+                    <div class="card-title">Borrowing Activity Trend</div>
+                    <div style="height: 300px;">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+                <div class="card" style="padding: 24px;">
+                    <div class="card-title">E-Library Session Trend</div>
+                    <div style="height: 300px;">
+                        <canvas id="sessionTrendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px; border: 1px solid rgba(39, 196, 204, 0.2);">
+                <div class="card-header" style="background: rgba(39, 196, 204, 0.05);">
+                    <div class="card-title"><i class="fas fa-clock-rotate-left" style="margin-right: 8px; color: var(--teal-primary);"></i>Pending Return Confirmations</div>
+                    <div class="badge badge-warning" id="pending-returns-count">0 Pending</div>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Book Title</th>
+                                <th>Borrow Date</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-returns-tbody">
+                            <tr><td colspan="5" style="text-align:center;">Checking for pending returns...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="card-title"><i class="fas fa-desktop" style="margin-right: 8px;"></i>E-Library Real-time Monitor</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">
+                        <i class="fas fa-info-circle" style="margin-right: 4px;"></i> 
+                        <strong>Health:</strong> Reflects hardware condition & peripheral status
+                    </div>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Unit ID</th>
+                                <th>Unit Label</th>
+                                <th>Current Status</th>
+                                <th>Last Used</th>
+                                <th>Health Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="elibrary-monitor-tbody">
+                            <tr><td colspan="5" style="text-align:center;">Fetching unit status...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROLE: STUDENT VIEW -->
+        <div id="student-view" style="display: none;">
+            <div class="section-title" id="student-welcome">My Library Dashboard</div>
+            <div class="section-sub">Personal borrowing and session history</div>
+
+            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="stat-card">
+                    <div class="label"><i class="fas fa-bookmark" style="margin-right: 8px;"></i>My Borrowings</div>
+                    <div class="value" id="user-val-borrowed">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label"><i class="fas fa-wallet" style="margin-right: 8px;"></i>Pending Penalties</div>
+                    <div class="value" id="user-val-penalties" style="color: var(--danger);">₱0.00</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-clock" style="margin-right: 8px;"></i>Upcoming Dues</div>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Borrowed At</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-dues-tbody">
+                            <tr><td colspan="4" style="text-align:center;">Loading borrowings...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-desktop" style="margin-right: 8px;"></i>Recent PC Usage</div>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Unit Number</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-sessions-tbody">
+                            <tr><td colspan="4" style="text-align:center;">Loading sessions...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = window.location.origin + '/api';
+
+function getToken() { return localStorage.getItem('ulitms_token'); }
+function getUserId() { return localStorage.getItem('ulitms_user_id'); }
+function getRole() { return localStorage.getItem('ulitms_role'); }
+
+async function loadDashboard() {
+    const role = getRole();
+    const token = getToken();
+    const userId = getUserId();
+    const userName = localStorage.getItem('ulitms_name') || 'User';
+
+    if (!token) {
+        window.location.href = '../login.html';
+        return;
+    }
+
+    if (role === 'admin') {
+        document.getElementById('admin-view').style.display = 'block';
+        document.getElementById('dashboard-title').textContent = 'Admin Dashboard';
+        document.getElementById('admin-welcome').textContent = `Administrator Overview: Welcome, ${userName}`;
+        loadAdminDashboardData(token);
+    } else {
+        document.getElementById('student-view').style.display = 'block';
+        document.getElementById('dashboard-title').textContent = 'My Dashboard';
+        document.getElementById('student-welcome').textContent = `Welcome back, ${userName}!`;
+        loadStudentDashboardData(token, userId);
+    }
+}
+
+async function loadAdminDashboardData(token) {
+    console.log('🚀 Loading Admin Dashboard...');
+    try {
+        const fetchData = async (url) => {
+            const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+            return res.ok ? await res.json() : null;
+        };
+
+        const [booksRes, usersRes, borrowingsRes, issuesRes, elibRes, sessionsRes, sessionsResHistorical] = await Promise.all([
+            fetchData(`${API_URL}/books`),
+            fetchData(`${API_URL}/users`),
+            fetchData(`${API_URL}/borrowings`),
+            fetchData(`${API_URL}/damage-reports/stats`),
+            fetchData(`${API_URL}/elibrary/units`),
+            fetchData(`${API_URL}/elibrary/sessions/active`),
+            fetchData(`${API_URL}/elibrary/sessions?limit=500`)
+        ]);
+
+        const books = booksRes?.data?.books || booksRes?.books || [];
+        const users = usersRes?.data?.users || usersRes?.users || [];
+        const borrowingsAll = borrowingsRes?.data?.borrowings || borrowingsRes?.borrowings || [];
+        const activeBorrowings = borrowingsAll.filter(b => b.status === 'borrowed');
+        const issuesCount = issuesRes?.data?.stats?.pending || issuesRes?.stats?.pending || 0;
+        const rawUnits = elibRes?.units || elibRes?.data?.units || [];
+        const activeSessions = sessionsRes?.sessions || sessionsRes?.data?.sessions || [];
+        const historicalSessions = sessionsResHistorical?.sessions || sessionsResHistorical?.data?.sessions || [];
+
+        const pendingReturns = borrowingsAll.filter(b => b.status === 'pending_return');
+        const tasksCount = issuesCount + pendingReturns.length;
+
+        document.getElementById('admin-val-books').textContent = books.length;
+        document.getElementById('admin-val-users').textContent = users.length;
+        document.getElementById('admin-val-borrowed').textContent = activeBorrowings.length;
+        document.getElementById('admin-val-tasks').textContent = tasksCount;
+        
+        // Update sidebar badge if exists
+        const sidebarBadge = document.getElementById('return-badge');
+        if (sidebarBadge) {
+            sidebarBadge.textContent = pendingReturns.length;
+            sidebarBadge.style.display = pendingReturns.length > 0 ? 'inline-block' : 'none';
+        }
+
+        document.getElementById('pending-returns-count').textContent = `${pendingReturns.length} Pending`;
+        populatePendingReturns(pendingReturns);
+
+        const units = rawUnits.map(unit => {
+            const session = activeSessions.find(s => s.unit_id === unit.id);
+            return {
+                ...unit,
+                status: session ? 'in_use' : (unit.condition === 'good' ? 'available' : 'maintenance'),
+                current_user: session ? `${session.first_name} ${session.last_name}` : null,
+                last_activity: session ? session.time_in : unit.updated_at
+            };
+        });
+
+
+        if (typeof Chart !== 'undefined') {
+            initBooksChart(books);
+            initELibraryChart(units);
+            initTrendsChart(borrowingsAll);
+            initSessionTrendsChart(historicalSessions);
+        }
+        populateELibraryMonitor(units);
+    } catch (e) { console.error(e); }
+}
+
+async function loadStudentDashboardData(token, userId) {
+    console.log('📖 Loading Student Dashboard...');
+    try {
+        const fetchData = async (url) => {
+            const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+            return res.ok ? await res.json() : null;
+        };
+
+        const [borrowingsRes, sessionsRes] = await Promise.all([
+            fetchData(`${API_URL}/borrowings/user/${userId}`),
+            fetchData(`${API_URL}/elibrary/sessions/user/${userId}`)
+        ]);
+
+        const borrowings = borrowingsRes?.data?.borrowings || borrowingsRes?.borrowings || [];
+        const sessions = sessionsRes?.sessions || sessionsRes?.data?.sessions || [];
+        
+        const activeBorrowings = borrowings.filter(b => b.status === 'borrowed' || b.status === 'pending_return');
+        const totalPenalties = borrowings.reduce((sum, b) => sum + (parseFloat(b.fine_amount) || 0), 0);
+
+        document.getElementById('user-val-borrowed').textContent = activeBorrowings.length;
+        document.getElementById('user-val-penalties').textContent = `₱${totalPenalties.toFixed(2)}`;
+
+        // Populate Dues
+        const duesTbody = document.getElementById('user-dues-tbody');
+        if (activeBorrowings.length === 0) {
+            duesTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No active borrowings</td></tr>';
+        } else {
+            duesTbody.innerHTML = activeBorrowings.map(b => {
+                const dueDate = new Date(b.due_date);
+                const isOverdue = dueDate < new Date();
+                
+                let statusText = 'ACTIVE';
+                let statusClass = 'info';
+                
+                if (b.status === 'pending_return') {
+                    statusText = 'PENDING';
+                    statusClass = 'secondary';
+                } else if (isOverdue) {
+                    statusText = 'OVERDUE';
+                    statusClass = 'danger';
+                }
+
+                return `
+                    <tr>
+                        <td>${b.title}</td>
+                        <td>${new Date(b.borrowed_at).toLocaleDateString()}</td>
+                        <td style="color: ${isOverdue ? 'var(--danger)' : 'var(--text-secondary)'};">
+                            ${dueDate.toLocaleDateString()}
+                        </td>
+                        <td><span class="badge badge-${statusClass}">${statusText}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Populate Sessions
+        const sessionsTbody = document.getElementById('user-sessions-tbody');
+        if (sessions.length === 0) {
+            sessionsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No session history</td></tr>';
+        } else {
+            sessionsTbody.innerHTML = sessions.slice(0, 5).map(s => {
+                const duration = s.time_out ? Math.round((new Date(s.time_out) - new Date(s.time_in)) / 60000) + ' min' : 'Active';
+                return `
+                    <tr>
+                        <td>Unit #${s.unit_number}</td>
+                        <td>${new Date(s.time_in).toLocaleString()}</td>
+                        <td>${s.time_out ? new Date(s.time_out).toLocaleString() : '<span class="badge badge-success">ACTIVE</span>'}</td>
+                        <td>${duration}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+    } catch (e) { console.error(e); }
+}
+
+function initBooksChart(books) {
+    const canvas = document.getElementById('booksChart');
+    const available = books.reduce((sum, b) => sum + (parseInt(b.available_copies) || 0), 0);
+    const total = books.reduce((sum, b) => sum + (parseInt(b.total_copies) || 0), 0);
+    const borrowed = Math.max(0, total - available);
+    new Chart(canvas, {
+        type: 'pie',
+        data: {
+            labels: ['Available', 'Borrowed'],
+            datasets: [{ data: [available, borrowed], backgroundColor: ['#10b981', '#f59e0b'], borderColor: '#0b1120', borderWidth: 2 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 20 } } } }
+    });
+}
+
+function initELibraryChart(units) {
+    const canvas = document.getElementById('elibraryChart');
+    const inUse = units.filter(u => u.status === 'in_use').length;
+    const available = units.filter(u => u.status === 'available').length;
+    const maintenance = units.filter(u => u.status === 'maintenance').length;
+    new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: ['In Use', 'Available', 'Maintenance'],
+            datasets: [{ data: [inUse, available, maintenance], backgroundColor: ['#ef4444', '#27c4cc', '#64748b'], borderColor: '#0b1120', borderWidth: 2 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 20 } } } }
+    });
+}
+
+function initTrendsChart(allBorrowings) {
+    const canvas = document.getElementById('trendsChart');
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        last7Days.push(d.toISOString().split('T')[0]);
+    }
+    const counts = last7Days.map(dateStr => {
+        return allBorrowings.filter(b => new Date(b.borrowed_at).toISOString().split('T')[0] === dateStr).length;
+    });
+
+    // Simple Linear Forecast for next 3 days
+    const forecast = [];
+    const avg = counts.reduce((a,b)=>a+b, 0) / counts.length;
+    for(let i=1; i<=3; i++) forecast.push(Math.round(avg * (1 + (i*0.05))));
+
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: [
+                ...last7Days.map(d => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })),
+                'Tomorrow', '+2 Days', '+3 Days'
+            ],
+            datasets: [
+                { label: 'Actual', data: counts, borderColor: '#27c4cc', backgroundColor: 'rgba(39, 196, 204, 0.1)', fill: true, tension: 0.4 },
+                { label: 'Forecast', data: [...new Array(6).fill(null), counts[6], ...forecast], borderColor: '#60a5fa', borderDash: [5, 5], fill: false, tension: 0.4 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#94a3b8', stepSize: 1 } }, x: { ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: true, labels: { color: '#94a3b8', size: 10 } } } }
+    });
+}
+
+function initSessionTrendsChart(allSessions) {
+    const canvas = document.getElementById('sessionTrendsChart');
+    if(!canvas) return;
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        last7Days.push(d.toISOString().split('T')[0]);
+    }
+    const counts = last7Days.map(dateStr => {
+        return allSessions.filter(s => new Date(s.time_in).toISOString().split('T')[0] === dateStr).length;
+    });
+
+    const avg = counts.reduce((a,b)=>a+b, 0) / counts.length;
+    const forecast = [Math.round(avg), Math.round(avg*1.1), Math.round(avg*1.05)];
+
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: [
+                ...last7Days.map(d => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })),
+                'Tomorrow', '+2 Days', '+3 Days'
+            ],
+            datasets: [
+                { label: 'Sessions', data: counts, borderColor: '#f472b6', backgroundColor: 'rgba(244, 114, 182, 0.1)', fill: true, tension: 0.4 },
+                { label: 'Forecast', data: [...new Array(6).fill(null), counts[6], ...forecast], borderColor: '#fbbf24', borderDash: [5, 5], fill: false, tension: 0.4 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#94a3b8', stepSize: 1 } }, x: { ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: true, labels: { color: '#94a3b8', size: 10 } } } }
+    });
+}
+
+function populateELibraryMonitor(units) {
+    const tbody = document.getElementById('elibrary-monitor-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = units.map(u => {
+        const statusClass = u.status === 'available' ? 'success' : u.status === 'in_use' ? 'danger' : 'warning';
+        const userDisplay = u.current_user ? `<div style="font-size: 0.7rem; color: var(--text-muted);">${u.current_user}</div>` : '';
+        
+        // Calculate health based on condition and damaged peripherals
+        let healthPercent = 100;
+        if (u.condition === 'damaged') healthPercent -= 40;
+        else if (u.condition === 'maintenance') healthPercent -= 20;
+        
+        const damagedCount = parseInt(u.damaged_peripherals) || 0;
+        healthPercent -= (damagedCount * 15);
+        healthPercent = Math.max(10, healthPercent);
+
+        const healthColor = healthPercent > 70 ? 'var(--success)' : healthPercent > 40 ? 'var(--warning)' : 'var(--danger)';
+
+        return `
+            <tr>
+                <td><strong>#${u.unit_number}</strong></td>
+                <td>${u.label || 'N/A'}</td>
+                <td><span class="badge badge-${statusClass}">${u.status.toUpperCase()}</span>${userDisplay}</td>
+                <td>${u.last_activity ? new Date(u.last_activity).toLocaleTimeString() : '---'}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                            <div style="width: ${healthPercent}%; height: 100%; background: ${healthColor};"></div>
+                        </div>
+                        <span style="font-size: 0.65rem; color: ${healthColor}; font-weight: 700;">${healthPercent}%</span>
+                    </div>
+                </td>
+            </tr>`;
+    }).join('');
+}
+
+function populatePendingReturns(pending) {
+    const tbody = document.getElementById('pending-returns-tbody');
+    if (!tbody) return;
+    
+    if (pending.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">No return requests awaiting confirmation</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = pending.map(b => `
+        <tr>
+            <td>
+                <div style="font-weight: 600;">${b.first_name} ${b.last_name}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">${b.student_id || 'ID N/A'}</div>
+            </td>
+            <td><strong>${b.title}</strong></td>
+            <td>${new Date(b.borrowed_at).toLocaleDateString()}</td>
+            <td>${new Date(b.due_date).toLocaleDateString()}</td>
+            <td>
+                <button class="btn-small btn-primary" onclick="confirmReturn(${b.id})">
+                    <i class="fas fa-check-circle" style="margin-right: 4px;"></i> Confirm Return
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function confirmReturn(id) {
+    confirmAction('Confirm that this book has been physically returned?', async () => {
+        try {
+            showLoading('Confirming return...');
+            const res = await fetch(`${API_URL}/borrowings/${id}/confirm`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': 'Bearer ' + getToken(),
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await res.json();
+            hideLoading();
+            
+            if (data.success) {
+                showSuccess('Return confirmed successfully!');
+                loadAdminDashboardData(getToken());
+            } else {
+                showError('Error: ' + data.message);
+            }
+        } catch (e) {
+            console.error(e);
+            hideLoading();
+            showError('Failed to confirm return');
+        }
+    }, { title: 'Confirm Return', confirmText: 'Confirm', type: 'info' });
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

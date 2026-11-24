@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Catalog - ULITMS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="../js/api-node.js"></script>
+</head>
+<body>
+    <div class="page-bg"><div class="glow1"></div><div class="glow2"></div></div>
+    
+    <div id="main">
+        <header id="topbar">
+            <div class="page-title">Book Catalog</div>
+            <div class="topbar-right">
+                <div class="notif-btn"><i class="fas fa-bell"></i></div>
+                <div class="avatar" id="header-avatar" style="width:36px;height:36px;">G</div>
+                <div>
+                    <div class="user-name" id="header-name" style="font-size:0.82rem;">Guest</div>
+                </div>
+            </div>
+        </header>
+        
+        <div id="content">
+            <div class="section-header">
+                <h2>📚 Book Catalog</h2>
+                <div class="search-container">
+                    <input type="text" id="catalog-search" placeholder="Search books..." class="search-input">
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>ISBN</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="catalog-tbody">
+                        <!-- Books will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Sidebar Template -->
+    <aside id="sidebar">
+    </aside>
+
+    <!-- Dynamic Sidebar Loading Script -->
+    <script src="../js/sidebar-loader.js"></script>
+    <script>loadSidebar();</script>
+    <script src="../js/confirm-dialog.js"></script>
+    <script src="../js/catalog.js"></script>
+    <script>
+        checkAuth();
+        loadCatalog();
+    </script>
+</body>
+</html>
