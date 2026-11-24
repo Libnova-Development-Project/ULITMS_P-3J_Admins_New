@@ -1,0 +1,700 @@
+{
+  "info": {
+    "name": "ULITMS API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "student_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Register a student account\n\nPostgreSQL: PROCEDURE sp_register_user (+ trg_users_sanitize, trg_audit_users)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_number\": \"2026-0100\",\n  \"first_name\": \"Ana\",\n  \"last_name\": \"Reyes\",\n  \"email\": \"ana@ulitms.edu\",\n  \"password\": \"Secret123!\",\n  \"course\": \"BSIS\",\n  \"year_level\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/login (ADMIN - run first)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json(); if (j.success) pm.collectionVariables.set('admin_token', j.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@ulitms.edu\",\n  \"password\": \"Admin@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /auth/login (STUDENT Juan - run first)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json(); if (j.success) pm.collectionVariables.set('student_token', j.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juan@ulitms.edu\",\n  \"password\": \"Student@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /auth/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me",
+            "description": "Current user profile\n\nPostgreSQL: SELECT users (column-limited)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "GET /books",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/books?keyword=&category_id=",
+            "description": "Search catalog\n\nPostgreSQL: FUNCTION fn_search_books"
+          }
+        },
+        {
+          "name": "GET /books/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/books/1",
+            "description": "One book\n\nPostgreSQL: VIEW vw_active_catalog"
+          }
+        },
+        {
+          "name": "POST /books",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/books",
+            "description": "Add book\n\nPostgreSQL: INSERT in BEGIN/COMMIT/ROLLBACK + trg_audit_books",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Clean Code\",\n  \"author\": \"Robert Martin\",\n  \"isbn\": \"9780132350884\",\n  \"total_copies\": 2,\n  \"category_id\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /books/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/books/1",
+            "description": "Edit book\n\nPostgreSQL: UPDATE + trg_books_adjust_available, trg_books_guard_deactivation",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"total_copies\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /books/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/books/1",
+            "description": "Soft delete book\n\nPostgreSQL: UPDATE deleted_at + trg_books_guard_deactivation, trg_books_no_delete"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Borrowings",
+      "item": [
+        {
+          "name": "POST /borrowings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/borrowings",
+            "description": "Request a book (pending approval)\n\nPostgreSQL: PROCEDURE sp_submit_borrow_request + FUNCTION fn_check_borrow_eligibility + trg_borrow_notify_insert",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"book_id\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /borrowings/mine",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/borrowings/mine",
+            "description": "My requests and loans\n\nPostgreSQL: FUNCTION fn_get_user_borrowings"
+          }
+        },
+        {
+          "name": "GET /borrowings/pending",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/borrowings/pending",
+            "description": "Approval queue\n\nPostgreSQL: FUNCTION fn_get_pending_requests"
+          }
+        },
+        {
+          "name": "GET /borrowings/active",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/borrowings/active",
+            "description": "Active loans with projected fines\n\nPostgreSQL: VIEW vw_active_borrowings (uses fn_calculate_fine)"
+          }
+        },
+        {
+          "name": "PUT /borrowings/:id/decision",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/borrowings/1/decision",
+            "description": "Approve or reject\n\nPostgreSQL: PROCEDURE sp_decide_borrow_request (COMMIT / ROLLBACK) + trg_borrow_validate_transition, trg_borrow_notify_status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"approve\",\n  \"note\": \"Approved\",\n  \"loan_days\": 7\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /borrowings/:id/issue",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/borrowings/1/issue",
+            "description": "Hand the book over (approved to borrowed)\n\nPostgreSQL: PROCEDURE sp_issue_book"
+          }
+        },
+        {
+          "name": "PUT /borrowings/:id/return-request",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/borrowings/1/return-request",
+            "description": "Student starts a return\n\nPostgreSQL: PROCEDURE sp_request_return"
+          }
+        },
+        {
+          "name": "PUT /borrowings/:id/confirm-return",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/borrowings/1/confirm-return",
+            "description": "Confirm return, compute fine, restore copy\n\nPostgreSQL: PROCEDURE sp_confirm_return + FUNCTION fn_calculate_fine"
+          }
+        },
+        {
+          "name": "POST /borrowings/mark-overdue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/borrowings/mark-overdue",
+            "description": "Run overdue batch\n\nPostgreSQL: PROCEDURE sp_mark_overdue_borrowings"
+          }
+        }
+      ]
+    },
+    {
+      "name": "E-Library",
+      "item": [
+        {
+          "name": "GET /elibrary/units",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/elibrary/units",
+            "description": "Unit availability\n\nPostgreSQL: VIEW vw_elibrary_unit_status"
+          }
+        },
+        {
+          "name": "POST /elibrary/sessions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/elibrary/sessions",
+            "description": "Start a session\n\nPostgreSQL: PROCEDURE sp_start_elibrary_session + trg_session_sync_unit_start",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unit_id\": 1,\n  \"purpose\": \"Research\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT /elibrary/sessions/:id/end",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/elibrary/sessions/1/end",
+            "description": "End a session\n\nPostgreSQL: PROCEDURE sp_end_elibrary_session + trg_session_sync_unit_end"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Damage",
+      "item": [
+        {
+          "name": "POST /damage-reports",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/damage-reports",
+            "description": "Report damaged unit/peripheral\n\nPostgreSQL: PROCEDURE sp_submit_damage_report + trg_damage_notify_insert",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"peripheral_id\": 1,\n  \"damage_type\": \"Cracked screen\",\n  \"description\": \"Crack on the monitor\",\n  \"severity\": \"moderate\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /damage-reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/damage-reports",
+            "description": "Open reports\n\nPostgreSQL: VIEW vw_open_damage_reports"
+          }
+        },
+        {
+          "name": "PUT /damage-reports/:id/resolve",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/damage-reports/1/resolve",
+            "description": "Resolve/close report\n\nPostgreSQL: PROCEDURE sp_resolve_damage_report + trg_damage_notify_status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"resolved\",\n  \"notes\": \"Sent for repair\",\n  \"new_condition\": \"repair_needed\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "GET /users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users",
+            "description": "Users with activity summary\n\nPostgreSQL: VIEW vw_user_activity"
+          }
+        },
+        {
+          "name": "PUT /users/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users/1",
+            "description": "Edit user / change status\n\nPostgreSQL: UPDATE + trg_users_sanitize, trg_audit_users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"suspended\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /users/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users/1",
+            "description": "Soft delete user\n\nPostgreSQL: UPDATE deleted_at + trg_users_no_delete"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "GET /notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/notifications",
+            "description": "My notifications\n\nPostgreSQL: SELECT notifications"
+          }
+        },
+        {
+          "name": "PUT /notifications/:id/read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{student_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/notifications/1/read",
+            "description": "Mark as read\n\nPostgreSQL: UPDATE notifications"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "GET /dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/dashboard",
+            "description": "Dashboard statistics\n\nPostgreSQL: FUNCTION fn_get_dashboard_stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "GET /reports/inventory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reports/inventory",
+            "description": "Inventory reconciliation\n\nPostgreSQL: VIEW vw_inventory_check"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit",
+      "item": [
+        {
+          "name": "GET /audit-logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audit-logs?table=&record_id=&operation=&limit=&offset=",
+            "description": "Audit trail\n\nPostgreSQL: VIEW vw_audit_trail (filled by trg_fn_audit_row)"
+          }
+        }
+      ]
+    }
+  ]
+}

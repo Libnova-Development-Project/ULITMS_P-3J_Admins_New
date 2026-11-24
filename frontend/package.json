@@ -1,0 +1,10 @@
+{
+  "name": "ulitms-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ULITMS web frontend (no build step, no dependencies)",
+  "scripts": {
+    "start": "node server.js",
+    "mock": "node dev/mock-api.js"
+  }
+}
